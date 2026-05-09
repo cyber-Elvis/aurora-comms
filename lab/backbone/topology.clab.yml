@@ -1,0 +1,38 @@
+name: aurora
+topology:
+  nodes:
+    melbourne:
+      kind: linux
+      image: frrouting/frr:latest
+      binds:
+        - melbourne/daemons:/etc/frr/daemons
+        - melbourne/frr.conf:/etc/frr/frr.conf
+        - melbourne/vtysh.conf:/etc/frr/vtysh.conf
+    sydney:
+      kind: linux
+      image: frrouting/frr:latest
+      binds:
+        - sydney/daemons:/etc/frr/daemons
+        - sydney/frr.conf:/etc/frr/frr.conf
+        - sydney/vtysh.conf:/etc/frr/vtysh.conf
+    brisbane:
+      kind: linux
+      image: frrouting/frr:latest
+      binds:
+        - brisbane/daemons:/etc/frr/daemons
+        - brisbane/frr.conf:/etc/frr/frr.conf
+        - brisbane/vtysh.conf:/etc/frr/vtysh.conf
+    geelong:
+      kind: linux
+      image: frrouting/frr:latest
+      binds:
+        - geelong/daemons:/etc/frr/daemons
+        - geelong/frr.conf:/etc/frr/frr.conf
+        - geelong/vtysh.conf:/etc/frr/vtysh.conf
+  links:
+    - endpoints: ["melbourne:eth1", "sydney:eth1"]
+    - endpoints: ["sydney:eth2", "brisbane:eth1"]
+    - endpoints: ["brisbane:eth2", "geelong:eth1"]
+    - endpoints: ["geelong:eth2", "melbourne:eth2"]
+    - endpoints: ["melbourne:eth3", "brisbane:eth3"]
+    - endpoints: ["sydney:eth3", "geelong:eth3"]
