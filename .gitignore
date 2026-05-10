@@ -9,3 +9,6 @@ __pycache__/
 node_modules/
 .env
 .env.local
+
+# Containerlab runtime — auto-generated per deploy, contains TLS keys and SSH state
+clab-*/
