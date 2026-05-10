@@ -1,0 +1,89 @@
+# Nokia 7750 SR equivalent — Aurora Melbourne PE
+# SR OS classic CLI
+
+configure router "Base"
+    interface "system"
+        description "router-id"
+        address 10.0.0.1/32
+        no shutdown
+    exit
+    interface "to-sydney"
+        port 1/1/1
+        address 10.1.12.0/31
+        no shutdown
+    exit
+    interface "to-geelong"
+        port 1/1/2
+        address 10.1.14.0/31
+        no shutdown
+    exit
+    interface "to-brisbane"
+        port 1/1/3
+        address 10.1.13.0/31
+        no shutdown
+    exit
+    autonomous-system 65100
+    router-id 10.0.0.1
+
+    isis
+        level-capability level-2
+        area-id 49.0001
+        system-id 0010.0000.0001
+        level 2
+            wide-metrics-only
+        exit
+        interface "system"
+            passive
+            no shutdown
+        exit
+        interface "to-sydney"
+            interface-type point-to-point
+            level-capability level-2
+            no shutdown
+        exit
+        interface "to-geelong"
+            interface-type point-to-point
+            level-capability level-2
+            no shutdown
+        exit
+        interface "to-brisbane"
+            interface-type point-to-point
+            level-capability level-2
+            no shutdown
+        exit
+        no shutdown
+    exit
+
+    ldp
+        interface-parameters
+            interface "to-sydney"
+                no shutdown
+            exit
+            interface "to-geelong"
+                no shutdown
+            exit
+            interface "to-brisbane"
+                no shutdown
+            exit
+        exit
+        no shutdown
+    exit
+
+    bgp
+        router-id 10.0.0.1
+        group "IBGP_PE"
+            type internal
+            peer-as 65100
+            local-address system
+            family ipv4
+            next-hop-self
+            neighbor 10.0.0.2
+            exit
+            neighbor 10.0.0.3
+            exit
+            neighbor 10.0.0.4
+            exit
+        exit
+        no shutdown
+    exit
+exit all
