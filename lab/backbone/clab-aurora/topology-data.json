@@ -1,0 +1,243 @@
+{
+  "name": "aurora",
+  "type": "clab",
+  "clab": {
+    "config": {
+      "prefix": "clab",
+      "mgmt": {
+        "network": "clab",
+        "bridge": "br-d7038b315091",
+        "ipv4-subnet": "172.20.20.0/24",
+        "ipv4-gw": "172.20.20.1",
+        "ipv6-subnet": "3fff:172:20:20::/64",
+        "ipv6-gw": "3fff:172:20:20::1",
+        "external-access": true
+      }
+    }
+  },
+  "ssh-pub-keys": [],
+  "nodes": {
+    "brisbane": {
+      "index": "0",
+      "shortname": "brisbane",
+      "longname": "clab-aurora-brisbane",
+      "fqdn": "brisbane.aurora.io",
+      "group": "",
+      "labdir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/brisbane",
+      "kind": "linux",
+      "image": "frrouting/frr:latest",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.4",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "3fff:172:20:20::4",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-d7038b315091",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/brisbane",
+        "clab-node-longname": "clab-aurora-brisbane",
+        "clab-node-name": "brisbane",
+        "clab-node-type": "",
+        "clab-owner": "elvis-pc",
+        "clab-topo-file": "/home/elvis-pc/aurora-comms/lab/backbone/topology.clab.yml",
+        "containerlab": "aurora"
+      },
+      "port-bindings": [
+      ]
+    },
+    "geelong": {
+      "index": "1",
+      "shortname": "geelong",
+      "longname": "clab-aurora-geelong",
+      "fqdn": "geelong.aurora.io",
+      "group": "",
+      "labdir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/geelong",
+      "kind": "linux",
+      "image": "frrouting/frr:latest",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.2",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "3fff:172:20:20::2",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-d7038b315091",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/geelong",
+        "clab-node-longname": "clab-aurora-geelong",
+        "clab-node-name": "geelong",
+        "clab-node-type": "",
+        "clab-owner": "elvis-pc",
+        "clab-topo-file": "/home/elvis-pc/aurora-comms/lab/backbone/topology.clab.yml",
+        "containerlab": "aurora"
+      },
+      "port-bindings": [
+      ]
+    },
+    "melbourne": {
+      "index": "2",
+      "shortname": "melbourne",
+      "longname": "clab-aurora-melbourne",
+      "fqdn": "melbourne.aurora.io",
+      "group": "",
+      "labdir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/melbourne",
+      "kind": "linux",
+      "image": "frrouting/frr:latest",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.5",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "3fff:172:20:20::5",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-d7038b315091",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/melbourne",
+        "clab-node-longname": "clab-aurora-melbourne",
+        "clab-node-name": "melbourne",
+        "clab-node-type": "",
+        "clab-owner": "elvis-pc",
+        "clab-topo-file": "/home/elvis-pc/aurora-comms/lab/backbone/topology.clab.yml",
+        "containerlab": "aurora"
+      },
+      "port-bindings": [
+      ]
+    },
+    "sydney": {
+      "index": "3",
+      "shortname": "sydney",
+      "longname": "clab-aurora-sydney",
+      "fqdn": "sydney.aurora.io",
+      "group": "",
+      "labdir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/sydney",
+      "kind": "linux",
+      "image": "frrouting/frr:latest",
+      "mgmt-net": "",
+      "mgmt-intf": "",
+      "mgmt-ipv4-address": "172.20.20.3",
+      "mgmt-ipv4-prefix-length": 24,
+      "mgmt-ipv6-address": "3fff:172:20:20::3",
+      "mgmt-ipv6-prefix-length": 64,
+      "mac-address": "",
+      "labels": {
+        "clab-mgmt-net-bridge": "br-d7038b315091",
+        "clab-node-group": "",
+        "clab-node-kind": "linux",
+        "clab-node-lab-dir": "/home/elvis-pc/aurora-comms/lab/backbone/clab-aurora/sydney",
+        "clab-node-longname": "clab-aurora-sydney",
+        "clab-node-name": "sydney",
+        "clab-node-type": "",
+        "clab-owner": "elvis-pc",
+        "clab-topo-file": "/home/elvis-pc/aurora-comms/lab/backbone/topology.clab.yml",
+        "containerlab": "aurora"
+      },
+      "port-bindings": [
+      ]
+    }
+  },
+  "links": [
+    {
+      "endpoints": {
+        "a": {
+          "node": "melbourne",
+          "interface": "eth1",
+          "mac": "aa:c1:ab:17:f3:6d",
+          "peer": "z"
+        },
+        "z": {
+          "node": "sydney",
+          "interface": "eth1",
+          "mac": "aa:c1:ab:63:ba:ad",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "sydney",
+          "interface": "eth2",
+          "mac": "aa:c1:ab:59:1a:e1",
+          "peer": "z"
+        },
+        "z": {
+          "node": "brisbane",
+          "interface": "eth1",
+          "mac": "aa:c1:ab:6c:0b:66",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "brisbane",
+          "interface": "eth2",
+          "mac": "aa:c1:ab:29:5d:59",
+          "peer": "z"
+        },
+        "z": {
+          "node": "geelong",
+          "interface": "eth1",
+          "mac": "aa:c1:ab:ee:bd:65",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "geelong",
+          "interface": "eth2",
+          "mac": "aa:c1:ab:33:a8:ec",
+          "peer": "z"
+        },
+        "z": {
+          "node": "melbourne",
+          "interface": "eth2",
+          "mac": "aa:c1:ab:1b:6f:a1",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "melbourne",
+          "interface": "eth3",
+          "mac": "aa:c1:ab:f7:e7:42",
+          "peer": "z"
+        },
+        "z": {
+          "node": "brisbane",
+          "interface": "eth3",
+          "mac": "aa:c1:ab:50:23:5f",
+          "peer": "a"
+        }
+      }
+    },
+    {
+      "endpoints": {
+        "a": {
+          "node": "sydney",
+          "interface": "eth3",
+          "mac": "aa:c1:ab:a9:a4:97",
+          "peer": "z"
+        },
+        "z": {
+          "node": "geelong",
+          "interface": "eth3",
+          "mac": "aa:c1:ab:d6:3f:58",
+          "peer": "a"
+        }
+      }
+    }
+  ]
+}
