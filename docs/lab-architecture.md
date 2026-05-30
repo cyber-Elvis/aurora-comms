@@ -3,11 +3,19 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
+| Version | 1.1 |
 | Date | May 2026 |
 | Decision | Hybrid workload distribution — CPU-intensive services on PC1, lightweight services + carrier backbone on Dell |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 | Supersedes | n/a (initial) |
 | Related | `docs/design.md`, `docs/ip-plan.md`, `BACKLOG.md` |
+
+## Revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 1.0 | May 2026 | Initial decision: Option C hybrid workload distribution |
+| 1.1 | May 2026 | Added Cowork agent (~3 GB) to PC1 always-on accounting; tightened active-lab pool from 11 GB to 8 GB and revised sprint feasibility; fixed WSL2 memory cap to 12 GB in migration plan |
 
 ## 1. Context
 
@@ -51,16 +59,16 @@ Move all MSP services to PC1 alongside endpoint VMs. Dell only runs the carrier 
 CPU-intensive backend services (Wazuh manager, OpenSearch, MISP) move to PC1. Lightweight always-on services (FreeRADIUS, AD DC, LibreNMS, Grafana, pfSense, jump box) stay on Dell. Carrier containerlab stays on Dell.
 
 - **Dell load at Sprint W4:** ~25.5 GB (6.5 GB headroom)
-- **PC1 load at Sprint W4:** ~21 GB always-on + ~11 GB pool for active labs
+- **PC1 load at Sprint W4:** ~24 GB always-on + ~8 GB pool for active labs
 - **CPU placement:** heavy workloads run on the fast Ryzen; light workloads on the Dell where they fit comfortably
-- **Daily-driver impact:** PC1 becomes always-on, but the 9 GB always-on services committed are buffered by 11 GB free pool
+- **Daily-driver impact:** PC1 becomes always-on, but the always-on services are buffered by the active-lab pool
 - **Verdict:** accepted
 
 ## 4. Decision
 
 **Option C — Hybrid workload distribution.**
 
-PC1 hosts CPU-intensive backend services, endpoint VMs, on-demand firewall labs, and CCNA-style customer-edge topologies. Dell hosts the containerlab carrier backbone, persistent infrastructure services (identity, monitoring, NAC, fallback firewall), and the lab's central management plane. Surface Pro acts as a single Intune-managed endpoint for Conditional Access policy testing.
+PC1 hosts CPU-intensive backend services, the Cowork development agent, endpoint VMs, on-demand firewall labs, and CCNA-style customer-edge topologies. Dell hosts the containerlab carrier backbone, persistent infrastructure services (identity, monitoring, NAC, fallback firewall), and the lab's central management plane. Surface Pro acts as a single Intune-managed endpoint for Conditional Access policy testing.
 
 ## 5. Service placement matrix
 
@@ -71,6 +79,7 @@ PC1 hosts CPU-intensive backend services, endpoint VMs, on-demand firewall labs,
 | Maple Ridge CE routers (in containerlab) | Customer edge | Dell | 1 GB | Aligned with PE for direct connectivity |
 | **Wazuh manager + OpenSearch + dashboard** | MSP SIEM | **PC1** | **6 GB** | CPU-heavy search/index needs Ryzen |
 | **MISP + Redis** | MSP threat intel | **PC1** | **3 GB** | CPU-heavy correlation needs Ryzen |
+| **Cowork agent + sandbox VM** | Lab development | **PC1** | **~3 GB** | The development environment used to build, document, and iterate the lab. ~660 MB Claude app + ~1.5 GB Linux sandbox VM (HCS) + ~340 MB Node.js helpers + variable WebView |
 | Maple Ridge AD DC | MSP identity | Dell | 3 GB | Low CPU, persistent service |
 | FreeRADIUS NAC | MSP NAC | Dell | 1 GB | Low CPU, lightweight |
 | LibreNMS + Grafana | MSP monitoring | Dell | 4 GB | Low CPU, persistent monitoring |
@@ -91,11 +100,12 @@ PC1 hosts CPU-intensive backend services, endpoint VMs, on-demand firewall labs,
 | Category | Allocation |
 | --- | --- |
 | Win 11 host + apps | 6 GB |
-| WSL2 + Docker (capped via `.wslconfig`) | 6 GB |
+| Cowork agent (Claude app + sandbox VM + Node.js helpers) | 3 GB |
+| WSL2 + Docker (hard-capped at 12 GB via `.wslconfig`) | 6 GB |
 | Wazuh manager + OpenSearch + dashboard | 6 GB |
 | MISP + Redis | 3 GB |
-| **Always-on subtotal** | **21 GB** |
-| Active lab pool | **11 GB** |
+| **Always-on subtotal** | **24 GB** |
+| Active lab pool | **8 GB** |
 
 ### Dell (32 GB)
 
@@ -146,13 +156,17 @@ All containerlab nodes (Aurora PEs, Maple Ridge CEs, customer endpoint VMs) conf
 
 | Sprint | Dell load | PC1 load | Verdict |
 | --- | --- | --- | --- |
-| W1 (current baseline) | ~19 GB | ~21 GB always-on + active labs from 11 GB pool | ✓ Comfortable |
-| W2 (Ansible commit + VPRN + Wazuh/MISP migration) | ~20 GB | Migration in progress — temporary peak ~24 GB | ✓ Fits |
-| W3 (multi-vendor backbone + RR + BFD + auth + SR) | ~24 GB | ~21 GB always-on + active labs from 11 GB | ✓ Comfortable |
-| W4 (RPKI + Palo Alto + FortiGate + customer services) | ~25.5 GB | ~21 GB always-on + 11 GB cycles between PA/macOS/Win11 | ✓ Comfortable with workload cycling |
-| W5+ (FortiManager + advanced services + NETCONF/gNMI) | ~26.5 GB | ~24 GB always-on (FortiManager added) + 8 GB active pool | ✓ Tight, manageable |
+| W1 (current baseline) | ~19 GB | Cowork running + WSL Ubuntu = ~12 GB active | ✓ Comfortable |
+| W2 (Ansible commit + VPRN + Wazuh/MISP migration) | ~20 GB | Migration in progress — temporary peak ~26 GB | ✓ Fits |
+| W3 (multi-vendor backbone + RR + BFD + auth + SR) | ~24 GB | ~24 GB always-on + active labs from 8 GB pool | ✓ Tight, manageable |
+| W4 (RPKI + Palo Alto + FortiGate + customer services) | ~25.5 GB | ~24 GB always-on + 8 GB cycles between PA/macOS/Win11 | ⚠ Requires workload cycling (see §10) |
+| W5+ (FortiManager + advanced services + NETCONF/gNMI) | ~26.5 GB | ~24 GB always-on + 8 GB active pool | ⚠ Cowork closure may be needed for demos |
 
-**Sprint W4 cycling rule:** at peak, choose two of {macOS endpoint, Palo Alto VM-Series, multiple firewall VMs}. Don't attempt all three concurrently on PC1.
+**Active-lab pool reality at W4:** the 8 GB pool fits one of {PA, macOS, Win11 endpoint at 6 GB, FortiGate, Maple Ridge CE in WSL} at a time, with some pairings possible (Win11 endpoint at 4 GB + Maple Ridge CE + FortiGate = ~7 GB).
+
+**Sprint W4 cycling rule:** at peak, choose ONE of {macOS endpoint, Palo Alto VM-Series, multiple firewall VMs}. Don't attempt all three concurrently on PC1.
+
+**Cowork closure for demos:** if a demo specifically needs both endpoint VMs simultaneously (e.g., showing Helix Health Win + Mac users), closing the Cowork session reclaims ~3 GB and gives you an 11 GB pool — enough to fit both endpoints. Re-open Cowork after the demo.
 
 ## 10. Constraints accepted
 
@@ -163,6 +177,7 @@ These limitations are explicit, documented, and acceptable:
 3. **All three NGFWs (PA + FortiGate + ASAv) cannot run simultaneously.** Cycle through them per scenario.
 4. **Cisco IOS XRd on Dell runs at reduced performance** compared to the same workload on PC1. Accepted because XRd is one node in a multi-vendor backbone, not the primary lab workhorse.
 5. **The lab requires both PCs powered on** for the full topology to be reachable. Either alone is degraded.
+6. **Cowork agent consumes ~3 GB of PC1's always-on budget** during active lab development. This is the cost of the development environment used to build and document the lab. For specific demo scenarios that need the full 11 GB active-lab pool, close Cowork temporarily and reopen afterwards.
 
 ## 11. Migration plan — Sprint W2
 
@@ -171,7 +186,7 @@ The transition from current state (Wazuh + MISP on Dell) to Option C requires a 
 ### Phase 1 — Prepare PC1 (1 hour)
 
 1. Install Docker Desktop on PC1 (or use WSL2 Docker — both viable; pick Docker Desktop for GUI management or WSL2 Docker for CLI-pure).
-2. Configure `.wslconfig` to cap WSL2 at 6 GB and 6 vCPU.
+2. Confirm `.wslconfig` is in place at `C:\Users\Elvis\.wslconfig` capping WSL2 at 12 GB and 8 vCPU (already in place as of May 2026).
 3. Verify Tailscale connectivity from PC1 to Dell and to containerlab nodes.
 
 ### Phase 2 — Deploy Wazuh on PC1 (1 hour)
@@ -220,7 +235,7 @@ The transition from current state (Wazuh + MISP on Dell) to Option C requires a 
 
 ### Power consumption
 
-- PC1 always-on at ~60–80 W (idle, Wazuh + MISP background): ~$5–7/month at AU residential rates.
+- PC1 always-on at ~60–80 W (idle, Wazuh + MISP + Cowork background): ~$5–7/month at AU residential rates.
 - Dell always-on at ~25–40 W (idle, lightweight services): ~$2–4/month.
 - Surface Pro on-demand: trivial.
 
@@ -230,10 +245,11 @@ Total ~$7–11/month in electricity. Tolerable.
 
 | Failure | Impact | Mitigation |
 | --- | --- | --- |
-| PC1 reboots unexpectedly | Wazuh + MISP offline ~5 min during boot | Restart on auto-power; alerts ride out gap |
+| PC1 reboots unexpectedly | Wazuh + MISP + Cowork offline ~5 min during boot | Restart on auto-power; alerts ride out gap |
 | Dell reboots unexpectedly | Aurora + identity + monitoring offline | Aurora deploy in ~60 sec via `make redeploy`; AD DC + LibreNMS auto-restart |
 | Both PCs offline | Lab fully offline | Surface Pro endpoint remains for offline Conditional Access testing |
 | Tailscale outage | Inter-host management degraded | LAN-direct fallback works for most cross-host traffic |
+| Cowork session ends | Cowork agent and sandbox VM stop | ~3 GB returned to PC1 active pool; no impact on Wazuh/MISP services |
 
 ### Maintenance windows
 
