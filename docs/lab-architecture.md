@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.2 |
+| Version | 1.4 |
 | Date | May 2026 |
 | Decision | Hybrid workload distribution — CPU-intensive services on PC1, lightweight services + carrier backbone on Dell |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
@@ -17,6 +17,8 @@
 | 1.0 | May 2026 | Initial decision: Option C hybrid workload distribution |
 | 1.1 | May 2026 | Added Cowork agent (~3 GB) to PC1 always-on accounting; tightened active-lab pool from 11 GB to 8 GB and revised sprint feasibility; fixed WSL2 memory cap to 12 GB in migration plan |
 | 1.2 | May 2026 | Phase 1 audit reconciliation: Docker Desktop (~2 GB) retained on PC1 to host pre-existing personal stacks (job-radar, openwebui, freshrss, rsshub); active-lab pool tightened from 8 GB to 6 GB; Tailscale measured as already deployed across `forty3s-pc1/pc2/pc3` with magic DNS; native Docker in WSL Ubuntu coexists with Docker Desktop, isolated to lab workloads; Docker data-root relocated to D:\ to handle 35 GB C: drive free constraint |
+| 1.3 | May 2026 | Per-tenant customer-edge and LAN topology committed: §14 multi-vendor matrix (Cisco at Maple Ridge full stack; Cisco edge + HPE Aruba LAN at Helix Health; Juniper cRPD edge + Cisco LAN at Northwind); §15 vendor strategy framing Cisco-first with HPE Aruba and Juniper as multi-vendor demonstrators matching realistic Australian enterprise patterns; §6 RAM allocation updated for one-tenant-at-a-time PC1 cycling; §10 constraint #9 added (vendor account dependencies); §11 Sprint W4 work expanded (vrnetlab wrappers for Cisco/Aruba VM images, Juniper cRPD native pull). GNS3 and EVE-NG explicitly rejected: all CE/LAN/firewall runs as containerlab nodes, including vrnetlab-wrapped vendor VM images |
+| 1.4 | May 2026 | Throughput vs. demo path separation pattern committed: §15.4 design pattern for splitting protocol-demo paths (Cisco/Nokia licensed-but-capped images for vendor-CLI credibility) from throughput-test paths (FRR/VyOS substitutes or TRex traffic generator for data-plane validation at WSL2 substrate ceiling); §10 constraint #11 added (throughput-capped images drive demo/perftest topology separation); §10 constraint #12 added (Nokia SR OS 13.0 R4 runs with frozen 2015 RTC for license validity, all SR OS-originated timestamps offset 11 years); §14.4 vrnetlab wrapper inventory annotated for existing on-disk images requiring no vendor account registration (CSR1000v 16.8, IOS XRv 6.1.3, Nokia SR OS 13.0 R4, IOSv 15.7, IOSv-L2 15.2, MikroTik CHR 6.41.4); §15.3 vendor account inventory annotated to mark which vendors are covered by on-disk images vs. requiring registration; new §17 Cisco DevNet Sandbox integration as inter-AS peer carrier for current-IOS-XR demos |
 
 ## 1. Context
 
@@ -117,6 +119,16 @@ PC1 hosts CPU-intensive backend services, the Cowork development agent, endpoint
 - Native Docker Engine inside `Ubuntu` WSL distro hosts all lab workloads — Wazuh, MISP, Aurora carrier integration, vrnetlab vendor router containers.
 - The two daemons are isolated by WSL distro boundary. No cross-daemon dependencies.
 
+**Tenant CE/LAN runs from the PC1 active-lab pool, not Dell.** This matches §8's existing GRE-tunnel-from-PC1-to-Dell topology. Per-tenant RAM cost when active:
+
+| Active tenant | CE | LAN core | Access | Endpoint | **Total** |
+| --- | --- | --- | --- | --- | --- |
+| Maple Ridge (full Cisco) | Cat8000v 4 GB | Cat9000v 2 GB | Cat9000v 2 GB | Win 11 6 GB | **14 GB** — Cowork + Docker Desktop both closed |
+| Helix Health (Cisco edge + Aruba LAN) | Cat8000v 4 GB | Aruba CX 2 GB | Aruba CX 2 GB | macOS 8 GB | **16 GB** — Cowork + Docker Desktop both closed; tight |
+| Northwind (Juniper cRPD edge + Cisco LAN) | cRPD 0.5 GB | Cat9000v 2 GB | Cat9000v 2 GB | Linux 4 GB | **8.5 GB** — Cowork closed sufficient |
+
+**Cycling rule for tenant demos:** activate one tenant at a time. Northwind fits comfortably in the active-lab pool with only Cowork closed. Helix and Maple Ridge require both Cowork and Docker Desktop closed during their demo windows. Re-open after.
+
 ### Dell (32 GB)
 
 | Category | Allocation |
@@ -212,6 +224,10 @@ These limitations are explicit, documented, and acceptable:
 6. **Cowork agent consumes ~3 GB of PC1's always-on budget** during active lab development. This is the cost of the development environment used to build and document the lab. For specific demo scenarios that need a 9 GB active-lab pool, close Cowork temporarily and reopen afterwards.
 7. **Docker Desktop consumes ~2 GB of PC1's always-on budget** to keep personal stacks (job-radar, openwebui, freshrss, rsshub) running. Retained because these stacks support daily productivity (notably job-radar during active job search). For peak demos requiring an 11 GB active-lab pool (e.g., PA + endpoint or dual-endpoint scenarios), quit Docker Desktop from the tray icon — this stops personal stacks during the demo window. Re-open after.
 8. **Dual Docker daemons on PC1.** Docker Desktop (in `docker-desktop` WSL distro) hosts personal stacks. Native Docker Engine (in `Ubuntu` WSL distro) hosts lab workloads. The two daemons cannot directly address each other's containers; cross-daemon connectivity goes via Windows host networking. Acceptable because the lab and personal stacks have no functional overlap.
+9. **Vendor account dependencies for tenant CE/LAN.** Cisco Cat8000v, Cisco Cat9000v, and HPE Aruba CX simulator images require free vendor accounts (Cisco CCO + DevNet, HPE Aruba Networking Central). Juniper cRPD requires Juniper engineering-download login. Image downloads occur asynchronously outside demo windows. No live downloads during interview demos or customer presentations. Account registration is a one-time prerequisite before Sprint W4 deployments. Where a vendor changes licensing terms, the affected tenant CE falls back to FRR (open-source) until a replacement vendor account is approved.
+10. **No GNS3 or EVE-NG.** All CE/LAN/firewall/wireless devices run as containerlab nodes. Native vendor containers (Juniper cRPD, Cisco IOS XRd, Nokia SR Linux, FRR, Cumulus VX, SONiC) execute directly. VM-only vendor images (Cisco Cat8000v, Cat9000v, ASAv; HPE Aruba CX; Palo Alto VM-Series; FortiGate-VM) execute as `vrnetlab`-wrapped containers — qcow2 packaged inside a Docker container running qemu-kvm internally, orchestrated by containerlab as ordinary nodes. This preserves the "everything as code" deployment story without depending on GNS3/EVE-NG graphical tooling. Containerlab YAML topology files are the canonical source of truth.
+11. **Throughput-capped vendor images drive demo-vs-perftest topology separation.** Cisco CSR1000v 16.8 in unlicensed eval mode is capped at ~250 Kbps forwarding throughput. Older IOS XRv 6.1.3 demo build and similar legacy lab images have analogous data-plane caps. The lab accepts this by maintaining two topology variants per tenant: a protocol-demo path that retains vendor-licensed images for CLI credibility (the throughput cap is invisible at <10 Mbps test rates), and an explicit performance-test path that substitutes open-source FRR or VyOS at the high-throughput hop (no cap). For data-plane testing requiring higher rates, the lab uses TRex (Cisco's open-source traffic generator) as a container node injecting traffic directly into Aurora PEs, bypassing capped CE images. See §15.4 for the design pattern.
+12. **Nokia SR OS 13.0 R4 runs with frozen 2015 RTC for license validity.** The 2015-issued ALCATEL-LUCENT 7750 SROS-vSIM demo license technically expired August 2015. The well-documented community technique sets the QEMU virtual machine RTC to `base=2015-03-10` and the VM UUID to `00000000-0000-0000-0000-000000000000` at launch, causing the SR OS image to evaluate the license as valid (175 days remaining in its 2015 frame of reference). vrnetlab `vr-sros` launch.py customised at build time to inject these QEMU flags on every container start. **Operational consequence: all SR OS-originated timestamps run 11 years behind wall-clock time.** Wazuh ingestion includes a normalisation decoder rule that source-tags SR OS events and adjusts the timestamp to wall-clock-now before correlation. NTP must remain disabled on the SR OS PE — re-enabling it would break the trick.
 
 ## 11. Migration plan — Sprint W2
 
@@ -298,7 +314,227 @@ Total ~$7–11/month in electricity. Tolerable.
 
 If at Sprint W6+ the lab's workload genuinely outgrows the 64 GB / 10-core combined envelope of these two PCs, the upgrade path is to replace the Dell with a modern multi-core mini-PC (e.g., Beelink SER7 with Ryzen 7 7840HS, 64 GB option) and migrate the always-on services to it. This is **not required for Sprint W1–W5 work** and is out of scope for ADR-001.
 
-## 14. References
+## 14. Customer-edge and LAN topology per tenant
+
+### 14.1 Per-tenant matrix
+
+The three Sentinel Ridge MSP tenants are deliberately heterogeneous to reflect realistic Australian enterprise patterns. Each pairing matches a customer archetype an interviewer or audit partner would recognise.
+
+| Tenant | Customer archetype | CE router | LAN core / dist | Access switch | Endpoint |
+| --- | --- | --- | --- | --- | --- |
+| **Maple Ridge Logistics** | General SME, Cisco-everywhere shop. Sentinel Ridge MSP's bread-and-butter customer base. | Cisco **Cat8000v** | Cisco **Cat9000v** | Cisco **Cat9000v** (L2 mode) | Win 11 VM |
+| **Helix Health Analytics** | Regulated industry (healthcare, Privacy Act / My Health Records). Cisco at the carrier demarc, HPE Aruba inside the LAN — a common pattern because Aruba's dot1x + ClearPass NAC story sells well in healthcare and education. | Cisco **Cat8000v** | HPE **Aruba CX** | HPE **Aruba CX** | macOS VM |
+| **Northwind Robotics** | Modern, cloud-native, born-in-DevOps. Juniper at the edge because the ops team is comfortable with Junos and YAML-based config management. Cisco LAN inherited from an older site or acquisition. | Juniper **cRPD** | Cisco **Cat9000v** | Cisco **Cat9000v** | Linux dev VM |
+
+### 14.2 What each pairing demonstrates
+
+- **Cisco fluency.** Cat8000v at Maple Ridge + Helix Health edge, Cat9000v across both Maple Ridge and Northwind LAN. IOS XE CLI exposure at both routing and switching layers — directly relevant for Cisco-shop Australian enterprises.
+- **Multi-vendor LAN competence.** Aruba CX (AOS-CX) at Helix Health LAN. ArubaOS-CX command structure differs from Cisco IOS XE — demonstrates ability to operate non-Cisco LAN environments without retraining.
+- **Carrier-grade routing in the customer edge.** Juniper cRPD at Northwind. cRPD runs the same routing protocols (BGP, IS-IS, OSPF, MPLS) as Juniper's carrier gear (vMX, MX series) — the lightest of the routing containers (~500 MB) and the closest in-container approximation of real Junos behaviour.
+- **Realistic Australian patterns.** Pure Cisco, mixed Cisco+Aruba, mixed Juniper+Cisco — the three pairings cover the dominant enterprise configurations observable in AU customer environments today.
+
+### 14.3 PE-CE protocol per tenant
+
+Tenants share the carrier PE-CE protocol choice from `BACKLOG.md` Sprint W2 (OSPF) but vary by their internal LAN routing:
+
+| Tenant | PE-CE protocol | LAN protocol |
+| --- | --- | --- |
+| Maple Ridge | OSPF area 0 from CE to Aurora PE; redistribute connected LANs | EIGRP between Cat8000v and Cat9000v (Cisco-only stack supports it) |
+| Helix Health | OSPF area 0 from CE to Aurora PE | OSPF on Aruba CX LAN; redistribute mutually with Cisco CE at the demarcation |
+| Northwind | eBGP from Juniper cRPD CE to Aurora PE (demonstrates eBGP-CE pattern alongside Maple Ridge/Helix OSPF-CE pattern) | OSPF area 0 between cRPD and Cisco Cat9000v |
+
+This variety means a single interview demo can showcase OSPF/E1/E2 redistribution, EIGRP, OSPF-to-BGP redistribution, and eBGP CE-PE — without contriving the use cases.
+
+### 14.4 vrnetlab wrappers required (Sprint W4)
+
+| Image | Container source | Wrapper needed? | Build time |
+| --- | --- | --- | --- |
+| Juniper cRPD | `crpd:latest` from Juniper registry | No — native container | n/a |
+| Cisco IOS XRd | `ios-xr/xrd-control-plane`, `ios-xr/xrd-vrouter` from Cisco registry | No — native container | n/a |
+| Cisco Cat8000v | qcow2 from Cisco Software Download | Yes — `vrnetlab/cat8000v` | ~30 min |
+| Cisco Cat9000v | qcow2 from Cisco Software Download | Yes — `vrnetlab/cat9000v` | ~30 min |
+| HPE Aruba CX | qcow2 from HPE Aruba Networking Central | Yes — `vrnetlab/aoscx` | ~30 min |
+
+## 15. Vendor strategy
+
+### 15.1 Cisco-first with multi-vendor demonstrators
+
+Sentinel Ridge MSP's primary customer base is Cisco-credentialed Australian enterprises. Cisco is therefore the default vendor at three points in the lab:
+
+- The carrier PE (Cisco IOS XRd) — already in W3 backlog
+- The dominant tenant CE (Cisco Cat8000v at Maple Ridge and Helix Health)
+- The dominant LAN switching (Cisco Cat9000v at Maple Ridge and Northwind)
+
+HPE Aruba and Juniper appear as **multi-vendor demonstrators** in specific tenants where the pairing matches a realistic Australian customer profile, not as decoration:
+- HPE Aruba CX at Helix Health LAN — healthcare and education in AU often run Aruba behind a Cisco edge.
+- Juniper cRPD at Northwind edge — modern tech companies prefer Junos for its YANG/JSON-friendly config model.
+
+Nokia SR Linux is retained at one Aurora PE per the existing `BACKLOG.md` W3 plan — for SP-side multi-vendor interop, not customer-side.
+
+### 15.2 Rejected — GNS3 and EVE-NG
+
+GNS3 and EVE-NG provide graphical lab orchestration with broader image support (including legacy Cisco IOSv that has no container form). This ADR explicitly rejects both for the following reasons:
+
+| Concern | GNS3 / EVE-NG | containerlab |
+| --- | --- | --- |
+| Deployment model | Graphical, point-and-click | YAML topology file, `containerlab deploy` |
+| Source of truth | UI state stored in `.gns3project` files | Git-tracked YAML |
+| CI / automation | Limited | Native — same `containerlab deploy` runs in CI |
+| Reproducibility | Requires manual screenshot or `.gns3` file commit | Git diff is the entire change set |
+| Vendor image support | Broader (includes IOSv, IOL) | Equivalent for modern vendor images via `vrnetlab` |
+| Resource overhead | GNS3 server process + GUI | None beyond Docker |
+| Interview alignment with "everything as code" | Weaker | Stronger |
+
+The trade-off is that Cisco IOSv (the historical default for Cisco lab demonstrations) is unavailable as a containerlab node. The architecture accepts this loss because IOSv is a 2015-era image that does not represent current Cisco SP gear; Cat8000v and IOS XRd are more relevant to actual present-day Cisco environments.
+
+### 15.3 Vendor account inventory
+
+| Vendor | Account type | Cost | Approval time | Used for | On-disk image already available? |
+| --- | --- | --- | --- | --- | --- |
+| Cisco | CCO + DevNet | Free | Immediate after email verification | Cat8000v, Cat9000v, IOS XRd, ASAv | **Partial — CSR1000v 16.8, IOS XRv 6.1.3, IOSv 15.7, IOSv-L2 15.2 already on disk; only required for current versions (Cat8000v 17.x, XRd 7.x) or DevNet Sandbox access** |
+| HPE | Aruba Networking Central | Free | Immediate after email verification | Aruba CX simulator | No — must download |
+| Juniper | Engineering downloads (juniper.net) | Free | Immediate after email verification | cRPD | No — must pull from Juniper registry |
+| Fortinet | FortiCare | Free (15-day eval) | Immediate | FortiGate-VM (Helix W4 deployment) | No |
+| Palo Alto Networks | Live community | Free trial | 1-3 days approval | PA VM-Series (Maple Ridge W4 deployment) | No |
+| Nokia | Lab access / partner portal | Free for partner-tier | 24-72 hours | SR Linux current-version; SR OS classic | **Yes — SR OS 13.0 R4 already on disk with 2015 demo license (see §10 constraint #12)** |
+| MikroTik | n/a | Free | n/a | RouterOS CHR | **Yes — CHR 6.41.4 already on disk; free up to 1 Mbps per interface, no registration needed** |
+
+**Effective Sunday-morning registration burden after on-disk image inventory:** HPE Aruba (10 min, instant) and Juniper engineering downloads (10 min, instant). Optionally Cisco DevNet for current-version access (see §17). Fortinet and Palo Alto remain Sprint W4 prerequisites, not blocking immediate lab work.
+
+### 15.4 Throughput-test topology separation pattern
+
+Several of the on-disk and legacy lab images carry throughput caps as part of their unlicensed-eval operating mode:
+
+| Image | Eval throughput cap | Control-plane functional? |
+| --- | --- | --- |
+| Cisco CSR1000v 16.8 | ~250 Kbps forwarding | Yes — BGP, OSPF, IS-IS, MPLS, L3VPN all work at full feature level |
+| Cisco IOS XRv 6.1.3 (demo) | No data-plane cap but 60-day timer (resets on redeploy) | Yes |
+| Cisco IOSv 15.7 / IOSv-L2 | No hard cap (lightweight emulation, naturally rate-limited) | Yes |
+| Nokia SR OS 13.0 R4 (RTC-frozen license) | No cap when license is valid via RTC trick | Yes |
+| MikroTik CHR 6.41.4 (free tier) | 1 Mbps per interface | Yes |
+| FRR / VyOS / Cumulus VX | Uncapped (open source) | Yes |
+
+The caps do not impede protocol-demo work — control-plane operations consume <10 Kbps per session and demonstrating IS-IS, BGP, MPLS, L3VPN, OSPF redistribution can all complete without exceeding 250 Kbps. **The architectural problem only emerges for explicit data-plane validation: iperf3 at production rates, TRex traffic generation for SLA testing, MPLS forwarding-plane throughput characterization.**
+
+The lab addresses this by maintaining **two topology variants per tenant** where data-plane validation matters:
+
+#### Demo path topology
+
+Uses vendor-licensed images at the customer edge and LAN for CLI credibility. Throughput cap is invisible because demo traffic is control-plane and low-rate verification only.
+
+| Tenant | Demo path |
+| --- | --- |
+| Maple Ridge | CSR1000v CE + IOSv-L2 LAN core/access + Win 11 VM |
+| Helix Health | CSR1000v CE + HPE Aruba CX LAN core/access + macOS VM |
+| Northwind | Juniper cRPD CE + IOSv-L2 LAN + Linux VM |
+
+Topology file: `tenants/<tenant>/clab-<tenant>-demo.yml`
+
+#### Performance-test path topology
+
+Substitutes uncapped open-source routers at the throughput-critical hops. Same protocols, same Aurora PE attachment, same Ansible templates (kind-aware Jinja2 renders FRR or VyOS syntax instead of IOS XE).
+
+| Tenant | Performance-test path |
+| --- | --- |
+| Maple Ridge | FRR CE + SONiC LAN + Win 11 VM (or TRex traffic generator container) |
+| Helix Health | FRR CE + SONiC LAN + Linux iperf3 client |
+| Northwind | FRR CE + Cumulus VX LAN + Linux iperf3 client |
+
+Topology file: `tenants/<tenant>/clab-<tenant>-perftest.yml`
+
+#### TRex as the SP-credible traffic generator
+
+Cisco's TRex (Stateful and Stateless Traffic Generator, https://trex-tgn.cisco.com) is the canonical open-source SP test tool. It runs as a containerlab node and injects traffic directly into Aurora PE interfaces, bypassing any CE-side throughput cap. Capabilities relevant to the lab:
+
+| TRex capability | Lab use |
+| --- | --- |
+| Stateless mode up to 200 Gbps per port (NIC-dependent) | Capped by WSL2 substrate ceiling rather than TRex itself |
+| BFD timer validation | Confirm BFD sub-second detection at scale |
+| MPLS label-stack tests | Validate PHP behavior, label push/swap/pop under load |
+| TCP session emulation at scale | L7 simulation when needed |
+
+TRex's inclusion strengthens the interview narrative: "I use Cisco's TRex for data-plane validation, separating it from the vendor-licensed devices used in protocol-demo paths." This is unambiguously Cisco-credible.
+
+#### Physical substrate ceiling
+
+Even with all caps removed, the WSL2 + home-hardware substrate limits realistic throughput:
+
+| Path | Realistic max throughput |
+| --- | --- |
+| Single-host containerlab on PC1 Ryzen 7 2700, two FRR containers, single hop | 5-10 Gbps |
+| Cross-host containerlab over PC1↔Dell home gigabit LAN with GRE | ~700 Mbps |
+| Containerlab through 3+ hops in WSL2 | 1-3 Gbps |
+| Dell i5-6300U as transit | ~1-2 Gbps before CPU saturation |
+
+**The lab's effective ceiling for any throughput test is ~5 Gbps single-host, ~700 Mbps cross-host.** This is the constraint to plan against. Anything beyond requires Cisco DevNet Sandbox (which runs in Cisco-hosted infrastructure with no equivalent ceiling) — see §17.
+
+#### Control-plane scale testing
+
+For BGP table scale, OSPF LSDB scale, VPNv4 route count — none of which require data-plane throughput — the lab uses dedicated tooling that injects via control-plane sessions:
+
+| Tool | Use case | Throughput needed |
+| --- | --- | --- |
+| ExaBGP (container) | Inject up to 1M BGP routes into an Aurora PE | <1 Mbps |
+| GoBGP scale-out | Same | <1 Mbps |
+| BGPerf | Benchmark BGP convergence time at scale | <1 Mbps |
+
+These run inside the existing demo topology — no perftest substitution needed — because they target the control plane only. The CSR1000v 250 Kbps cap is irrelevant.
+
+## 17. Cisco DevNet Sandbox as external inter-AS peer carrier
+
+The local containerlab Aurora carrier represents the AS65100 hosted MSP infrastructure. For demonstrations and validation that benefit from "real currently-licensed Cisco gear under production-rate load," the lab integrates with Cisco DevNet Sandbox (devnetsandbox.cisco.com) as a hosted external network.
+
+### 17.1 What DevNet provides
+
+Cisco hosts a pool of cloud-virtualised current-version Cisco devices accessible via AnyConnect VPN (reservation sandboxes) or public SSH (always-on sandboxes). DevNet is **complementary** to the local lab — it does not replace any local node, but extends the reach of demonstrations.
+
+| Sandbox | Access model | Use in this architecture |
+| --- | --- | --- |
+| IOS XR (XRv9k or XRd 7.x) | Reservable, 1-4 hour slots | Peer carrier IOS XR at AS65200, eBGP with Aurora over GRE/IPsec |
+| IOS XE on Catalyst 8000v 17.x | Always-on | Current Cat8000v CLI demos when on-disk CSR1000v 16.8 isn't current enough |
+| NX-OS on Nexus 9000v 10.x | Reservable | Datacenter switch demos for Helix Health |
+| SD-WAN (vManage + vSmart + vBond + cEdge) | Reservable | Modern WAN architecture contrast with classic L3VPN |
+| Meraki Dashboard | Always-on, API-only | Cloud-managed networking API automation |
+| Catalyst Center | Reservable | Intent-based networking demonstrations |
+
+### 17.2 Integration patterns
+
+| Pattern | Description | Effort |
+| --- | --- | --- |
+| **A — Plain SSH access** | VPN in, SSH to provided IPs, treat as separate environment | Lowest |
+| **B — Ansible inventory inclusion** | Add `devnet` group to `automation/inventory/hosts.yml`, run existing playbooks against DevNet devices once VPN is up | Medium — extends existing NetDevOps story |
+| **C — Inter-AS eBGP via GRE tunnel** | Establish GRE/IPsec tunnel from PC1 WSL containerlab to DevNet IOS XR, eBGP across the tunnel between Aurora AS65100 and DevNet "peer carrier" AS65200 | Highest — but produces the strongest interview demo |
+| **D — API automation showcase** | Meraki / Catalyst Center API integration from Wazuh playbooks or Ansible | Independent track, complements but doesn't depend on the carrier topology |
+
+Pattern C is the interview-credible "carrier peering with real current Cisco production code" demonstration. It demonstrates eBGP-multihop, GRE-over-IP, IPsec optionality, BGP attribute propagation across an AS boundary — all things a Cisco SP Pre-Sales engineer is expected to discuss fluently.
+
+### 17.3 Operational constraints
+
+| Constraint | Mitigation |
+| --- | --- |
+| AnyConnect VPN single-device concurrency (one device per sandbox session) | Cannot VPN from both PC1 and Dell simultaneously; choose one as the integration point |
+| Reservation slot expiry wipes device state | Save running-config to a git-tracked file before slot ends; reload on next reservation |
+| Always-on sandboxes are shared with other DevNet users | Defensive `show running-config` at start of session, treat state as untrusted |
+| Latency from Australia to Cisco US-West/EU hosting | 150-250 ms — fine for CLI, slow for GUI screen-share demos |
+| Sandbox availability | High-demand sandboxes (IOS XR) may have busy periods; reserve ahead |
+
+### 17.4 Throughput beyond the local substrate ceiling
+
+§15.4 noted the WSL2 + home-hardware ceiling of ~5 Gbps single-host and ~700 Mbps cross-host. **For data-plane tests beyond that ceiling, DevNet sandbox devices have Cisco-hosting-grade bandwidth** — they're not constrained by the operator's home network. Running TRex against DevNet IOS XR over the eBGP-over-GRE link from Pattern C demonstrates SP-grade forwarding at rates impossible to achieve locally, while still tying back into the operator's own automation tooling.
+
+### 17.5 Sunday prerequisites
+
+| Task | Time |
+| --- | --- |
+| Register at devnetsandbox.cisco.com (CCO + DevNet) | 10 min |
+| Install Cisco AnyConnect VPN client (Windows) and openconnect (WSL Ubuntu) | 5 min |
+| SSH-test the Always-On Catalyst 8000v sandbox to verify account access | 15 min |
+| Reserve an IOS XR sandbox slot for Monday 3-7 PM (before EIL Global interview) | 5 min |
+| Document VPN connection workflow in `docs/runbook.md` §13 | 10 min |
+
+DevNet integration is treated as a Sprint W4-equivalent enhancement: not required for the W1-W3 carrier core but high-value once the carrier is otherwise stable.
+
+## 18. References
 
 - `BACKLOG.md` — sprint-by-sprint task list reflecting this architecture
 - `docs/design.md` — protocol-level design decisions for Aurora
@@ -306,3 +542,6 @@ If at Sprint W6+ the lab's workload genuinely outgrows the 64 GB / 10-core combi
 - `docs/runbook.md` — operational diagnostic procedures
 - `_setup/dell/README.md` — Dell-side deployment instructions
 - Sentinel Ridge MSP repo `_docs/Sentinel_Ridge_Lab_Design.docx` — master design document
+- `hellt/vrnetlab` — vrnetlab project, the wrapper that brings vendor qcow2 images into containerlab
+- Cisco DevNet (devnetsandbox.cisco.com), HPE Aruba Networking Central, Juniper engineering downloads — vendor image sources
+- Cisco TRex (trex-tgn.cisco.com) — open-source SP traffic generator used for data-plane validation in performance-test topologies
