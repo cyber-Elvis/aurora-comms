@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.1 |
+| Version | 1.2 |
 | Date | May 2026 |
 | Decision | Hybrid workload distribution — CPU-intensive services on PC1, lightweight services + carrier backbone on Dell |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
@@ -16,6 +16,7 @@
 | --- | --- | --- |
 | 1.0 | May 2026 | Initial decision: Option C hybrid workload distribution |
 | 1.1 | May 2026 | Added Cowork agent (~3 GB) to PC1 always-on accounting; tightened active-lab pool from 11 GB to 8 GB and revised sprint feasibility; fixed WSL2 memory cap to 12 GB in migration plan |
+| 1.2 | May 2026 | Phase 1 audit reconciliation: Docker Desktop (~2 GB) retained on PC1 to host pre-existing personal stacks (job-radar, openwebui, freshrss, rsshub); active-lab pool tightened from 8 GB to 6 GB; Tailscale measured as already deployed across `forty3s-pc1/pc2/pc3` with magic DNS; native Docker in WSL Ubuntu coexists with Docker Desktop, isolated to lab workloads; Docker data-root relocated to D:\ to handle 35 GB C: drive free constraint |
 
 ## 1. Context
 
@@ -80,6 +81,7 @@ PC1 hosts CPU-intensive backend services, the Cowork development agent, endpoint
 | **Wazuh manager + OpenSearch + dashboard** | MSP SIEM | **PC1** | **6 GB** | CPU-heavy search/index needs Ryzen |
 | **MISP + Redis** | MSP threat intel | **PC1** | **3 GB** | CPU-heavy correlation needs Ryzen |
 | **Cowork agent + sandbox VM** | Lab development | **PC1** | **~3 GB** | The development environment used to build, document, and iterate the lab. ~660 MB Claude app + ~1.5 GB Linux sandbox VM (HCS) + ~340 MB Node.js helpers + variable WebView |
+| **Docker Desktop + personal stacks** (job-radar, openwebui, freshrss, rsshub) | Personal productivity | **PC1** | **~2 GB** | Pre-existing personal infrastructure. Docker Desktop's `docker-desktop` WSL distro (~1.4 GB vmmem) + Docker Desktop GUI (~300 MB) + container overhead. Job-radar specifically supports active job search and is intentionally retained |
 | Maple Ridge AD DC | MSP identity | Dell | 3 GB | Low CPU, persistent service |
 | FreeRADIUS NAC | MSP NAC | Dell | 1 GB | Low CPU, lightweight |
 | LibreNMS + Grafana | MSP monitoring | Dell | 4 GB | Low CPU, persistent monitoring |
@@ -101,11 +103,19 @@ PC1 hosts CPU-intensive backend services, the Cowork development agent, endpoint
 | --- | --- |
 | Win 11 host + apps | 6 GB |
 | Cowork agent (Claude app + sandbox VM + Node.js helpers) | 3 GB |
-| WSL2 + Docker (hard-capped at 12 GB via `.wslconfig`) | 6 GB |
-| Wazuh manager + OpenSearch + dashboard | 6 GB |
-| MISP + Redis | 3 GB |
-| **Always-on subtotal** | **24 GB** |
-| Active lab pool | **8 GB** |
+| Docker Desktop GUI + `docker-desktop` WSL distro (personal stacks) | 2 GB |
+| WSL2 Ubuntu + native Docker (hard-capped at 12 GB via `.wslconfig`) | 6 GB |
+| Wazuh manager + OpenSearch + dashboard (in WSL Ubuntu) | 6 GB |
+| MISP + Redis (in WSL Ubuntu) | 3 GB |
+| **Always-on subtotal** | **26 GB** |
+| Active lab pool | **6 GB** |
+
+**Observed baseline (May 2026 Phase 1 audit):** 14.7 GB used at idle (before Wazuh + MISP migration), measured via Win32_OperatingSystem CIM. The 26 GB always-on figure above is the post-W2-migration target.
+
+**Docker daemon split:**
+- Docker Desktop's daemon (in `docker-desktop` WSL distro) hosts personal stacks only — `job-radar`, `openwebui`, `freshrss`, `rsshub`.
+- Native Docker Engine inside `Ubuntu` WSL distro hosts all lab workloads — Wazuh, MISP, Aurora carrier integration, vrnetlab vendor router containers.
+- The two daemons are isolated by WSL distro boundary. No cross-daemon dependencies.
 
 ### Dell (32 GB)
 
@@ -144,6 +154,17 @@ Tailscale overlay across PC1, Dell, Surface Pro, and the WSL2 instances on each.
 - Encrypted mesh between machines
 - Browser access to PC1 dashboards (Wazuh, MISP, LibreNMS, Grafana) from any device
 
+**Measured tailnet (May 2026 Phase 1 audit):**
+
+| Tailnet hostname | Role | Tailscale IP | Status |
+| --- | --- | --- | --- |
+| `forty3s-pc1` | PC1 (Desktop, Ryzen) | 100.88.225.123 | Online |
+| `forty3s-pc2` | Dell (Laptop, i5-6300U) | 100.109.74.61 | Active, direct |
+| `forty3s-pc3` | Surface Pro | 100.110.254.10 | Active, direct |
+| `iphone-xs` | Mobile (offline) | 100.111.123.41 | Offline 59d — drop from inventory |
+
+All hostnames resolve via MagicDNS. Inventory files (Ansible `inventory/hosts.yml`, Wazuh agent configs, MISP feed configs) should reference `forty3s-pcN.tailNNN.ts.net` rather than literal IPs.
+
 ### Carrier-customer lab integration
 
 GRE tunnel between PC1 (Maple Ridge CE topology in containerlab) and Dell (Aurora's Sydney PE) over the home LAN. Simulates a real customer-edge demarcation: traffic from a Maple Ridge office endpoint traverses the GRE tunnel as if it were the customer's transport circuit, lands on Aurora's PE, then routes via the carrier core.
@@ -156,17 +177,28 @@ All containerlab nodes (Aurora PEs, Maple Ridge CEs, customer endpoint VMs) conf
 
 | Sprint | Dell load | PC1 load | Verdict |
 | --- | --- | --- | --- |
-| W1 (current baseline) | ~19 GB | Cowork running + WSL Ubuntu = ~12 GB active | ✓ Comfortable |
-| W2 (Ansible commit + VPRN + Wazuh/MISP migration) | ~20 GB | Migration in progress — temporary peak ~26 GB | ✓ Fits |
-| W3 (multi-vendor backbone + RR + BFD + auth + SR) | ~24 GB | ~24 GB always-on + active labs from 8 GB pool | ✓ Tight, manageable |
-| W4 (RPKI + Palo Alto + FortiGate + customer services) | ~25.5 GB | ~24 GB always-on + 8 GB cycles between PA/macOS/Win11 | ⚠ Requires workload cycling (see §10) |
-| W5+ (FortiManager + advanced services + NETCONF/gNMI) | ~26.5 GB | ~24 GB always-on + 8 GB active pool | ⚠ Cowork closure may be needed for demos |
+| W1 (current baseline) | ~19 GB | Measured 14.7 GB (Phase 1 audit, May 2026) | ✓ Comfortable |
+| W2 (Ansible commit + VPRN + Wazuh/MISP migration) | ~20 GB | Migration target ~26 GB always-on + 6 GB pool | ✓ Fits |
+| W3 (multi-vendor backbone + RR + BFD + auth + SR) | ~24 GB | ~26 GB always-on + active labs from 6 GB pool | ✓ Tight, demos may need Cowork close |
+| W4 (RPKI + Palo Alto + FortiGate + customer services) | ~25.5 GB | ~26 GB always-on + cycling rules per §10 | ⚠ Requires workload cycling AND temporary closures |
+| W5+ (FortiManager + advanced services + NETCONF/gNMI) | ~26.5 GB | ~26 GB always-on + 6 GB active pool | ⚠ Combined Cowork + Docker Desktop closure for peak demos |
 
-**Active-lab pool reality at W4:** the 8 GB pool fits one of {PA, macOS, Win11 endpoint at 6 GB, FortiGate, Maple Ridge CE in WSL} at a time, with some pairings possible (Win11 endpoint at 4 GB + Maple Ridge CE + FortiGate = ~7 GB).
+**Active-lab pool reality at W4 (6 GB nominal):**
 
-**Sprint W4 cycling rule:** at peak, choose ONE of {macOS endpoint, Palo Alto VM-Series, multiple firewall VMs}. Don't attempt all three concurrently on PC1.
+| Scenario | RAM | Fits at W4? |
+| --- | --- | --- |
+| Maple Ridge CE in WSL (FRR) | 1 GB | ✓ Comfortable |
+| Win 11 endpoint at 6 GB | 6 GB | ✓ Exactly fits |
+| macOS endpoint (8 GB) | 8 GB | ✗ Needs Cowork closed (reclaims 3 GB → 9 GB pool) |
+| Palo Alto VM-Series (8 GB) | 8 GB | ✗ Needs Cowork closed |
+| Both endpoints concurrently (Win + Mac, 14 GB) | 14 GB | ✗ Needs Cowork **AND** Docker Desktop closed (reclaims ~5 GB → 11 GB pool) |
+| PA + Win 11 endpoint (12 GB) | 12 GB | ✗ Needs Cowork **AND** Docker Desktop closed |
 
-**Cowork closure for demos:** if a demo specifically needs both endpoint VMs simultaneously (e.g., showing Helix Health Win + Mac users), closing the Cowork session reclaims ~3 GB and gives you an 11 GB pool — enough to fit both endpoints. Re-open Cowork after the demo.
+**Sprint W4 cycling rule:** at peak, choose ONE of {macOS endpoint, Palo Alto VM-Series, multiple firewall VMs}.
+
+**Cowork closure for demos:** closing the Cowork session reclaims ~3 GB. Demos requiring single 8 GB workloads work with just Cowork closed.
+
+**Docker Desktop closure for big demos:** Quit Docker Desktop via tray icon (Right-click → Quit Docker Desktop). Reclaims ~2 GB additional — required for PA + endpoint or dual-endpoint demos. Personal stacks (job-radar, openwebui, freshrss, rsshub) stop during this window. Re-open Docker Desktop after demo to resume.
 
 ## 10. Constraints accepted
 
@@ -177,7 +209,9 @@ These limitations are explicit, documented, and acceptable:
 3. **All three NGFWs (PA + FortiGate + ASAv) cannot run simultaneously.** Cycle through them per scenario.
 4. **Cisco IOS XRd on Dell runs at reduced performance** compared to the same workload on PC1. Accepted because XRd is one node in a multi-vendor backbone, not the primary lab workhorse.
 5. **The lab requires both PCs powered on** for the full topology to be reachable. Either alone is degraded.
-6. **Cowork agent consumes ~3 GB of PC1's always-on budget** during active lab development. This is the cost of the development environment used to build and document the lab. For specific demo scenarios that need the full 11 GB active-lab pool, close Cowork temporarily and reopen afterwards.
+6. **Cowork agent consumes ~3 GB of PC1's always-on budget** during active lab development. This is the cost of the development environment used to build and document the lab. For specific demo scenarios that need a 9 GB active-lab pool, close Cowork temporarily and reopen afterwards.
+7. **Docker Desktop consumes ~2 GB of PC1's always-on budget** to keep personal stacks (job-radar, openwebui, freshrss, rsshub) running. Retained because these stacks support daily productivity (notably job-radar during active job search). For peak demos requiring an 11 GB active-lab pool (e.g., PA + endpoint or dual-endpoint scenarios), quit Docker Desktop from the tray icon — this stops personal stacks during the demo window. Re-open after.
+8. **Dual Docker daemons on PC1.** Docker Desktop (in `docker-desktop` WSL distro) hosts personal stacks. Native Docker Engine (in `Ubuntu` WSL distro) hosts lab workloads. The two daemons cannot directly address each other's containers; cross-daemon connectivity goes via Windows host networking. Acceptable because the lab and personal stacks have no functional overlap.
 
 ## 11. Migration plan — Sprint W2
 
@@ -185,9 +219,11 @@ The transition from current state (Wazuh + MISP on Dell) to Option C requires a 
 
 ### Phase 1 — Prepare PC1 (1 hour)
 
-1. Install Docker Desktop on PC1 (or use WSL2 Docker — both viable; pick Docker Desktop for GUI management or WSL2 Docker for CLI-pure).
-2. Confirm `.wslconfig` is in place at `C:\Users\Elvis\.wslconfig` capping WSL2 at 12 GB and 8 vCPU (already in place as of May 2026).
-3. Verify Tailscale connectivity from PC1 to Dell and to containerlab nodes.
+1. **Docker is already split correctly.** Docker Desktop (with `docker-desktop` WSL distro) is retained for personal stacks. Native Docker Engine (`docker.io` apt package) is already installed inside the `Ubuntu` WSL distro for lab workloads. Lab containers (Wazuh, MISP, Aurora) target the Ubuntu distro daemon only.
+2. Confirm `.wslconfig` is in place at `C:\Users\Elvis\.wslconfig` capping WSL2 at 12 GB and 8 vCPU (verified May 2026 Phase 1 audit).
+3. **Relocate Docker data-root to D:\** because C: drive has only 35.6 GB free (Phase 1 audit). Inside Ubuntu WSL: edit `/etc/docker/daemon.json` to set `"data-root": "/mnt/d/docker-data"` and restart docker. This puts Wazuh/MISP/vrnetlab images on the 1.76 TB D: drive.
+4. Verify Tailscale connectivity from PC1 to Dell (`forty3s-pc2`) and Surface Pro (`forty3s-pc3`) — already deployed at audit time, only needs verification.
+5. Install Tailscale CLI inside WSL Ubuntu (`curl -fsSL https://tailscale.com/install.sh | sh`) so lab containers can resolve tailnet hostnames and the WSL host itself is reachable on the tailnet.
 
 ### Phase 2 — Deploy Wazuh on PC1 (1 hour)
 
@@ -250,6 +286,8 @@ Total ~$7–11/month in electricity. Tolerable.
 | Both PCs offline | Lab fully offline | Surface Pro endpoint remains for offline Conditional Access testing |
 | Tailscale outage | Inter-host management degraded | LAN-direct fallback works for most cross-host traffic |
 | Cowork session ends | Cowork agent and sandbox VM stop | ~3 GB returned to PC1 active pool; no impact on Wazuh/MISP services |
+| Docker Desktop quit (manual or crash) | Personal stacks (job-radar, openwebui, freshrss, rsshub) stop | ~2 GB returned to PC1 active pool; lab Wazuh/MISP unaffected because they run on Ubuntu WSL native Docker, not Docker Desktop. Re-open Docker Desktop to restore personal stacks (containers with `restart: unless-stopped` come back automatically) |
+| Native Docker daemon crash in WSL Ubuntu | Lab containers (Wazuh, MISP, vrnetlab) stop | Personal stacks unaffected (different daemon). Restart with `sudo service docker start` or `sudo systemctl restart docker` |
 
 ### Maintenance windows
 
