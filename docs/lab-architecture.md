@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.4 |
+| Version | 1.5 |
 | Date | May 2026 |
 | Decision | Hybrid workload distribution — CPU-intensive services on PC1, lightweight services + carrier backbone on Dell |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
@@ -19,6 +19,7 @@
 | 1.2 | May 2026 | Phase 1 audit reconciliation: Docker Desktop (~2 GB) retained on PC1 to host pre-existing personal stacks (job-radar, openwebui, freshrss, rsshub); active-lab pool tightened from 8 GB to 6 GB; Tailscale measured as already deployed across `forty3s-pc1/pc2/pc3` with magic DNS; native Docker in WSL Ubuntu coexists with Docker Desktop, isolated to lab workloads; Docker data-root relocated to D:\ to handle 35 GB C: drive free constraint |
 | 1.3 | May 2026 | Per-tenant customer-edge and LAN topology committed: §14 multi-vendor matrix (Cisco at Maple Ridge full stack; Cisco edge + HPE Aruba LAN at Helix Health; Juniper cRPD edge + Cisco LAN at Northwind); §15 vendor strategy framing Cisco-first with HPE Aruba and Juniper as multi-vendor demonstrators matching realistic Australian enterprise patterns; §6 RAM allocation updated for one-tenant-at-a-time PC1 cycling; §10 constraint #9 added (vendor account dependencies); §11 Sprint W4 work expanded (vrnetlab wrappers for Cisco/Aruba VM images, Juniper cRPD native pull). GNS3 and EVE-NG explicitly rejected: all CE/LAN/firewall runs as containerlab nodes, including vrnetlab-wrapped vendor VM images |
 | 1.4 | May 2026 | Throughput vs. demo path separation pattern committed: §15.4 design pattern for splitting protocol-demo paths (Cisco/Nokia licensed-but-capped images for vendor-CLI credibility) from throughput-test paths (FRR/VyOS substitutes or TRex traffic generator for data-plane validation at WSL2 substrate ceiling); §10 constraint #11 added (throughput-capped images drive demo/perftest topology separation); §10 constraint #12 added (Nokia SR OS 13.0 R4 runs with frozen 2015 RTC for license validity, all SR OS-originated timestamps offset 11 years); §14.4 vrnetlab wrapper inventory annotated for existing on-disk images requiring no vendor account registration (CSR1000v 16.8, IOS XRv 6.1.3, Nokia SR OS 13.0 R4, IOSv 15.7, IOSv-L2 15.2, MikroTik CHR 6.41.4); §15.3 vendor account inventory annotated to mark which vendors are covered by on-disk images vs. requiring registration; new §17 Cisco DevNet Sandbox integration as inter-AS peer carrier for current-IOS-XR demos |
+| 1.5 | May 2026 | HPE-Juniper consolidation and verified vendor URLs: §14.5 added explicit acknowledgement that HPE acquired Juniper in 2025, collapsing the "Cisco vs. HPE Aruba vs. Juniper" three-vendor narrative into a "Cisco vs. HPE Networking" two-vendor narrative — the per-tenant *product* matrix (AOS-CX, cRPD, Cat9000v, etc.) remains accurate as distinct technology choices, but the *vendor account* inventory in §15.3 consolidates HPE Aruba and Juniper into a single HPE Networking row; §17 DevNet integration URLs verified from cisco.com fetch (devnetsandbox.cisco.com, developer.cisco.com/site/sandbox/, developer.cisco.com/docs/sandbox/, software.cisco.com/download/home/283000185 for Cisco Secure Client formerly AnyConnect); §15.3 Nokia row URLs verified from nokia.com fetch (SRC program at /networks/training/src/, My SR Learning Labs); HPE Networking URLs verified (devhub.arubanetworks.com developer hub serves both Aruba and Juniper, airheads.hpe.com migrated community, networkingsupport.hpe.com software downloads); §15.5 added honest verification disclaimer noting which vendor portals are login-gated and therefore not deep-link verifiable |
 
 ## 1. Context
 
@@ -349,15 +350,41 @@ This variety means a single interview demo can showcase OSPF/E1/E2 redistributio
 
 | Image | Container source | Wrapper needed? | Build time |
 | --- | --- | --- | --- |
-| Juniper cRPD | `crpd:latest` from Juniper registry | No — native container | n/a |
-| Cisco IOS XRd | `ios-xr/xrd-control-plane`, `ios-xr/xrd-vrouter` from Cisco registry | No — native container | n/a |
-| Cisco Cat8000v | qcow2 from Cisco Software Download | Yes — `vrnetlab/cat8000v` | ~30 min |
+| Juniper cRPD | `crpd:latest` from HPE Juniper Networking registry (post-acquisition; see §14.5) | No — native container | n/a |
+| Cisco IOS XRd | `ios-xr/xrd-control-plane`, `ios-xr/xrd-vrouter` from Cisco software download (CCO required) | No — native container | n/a |
+| Cisco Cat8000v | qcow2 from Cisco Software Download (`https://software.cisco.com/download/home`, CCO required) | Yes — `vrnetlab/cat8000v` | ~30 min |
 | Cisco Cat9000v | qcow2 from Cisco Software Download | Yes — `vrnetlab/cat9000v` | ~30 min |
-| HPE Aruba CX | qcow2 from HPE Aruba Networking Central | Yes — `vrnetlab/aoscx` | ~30 min |
+| HPE Aruba CX | qcow2 from HPE Networking Software Downloads (`https://networkingsupport.hpe.com`, HPE Passport login required) | Yes — `vrnetlab/aoscx` | ~30 min |
+
+### 14.5 HPE-Juniper consolidation — May 2026 industry context
+
+**HPE acquired Juniper Networks in early 2025.** The two product lines have since been consolidated under HPE Networking:
+
+- **HPE Aruba Networking** — formerly Aruba Networks (independent vendor, then HPE business unit, now HPE Networking division). Owns AOS-CX switching, AOS 8 wireless, ClearPass Policy Manager, Central cloud management.
+- **HPE Juniper Networking** — formerly Juniper Networks (independent vendor). Owns Junos OS, MX/PTX/EX/QFX/SRX platforms, cRPD, Apstra fabric automation, Mist AI for wireless.
+
+**Documentation evidence verified May 2026:**
+- Single developer hub at `https://devhub.arubanetworks.com/` serves both HPE Aruba Networking and HPE Juniper Networking products.
+- Get-started page lists AOS-CX, AOS 8, **and Junos** under "Switching Platforms".
+- Airheads Community migrated from `community.arubanetworks.com` to `https://airheads.hpe.com/` — both vendor communities now reachable through HPE-branded portal.
+- Code Exchange filters by `?product=aruba` and `?product=juniper` from the same hub.
+- Separate legacy `https://community.juniper.net/home` still exists during the transition.
+
+**Implication for §14 per-tenant matrix:**
+
+The product matrix in §14.1 remains valid — Cisco Cat8000v, HPE Aruba CX (AOS-CX), and Juniper cRPD (Junos) are still architecturally distinct technologies with different CLI, different config models (model-driven vs hierarchical), different routing daemon stacks. **They are NOT interchangeable from an operator-skill perspective.** A lab demo featuring Cat8000v at Maple Ridge, AOS-CX at Helix Health LAN, and cRPD at Northwind still demonstrates three distinct technology stacks.
+
+**What changes:**
+
+1. **Vendor account inventory consolidates.** Both HPE Aruba and Juniper now sit behind the same HPE Networking authentication. §15.3 consolidates these two rows into a single "HPE Networking" entry.
+2. **The "three-vendor multi-vendor lab" narrative becomes "two-vendor (Cisco + HPE) multi-product lab."** The vendor count drops from three to two; the technology count stays at four (Cisco IOS XE, Cisco IOS XR, Junos, AOS-CX).
+3. **Interview-narrative framing.** A Monday Cisco SP interviewer or Tuesday IT Ops interviewer in mid-2026 will recognise the HPE-Juniper consolidation as recent industry context. The defensible line is: "I structured the lab with Cisco against HPE — since HPE acquired Juniper in 2025, the realistic Australian enterprise vendor mix has consolidated."
+
+**No topology changes required.** The per-tenant CE/LAN matrix in §14.1 is technology-accurate. Only the vendor-account inventory in §15.3 and the vendor-strategy framing in §15.1 are updated.
 
 ## 15. Vendor strategy
 
-### 15.1 Cisco-first with multi-vendor demonstrators
+### 15.1 Cisco-first with HPE Networking as the second-vendor demonstrator
 
 Sentinel Ridge MSP's primary customer base is Cisco-credentialed Australian enterprises. Cisco is therefore the default vendor at three points in the lab:
 
@@ -365,11 +392,14 @@ Sentinel Ridge MSP's primary customer base is Cisco-credentialed Australian ente
 - The dominant tenant CE (Cisco Cat8000v at Maple Ridge and Helix Health)
 - The dominant LAN switching (Cisco Cat9000v at Maple Ridge and Northwind)
 
-HPE Aruba and Juniper appear as **multi-vendor demonstrators** in specific tenants where the pairing matches a realistic Australian customer profile, not as decoration:
-- HPE Aruba CX at Helix Health LAN — healthcare and education in AU often run Aruba behind a Cisco edge.
-- Juniper cRPD at Northwind edge — modern tech companies prefer Junos for its YANG/JSON-friendly config model.
+**Second-vendor demonstrator: HPE Networking.** Following the 2025 HPE-Juniper acquisition (see §14.5), HPE Aruba Networking and HPE Juniper Networking are now both divisions of HPE Networking. Two HPE products appear in specific tenants where the pairing matches a realistic Australian customer profile:
 
-Nokia SR Linux is retained at one Aurora PE per the existing `BACKLOG.md` W3 plan — for SP-side multi-vendor interop, not customer-side.
+- **HPE Aruba CX (AOS-CX)** at Helix Health LAN — healthcare and education in AU often run Aruba LAN behind a Cisco WAN edge. The dot1x + ClearPass NAC integration story is strong in regulated industries.
+- **HPE Juniper cRPD (Junos)** at Northwind edge — modern tech companies prefer Junos for its YANG/JSON-friendly config model and Apstra intent-based fabric automation. cRPD is the lightest of the routing containers.
+
+Although these two products are now under a single vendor, they remain architecturally distinct technologies with different CLI, config models, and operator skill requirements. The lab's multi-vendor narrative shifts from "three independent vendors" to "two vendors (Cisco + HPE) representing four distinct technology stacks (Cisco IOS XE, Cisco IOS XR, Junos, AOS-CX)."
+
+Nokia SR Linux is retained at one Aurora PE per the existing `BACKLOG.md` W3 plan — for SP-side multi-vendor interop, not customer-side. Nokia remains an independent vendor (no consolidation event).
 
 ### 15.2 Rejected — GNS3 and EVE-NG
 
@@ -389,17 +419,16 @@ The trade-off is that Cisco IOSv (the historical default for Cisco lab demonstra
 
 ### 15.3 Vendor account inventory
 
-| Vendor | Account type | Cost | Approval time | Used for | On-disk image already available? |
-| --- | --- | --- | --- | --- | --- |
-| Cisco | CCO + DevNet | Free | Immediate after email verification | Cat8000v, Cat9000v, IOS XRd, ASAv | **Partial — CSR1000v 16.8, IOS XRv 6.1.3, IOSv 15.7, IOSv-L2 15.2 already on disk; only required for current versions (Cat8000v 17.x, XRd 7.x) or DevNet Sandbox access** |
-| HPE | Aruba Networking Central | Free | Immediate after email verification | Aruba CX simulator | No — must download |
-| Juniper | Engineering downloads (juniper.net) | Free | Immediate after email verification | cRPD | No — must pull from Juniper registry |
-| Fortinet | FortiCare | Free (15-day eval) | Immediate | FortiGate-VM (Helix W4 deployment) | No |
-| Palo Alto Networks | Live community | Free trial | 1-3 days approval | PA VM-Series (Maple Ridge W4 deployment) | No |
-| Nokia | Lab access / partner portal | Free for partner-tier | 24-72 hours | SR Linux current-version; SR OS classic | **Yes — SR OS 13.0 R4 already on disk with 2015 demo license (see §10 constraint #12)** |
-| MikroTik | n/a | Free | n/a | RouterOS CHR | **Yes — CHR 6.41.4 already on disk; free up to 1 Mbps per interface, no registration needed** |
+| Vendor | Account type | Portal | Cost | Approval time | Used for | On-disk image already available? |
+| --- | --- | --- | --- | --- | --- | --- |
+| Cisco | CCO + DevNet | `id.cisco.com` (CCO), `developer.cisco.com/site/sandbox/` (DevNet), `software.cisco.com/download/home` (image downloads) | Free | Immediate after email verification | Cat8000v, Cat9000v, IOS XRd, ASAv; DevNet Sandbox access | **Partial — CSR1000v 16.8, IOS XRv 6.1.3, IOSv 15.7, IOSv-L2 15.2 already on disk; only required for current versions (Cat8000v 17.x, XRd 7.x) or DevNet Sandbox access** |
+| HPE Networking (post-Juniper acquisition; covers BOTH AOS-CX and Junos cRPD) | HPE Passport | Developer hub: `devhub.arubanetworks.com`; Community: `airheads.hpe.com`; Software downloads: `networkingsupport.hpe.com`; Training/cert: `arubanetworks.com/support-services/training-services/` | Free | Immediate after email verification | Aruba CX simulator, Junos cRPD container, Apstra documentation, Mist documentation, ClearPass | No — must download from HPE Networking Software Downloads after authentication |
+| Fortinet | FortiCare | `support.fortinet.com` | Free (15-day eval) | Immediate | FortiGate-VM (Helix W4 deployment) | No |
+| Palo Alto Networks | Live community | `live.paloaltonetworks.com` | Free trial | 1-3 days approval | PA VM-Series (Maple Ridge W4 deployment) | No |
+| Nokia | Lab access via SRC program | Learning hub: `nokia.com/learning/`; SRC: `nokia.com/networks/training/src/`; My SR Learning Labs: `nokia.com/networks/training/src/mysrlab`; Learning Store: `learningstore.nokia.com` | Paid (~$1,500-3,000 USD per course track with My SR Learning Labs included); $125 USD NRS I exam alone | Variable per program | Current SR OS access; SR Linux is publicly free (no Nokia account needed, see §15.6) | **Yes — SR OS 13.0 R4 already on disk with 2015 demo license (see §10 constraint #12); SR Linux is `docker pull ghcr.io/nokia/srlinux:latest` with no account** |
+| MikroTik | n/a | `mikrotik.com/download` | Free | n/a | RouterOS CHR | **Yes — CHR 6.41.4 already on disk; free up to 1 Mbps per interface, no registration needed** |
 
-**Effective Sunday-morning registration burden after on-disk image inventory:** HPE Aruba (10 min, instant) and Juniper engineering downloads (10 min, instant). Optionally Cisco DevNet for current-version access (see §17). Fortinet and Palo Alto remain Sprint W4 prerequisites, not blocking immediate lab work.
+**Effective Sunday-morning registration burden after on-disk image inventory and the HPE consolidation:** HPE Passport (10 min, instant) provides access to both AOS-CX and Junos cRPD. Cisco CCO + DevNet (10 min, instant) for current-version Cisco images and Sandbox access. Total: two vendor accounts, ~20 minutes of registration work. Fortinet and Palo Alto remain Sprint W4 prerequisites, not blocking immediate lab work.
 
 ### 15.4 Throughput-test topology separation pattern
 
@@ -480,6 +509,28 @@ For BGP table scale, OSPF LSDB scale, VPNv4 route count — none of which requir
 
 These run inside the existing demo topology — no perftest substitution needed — because they target the control plane only. The CSR1000v 250 Kbps cap is irrelevant.
 
+### 15.5 Nokia SR Linux — publicly free, no account required
+
+Nokia distributes the SR Linux container image publicly on GitHub Container Registry under a free-to-use license for non-production purposes:
+
+```
+docker pull ghcr.io/nokia/srlinux:latest
+```
+
+No Nokia account, no login, no license file, no time limit. SR Linux is **not** behind the SRC training paywall — that paywall applies only to current SR OS classic (TiMOS) lab access via My SR Learning Labs (§15.3 Nokia row).
+
+The architectural implication: a Nokia presence in the lab is essentially free. The §14 carrier multi-vendor backbone using SR Linux for one PE costs no vendor-account effort.
+
+### 15.6 URL and access verification disclaimer
+
+The URLs in §15.3, §17, and §18 were verified May 2026 by direct HTTPS fetch against vendor portals. The verification effort confirmed:
+
+- **Top-level portal entry points are real and reachable.** Nokia learning hub, Cisco DevNet sandbox launcher, HPE Aruba Networking developer hub, Airheads community migration to `airheads.hpe.com` all returned valid responses.
+- **Deep links beyond authentication are NOT independently verifiable.** Specifically: the exact AOS-CX simulator download URL inside `networkingsupport.hpe.com`, the exact Junos cRPD trial URL inside the HPE developer hub, the exact Cisco XRd container path inside `software.cisco.com`, and the exact ASAv qcow2 path are all behind login walls. The portal entry points are listed; the post-authentication paths will surface dynamically when the operator navigates with valid credentials.
+- **Vendor portals change.** The HPE-Juniper consolidation (§14.5) is itself an example: pre-2025 documentation that referenced `juniper.net/dm/crpd-trial.html` is now outdated as HPE migrates URLs. URLs in this ADR were correct at May 2026 and may drift over the lab's operational lifetime; cross-reference vendor documentation at access time rather than relying on this ADR alone for deep download paths.
+
+The verification record itself is preserved in commit history of this file — each ADR version's URL set represents the verified state at commit date.
+
 ## 17. Cisco DevNet Sandbox as external inter-AS peer carrier
 
 The local containerlab Aurora carrier represents the AS65100 hosted MSP infrastructure. For demonstrations and validation that benefit from "real currently-licensed Cisco gear under production-rate load," the lab integrates with Cisco DevNet Sandbox (devnetsandbox.cisco.com) as a hosted external network.
@@ -524,17 +575,23 @@ Pattern C is the interview-credible "carrier peering with real current Cisco pro
 
 ### 17.5 Sunday prerequisites
 
-| Task | Time |
-| --- | --- |
-| Register at devnetsandbox.cisco.com (CCO + DevNet) | 10 min |
-| Install Cisco AnyConnect VPN client (Windows) and openconnect (WSL Ubuntu) | 5 min |
-| SSH-test the Always-On Catalyst 8000v sandbox to verify account access | 15 min |
-| Reserve an IOS XR sandbox slot for Monday 3-7 PM (before EIL Global interview) | 5 min |
-| Document VPN connection workflow in `docs/runbook.md` §13 | 10 min |
+| Task | URL | Time |
+| --- | --- | --- |
+| Register CCO account | `https://id.cisco.com` | 10 min |
+| Register at DevNet Sandbox | `https://developer.cisco.com/site/sandbox/` (entry portal) → launcher at `https://devnetsandbox.cisco.com/` | 5 min |
+| Install **Cisco Secure Client** (Windows) — formerly known as AnyConnect, version 5+; OR `openconnect` (WSL Ubuntu) for the OSS path | Cisco Secure Client at `https://software.cisco.com/download/home/283000185` | 10 min |
+| SSH-test an Always-On sandbox (Catalyst 8000v or IOS XE) to verify account access | Sandbox catalog at `https://developer.cisco.com/sandbox` | 15 min |
+| Reserve an IOS XR sandbox slot for Monday 3-7 PM (before EIL Global interview) | From the sandbox catalog | 5 min |
+| Read DevNet Sandbox technical documentation for sandbox usage patterns | `https://developer.cisco.com/docs/sandbox/` | 10 min |
+| Document VPN connection workflow in `docs/runbook.md` §13 | n/a | 10 min |
+
+**Naming note: AnyConnect → Cisco Secure Client.** Cisco renamed the AnyConnect Secure Mobility Client to Cisco Secure Client (CSC) with version 5 in 2023. The functionality is identical for sandbox VPN connectivity; the name change is the relevant operator-facing difference. Some documentation still references AnyConnect; both names point to the same product.
 
 DevNet integration is treated as a Sprint W4-equivalent enhancement: not required for the W1-W3 carrier core but high-value once the carrier is otherwise stable.
 
 ## 18. References
+
+### Internal repo references
 
 - `BACKLOG.md` — sprint-by-sprint task list reflecting this architecture
 - `docs/design.md` — protocol-level design decisions for Aurora
@@ -542,6 +599,36 @@ DevNet integration is treated as a Sprint W4-equivalent enhancement: not require
 - `docs/runbook.md` — operational diagnostic procedures
 - `_setup/dell/README.md` — Dell-side deployment instructions
 - Sentinel Ridge MSP repo `_docs/Sentinel_Ridge_Lab_Design.docx` — master design document
-- `hellt/vrnetlab` — vrnetlab project, the wrapper that brings vendor qcow2 images into containerlab
-- Cisco DevNet (devnetsandbox.cisco.com), HPE Aruba Networking Central, Juniper engineering downloads — vendor image sources
-- Cisco TRex (trex-tgn.cisco.com) — open-source SP traffic generator used for data-plane validation in performance-test topologies
+
+### External tooling
+
+- `hellt/vrnetlab` (GitHub) — wraps vendor qcow2 images as containerlab nodes
+- Cisco TRex (`https://trex-tgn.cisco.com`) — open-source SP traffic generator used for data-plane validation in performance-test topologies (§15.4)
+
+### Vendor portal entry points (verified May 2026)
+
+| Vendor | Portal | Purpose |
+| --- | --- | --- |
+| Cisco DevNet | `https://developer.cisco.com/site/sandbox/` | Sandbox info |
+| Cisco DevNet | `https://devnetsandbox.cisco.com/` | Sandbox launcher (Torque) |
+| Cisco DevNet | `https://developer.cisco.com/docs/sandbox/` | Sandbox technical documentation |
+| Cisco DevNet | `https://developer.cisco.com/sandbox` | Sandbox catalog browser |
+| Cisco | `https://software.cisco.com/download/home` | Software download portal (CCO login required) |
+| Cisco Secure Client | `https://software.cisco.com/download/home/283000185` | VPN client (formerly AnyConnect, see §17.5) |
+| HPE Aruba Networking | `https://devhub.arubanetworks.com/` | Developer hub — serves both HPE Aruba AND HPE Juniper post-2025 acquisition (§14.5) |
+| HPE Aruba Networking | `https://devhub.arubanetworks.com/get-started/home` | API guides for AOS-CX, AOS 8, Junos, Mist, Apstra, Paragon, ClearPass, EdgeConnect |
+| HPE Aruba Networking | `https://airheads.hpe.com/` | Airheads community (migrated from community.arubanetworks.com) |
+| HPE Networking | `https://networkingsupport.hpe.com` | Software downloads (HPE Passport login required) |
+| HPE Aruba Networking | `https://www.arubanetworks.com/support-services/training-services/` | Training and certification |
+| Nokia | `https://www.nokia.com/learning/` | Learning hub |
+| Nokia | `https://www.nokia.com/networks/training/src/` | Service Routing Certification Program |
+| Nokia | `https://www.nokia.com/networks/training/src/mysrlab` | My SR Learning Labs (24/7 SR OS lab access) |
+| Nokia | `https://learningstore.nokia.com/` | Course and exam purchase |
+| Nokia | `ghcr.io/nokia/srlinux:latest` | SR Linux container (free, no account; see §15.5) |
+| MikroTik | `https://mikrotik.com/download` | RouterOS CHR (free tier capped at 1 Mbps) |
+| Fortinet | `https://support.fortinet.com` | FortiCare (W4 prerequisite) |
+| Palo Alto Networks | `https://live.paloaltonetworks.com` | Live community trial (W4 prerequisite) |
+
+### Industry context references
+
+- HPE-Juniper acquisition (2025) — see §14.5 for impact on vendor strategy
