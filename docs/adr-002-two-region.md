@@ -15,7 +15,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 1.0 | May 2026 | Initial — full pivot from ADR-001 single-region to two-region carrier with DevNet CML hosting the Cisco-dominant region. Architectural decision driven by May 31 2026 empirical validation that openconnect-in-WSL2 + containerlab + Docker MASQUERADE provides clean L3+L7 reach into DevNet sandbox environments. |
+| 1.0 | May 2026 | Initial — full pivot from ADR-001 single-region to two-region carrier with DevNet CML hosting the Cisco-dominant region. Architectural decision driven by May 31 2026 empirical validation that openconnect-in-WSL2 + containerlab + Docker MASQUERADE provides clean L3+L7 reach into DevNet sandbox environments. Includes refined topology per user direction same evening: Region A all-Nokia hybrid (SR Linux P + 2× SR OS PEs, single-homed CEs accepting tier-2 single-PE-failure tolerance); Region B dual-router-per-site (Aurora-DC P pair both XR, Aurora-MR PE pair mixed XR + XE reflecting gradual modernisation, Aurora-HH PE pair pure XR for regulated-industry audit consistency) with dual-homed CEs (Maple Ridge active-active multipath, Helix Health active-standby LOCAL_PREF). Topology diagram in §3.3a updated with per-site subgraphs and platform colour coding. |
 
 ## 1. Context
 
@@ -40,51 +40,96 @@ PC1 (Ryzen 7 2700, 32 GB), Dell (i5-6300U, 32 GB), Surface Pro (8 GB) — per AD
 
 ### 3.1 Region A — Nokia (Local)
 
-Aurora's Nokia-flavoured region, hosted entirely on local hardware.
+Aurora's Nokia-flavoured region, hosted entirely on local hardware. **All-Nokia stack** with single-homed CEs accepting that single-PE-failure tolerance is the appropriate level for this region's customers.
 
 | Role | Implementation | RAM | Notes |
 | --- | --- | --- | --- |
-| P (transit core) | FRR | ~250 MB | Or SR Linux container if resources allow |
-| PE (provider edge) | Nokia SR OS 13.0 R4 (TiMOS, on-disk demo license per ADR-001 §10 #12) | 1.5-3 GB | Primary "Nokia voice" of Aurora |
-| Secondary PE | FRR (fallback if SR OS resource pressure) | 250 MB | Optional resilience |
-| Customer-edge devices | Mixed vendors per tenant (MikroTik CHR, IOSv L3, OPNsense, FRR) | ~500 MB-1 GB each | Per-tenant choice |
+| Aurora-P | **Nokia SR Linux 24.10.1** | ~1-1.5 GB | Container-native data plane. Pulled from `ghcr.io/nokia/srlinux` per ADR-001 §15.5. Fast boot, lightweight, runs the IGP and label distribution backbone. |
+| Aurora-PE-1 | **Nokia SR OS 13.0 R4** (TiMOS, on-disk demo license per ADR-001 §10 #12) | ~2-3 GB | Primary PE — classic SR OS carrier OS for tenant VPRN and BGP peering |
+| Aurora-PE-2 | **Nokia SR OS 13.0 R4** | ~2-3 GB | Secondary PE — RTC-frozen license shared with PE-1. Same platform for operator-skill consistency. |
+| Customer-edge devices | Single-homed per tenant (mixed vendors) | ~500 MB-1 GB each | See per-tenant table below |
 
-**Region A total RAM**: ~3-5 GB on Dell, comfortable within the 14 GB Aurora workload pool.
+**Customer-edge devices in Region A** (single-homed to designated PE):
+
+| Tenant CE | CE platform | Connected to | PE-CE protocol |
+| --- | --- | --- | --- |
+| Northwind CE | MikroTik CHR 6.41.4 | Aurora-PE-1 (single uplink) | eBGP CE-PE |
+| Optional spare CE | VyOS or FRR | Aurora-PE-2 (single uplink) | OSPF CE-PE |
+
+**Region A total RAM**: ~6-7 GB on Dell with all nodes active. Fits comfortably within the 14 GB Aurora workload pool with margin for tenant endpoint VMs.
+
+**Why hybrid SR Linux + SR OS rather than pure SR OS**:
+- SR Linux's design heritage is data-centre fabric and modern programmability — its role as a P-router in Region A demonstrates Nokia's modern fabric NOS handling SP transit duty.
+- SR OS classic CLI on both PEs preserves the senior-Nokia-operator skill demonstration (`A:R1>config>router>bgp#` hierarchical CLI, VPRN service architecture, MD-CLI fallback).
+- ~1 GB saved by using SR Linux for P versus a third SR OS instance.
 
 **Tenants served from Region A**:
-- Northwind Robotics (CE = MikroTik CHR, fits the "modern tech company" persona)
-- Smaller branches of other tenants when Region A serves as backup
+- Northwind Robotics (CE = MikroTik CHR, fits the "modern tech company" persona; single-homed because Northwind accepts the single-PE-failure risk in exchange for lower carrier cost)
+- Spare capacity for any tenant when Region B (DevNet) is unavailable due to maintenance or reservation queue
 - Operational sandbox for protocol experimentation without DevNet reservation dependency
+
+**Single-homing rationale**: Region A is the resource-constrained tier. Single-homed CEs are an explicit architectural choice — not a deficiency — reflecting how smaller regions in real carriers accept single-PE-failure tolerance in exchange for lower operational complexity. This is the kind of regional asymmetry that real SP design accepts based on customer revenue and SLA tier.
 
 ### 3.2 Region B — Cisco-dominant (DevNet CML hosted)
 
-Aurora's larger, Cisco-dominant region, hosted in the CML server embedded in a Cisco DevNet Reservation sandbox.
+Aurora's larger, Cisco-dominant region, hosted in the CML server embedded in a Cisco DevNet Reservation sandbox. **Dual-router per site** at every backbone tier (P core, all PE sites) and **dual-homed CEs** for tenants. Tier-1 production design discipline applied throughout.
 
-| Role | Implementation | Where | Notes |
+#### 3.2.1 Three sites, six backbone routers
+
+| Site | Router-1 | Router-2 | Why this platform mix |
 | --- | --- | --- | --- |
-| P (transit core) | Cisco IOS XR 7.x (CML-hosted) | DevNet CML | Current production code |
-| PE (provider edge) | Cisco IOS XR 7.x (CML-hosted) | DevNet CML | Multiple PEs for site diversity |
-| Additional PE | Cisco Cat8000v (IOS XE 17.x) (CML-hosted) | DevNet CML | Alternative PE platform per real-world variation |
-| Customer-edge devices | Cisco Cat8000v + mixed vendors via the same CML topology | DevNet CML | Cisco-dominant with HPE Aruba CX and MikroTik CHR variants per tenant per ADR-001 §14 |
-| Lab management | CML web UI + REST API at `https://10.10.20.161` | DevNet sandbox | Operator browser via VPN |
+| **Aurora-DC** (transit / P core) | **DC-P-R1**: Cisco IOS XR 7.x | **DC-P-R2**: Cisco IOS XR 7.x | P core requires consistent IOS XR for MPLS LDP/SR-MPLS, IS-IS L2 transit, RSVP-TE, and carrier-grade label switching. Both routers IOS XR for operational consistency at the core. |
+| **Aurora-MR** (Maple Ridge PE site) | **MR-PE-R1**: Cisco IOS XR 7.x | **MR-PE-R2**: Cisco Cat8000v IOS XE 17.x | Mixed XR + XE PE site demonstrates the platform diversity real SP carriers carry. Maple Ridge as a general SME accepts whatever PE platform is present at the local site — operators gradually modernise the PE fleet site-by-site over years. |
+| **Aurora-HH** (Helix Health PE site) | **HH-PE-R1**: Cisco IOS XR 7.x | **HH-PE-R2**: Cisco IOS XR 7.x | Pure XR PE pair. Regulated industry — operational simplicity for audit and change-management requires platform consistency. Helix Health (healthcare) cannot tolerate the cognitive overhead of mixed platforms at their dedicated PE site. |
+
+#### 3.2.2 Customer edges (dual-homed per tenant)
+
+Each customer CE connects to BOTH PE routers at its local PE site via eBGP. The PE pair runs as a redundant pair with the CE choosing primary path via LOCAL_PREF or splitting via multipath.
+
+| Customer | CE platform | Uplinks (dual-homed) | PE-CE protocol | Active path selection |
+| --- | --- | --- | --- | --- |
+| Maple Ridge | **Cisco Cat8000v** | MR-PE-R1 (XR) AND MR-PE-R2 (XE) | eBGP CE-PE with multipath | BGP `multipath` for active-active load balancing (Maple Ridge values throughput, accepts asymmetric path) |
+| Helix Health | **Cisco Cat8000v** | HH-PE-R1 (XR) AND HH-PE-R2 (XR) | eBGP CE-PE with LOCAL_PREF | LOCAL_PREF higher on R1; R2 standby (Helix Health values predictable path for compliance — active-standby is auditable) |
+| Helix LAN | HPE Aruba CX (AOS-CX) | Helix Health CE (single connection to LAN) | OSPF area 0 between CE and LAN | n/a |
+
+#### 3.2.3 Where Cisco SD-WAN fits
+
+Region B's design above is **the classic MPLS L3VPN architecture** — Cisco IOS XR + IOS XE running BGP/IS-IS/MPLS. Per ADR-001 v1.6 §17.6 findings, Cisco SD-WAN sandboxes use OMP rather than traditional BGP, so SD-WAN is NOT used as the underlying transport in Aurora's Cisco region.
+
+If a future demand surfaces a "modern overlay WAN" demonstration scenario, the SD-WAN 20.x sandbox can be brought up as an **adjacent** demo — but Aurora's Region B core remains classic MPLS L3VPN. This is the right architectural choice for a carrier providing transit-based services (Aurora's stated business model).
+
+#### 3.2.4 Region B node inventory summary
+
+| Tier | Node count | Platform mix |
+| --- | --- | --- |
+| Aurora-DC P pair | 2 | 2× IOS XR |
+| Aurora-MR PE pair | 2 | 1× IOS XR + 1× Cat8000v IOS XE |
+| Aurora-HH PE pair | 2 | 2× IOS XR |
+| Maple Ridge CE | 1 | 1× Cat8000v |
+| Helix Health CE | 1 | 1× Cat8000v |
+| Helix LAN switch | 1 | 1× HPE Aruba CX |
+| **Total** | **9 nodes** | 5× IOS XR + 3× Cat8000v IOS XE + 1× Aruba CX |
+
+CML Personal handles 20 nodes — 11 nodes of headroom for growth (additional CEs, route reflectors, traffic generators, lab nodes for protocol tests).
 
 **Region B is ephemeral**: it exists only during an active DevNet sandbox reservation. The topology, configuration, and saved state are reconstructed from version-controlled CML topology YAML files on each fresh reservation.
 
 **Tenants served from Region B**:
-- Maple Ridge Logistics (full Cisco stack — fits the "Cisco SME" persona)
-- Helix Health Analytics (Cisco edge + Aruba LAN — regulated industry pairing)
-- Larger branches and DC sites for any tenant that benefits from current production-version Cisco code
+- Maple Ridge Logistics (Cisco SME — dual-homed via Cat8000v CE to mixed-platform PE pair MR-PE-R1 XR + MR-PE-R2 XE)
+- Helix Health Analytics (regulated industry — dual-homed via Cat8000v CE to pure-XR PE pair HH-PE-R1 + HH-PE-R2; HPE Aruba LAN behind CE)
+- Larger branches and DC sites for any tenant that benefits from current production-version Cisco code with carrier-grade redundancy
 
 ### 3.3a Topology overview
 
 ```mermaid
 graph TB
-    classDef nokia fill:#0066b3,color:#fff,stroke:#003d6b,stroke-width:2px
-    classDef cisco fill:#1e88e5,color:#fff,stroke:#0d47a1,stroke-width:2px
+    classDef nsros fill:#0066b3,color:#fff,stroke:#003d6b,stroke-width:2px
+    classDef nsrl fill:#42a5f5,color:#fff,stroke:#0066b3,stroke-width:2px
+    classDef cisco_xr fill:#1565c0,color:#fff,stroke:#0d47a1,stroke-width:2px
+    classDef cisco_xe fill:#42a5f5,color:#fff,stroke:#1565c0,stroke-width:2px
     classDef mixed fill:#ff9800,color:#fff,stroke:#e65100,stroke-width:2px
     classDef bridge fill:#43a047,color:#fff,stroke:#1b5e20,stroke-width:2px
     classDef mgmt fill:#6a1b9a,color:#fff,stroke:#4a148c,stroke-width:2px
-    classDef tenant fill:#757575,color:#fff,stroke:#424242,stroke-width:1px
 
     %% Management Plane
     subgraph Mgmt["📡 Sentinel Ridge MSP — Management Plane (PC1)"]
@@ -92,84 +137,110 @@ graph TB
         MISP["MISP threat intel<br/>localhost:8443"]
     end
 
-    %% Region A — Nokia (Local)
-    subgraph RegA["🟦 REGION A — Nokia (Local on Dell, sub-AS 65101)"]
+    %% Region A — Nokia (Local) — hybrid SR Linux P + SR OS PE pair
+    subgraph RegA["🟦 REGION A — Nokia (Local on Dell, sub-AS 65101, always-available)"]
         direction TB
-        NSR["Nokia PE-1<br/>SR OS 13.0 R4<br/>(RTC-frozen license)"]
-        FRR_P_A["Aurora P<br/>FRR"]
-        FRR_PE2["Aurora PE-2<br/>FRR backup"]
-        NW_CE["Northwind CE<br/>MikroTik CHR"]
-        VyOS_CE["Optional CE<br/>VyOS / FRR"]
+        SRL_P["Aurora-P<br/>Nokia SR Linux 24.10.1<br/>(container, ~1.5 GB)"]
+        SROS_PE1["Aurora-PE-1<br/>Nokia SR OS 13.0 R4<br/>(RTC license)"]
+        SROS_PE2["Aurora-PE-2<br/>Nokia SR OS 13.0 R4<br/>(RTC license)"]
+        NW_CE["Northwind CE<br/>MikroTik CHR<br/>single-homed"]
+        VyOS_CE["Optional CE<br/>VyOS / FRR<br/>single-homed"]
     end
 
     %% Interconnect
-    subgraph IC["🔄 Interconnect — WSL2 + openconnect + MASQUERADE"]
+    subgraph IC["🔄 Interconnect — openconnect + MASQUERADE"]
         OC["Dell WSL2 Ubuntu<br/>openconnect<br/>tun0: 192.168.254.x"]
         NAT["Docker iptables<br/>MASQUERADE NAT"]
         DN["DevNet VPN endpoint<br/>devnetsandbox-usw1<br/>-reservation.cisco.com:20134"]
     end
 
-    %% Region B — Cisco (DevNet CML)
-    subgraph RegB["🟪 REGION B — Cisco-dominant (DevNet CML, sub-AS 65102, ephemeral)"]
+    %% Region B — Cisco (DevNet CML) — dual-router per site
+    subgraph RegB["🟪 REGION B — Cisco (DevNet CML, sub-AS 65102, ephemeral)"]
         direction TB
-        CML["CML Server<br/>https://10.10.20.161<br/>(hosts Region B topology)"]
-        XRP["Aurora P<br/>IOS XR 7.x"]
-        XRPE["Aurora PE-1<br/>IOS XR 7.x<br/>(eBGP boundary)"]
-        XEPE["Aurora PE-2<br/>Cat8000v IOS XE 17.x"]
-        MR_CE["Maple Ridge CE<br/>Cat8000v"]
-        HH_CE["Helix Health CE<br/>Cat8000v"]
-        HH_LAN["Helix Health LAN<br/>HPE Aruba CX"]
+
+        CML["CML Server — hosts Region B<br/>https://10.10.20.161"]
+
+        subgraph DC_Site["Aurora-DC Site (transit/P core)"]
+            DC_P_R1["DC-P-R1<br/>IOS XR 7.x"]
+            DC_P_R2["DC-P-R2<br/>IOS XR 7.x"]
+        end
+
+        subgraph MR_Site["Aurora-MR Site (Maple Ridge PE pair — MIXED platform)"]
+            MR_PE_R1["MR-PE-R1<br/>IOS XR 7.x<br/>(eBGP confed boundary)"]
+            MR_PE_R2["MR-PE-R2<br/>Cat8000v IOS XE 17.x"]
+        end
+
+        subgraph HH_Site["Aurora-HH Site (Helix Health PE pair — PURE XR)"]
+            HH_PE_R1["HH-PE-R1<br/>IOS XR 7.x"]
+            HH_PE_R2["HH-PE-R2<br/>IOS XR 7.x"]
+        end
+
+        MR_CE["Maple Ridge CE<br/>Cisco Cat8000v<br/>(dual-homed)"]
+        HH_CE["Helix Health CE<br/>Cisco Cat8000v<br/>(dual-homed)"]
+        HH_LAN["Helix Health LAN<br/>HPE Aruba CX<br/>(AOS-CX)"]
     end
 
-    %% Region A internal links
-    NW_CE -->|OSPF / eBGP CE-PE| NSR
-    VyOS_CE -->|eBGP CE-PE| FRR_PE2
-    NSR ---|IS-IS L2| FRR_P_A
-    FRR_P_A ---|IS-IS L2| FRR_PE2
+    %% Region A internal links — single-homed CEs
+    NW_CE -->|eBGP CE-PE<br/>single uplink| SROS_PE1
+    VyOS_CE -->|OSPF CE-PE<br/>single uplink| SROS_PE2
+    SROS_PE1 ---|IS-IS L2 + LDP| SRL_P
+    SROS_PE2 ---|IS-IS L2 + LDP| SRL_P
 
     %% Interconnect path — the region boundary
-    NSR -.->|eBGP confed<br/>AS 65101 → 65102| OC
+    SROS_PE1 -.->|eBGP confed<br/>65101 → 65102| OC
     OC --> NAT
     NAT --> DN
-    DN -.->|tun0 IP as<br/>BGP neighbor| XRPE
+    DN -.->|tun0 IP as<br/>BGP neighbor| MR_PE_R1
 
-    %% Region B internal links
-    MR_CE -->|OSPF CE-PE| XRPE
-    HH_CE -->|OSPF CE-PE| XEPE
-    HH_CE ---|dot1x VLAN| HH_LAN
-    XRPE ---|IS-IS L2| XRP
-    XEPE ---|IS-IS L2| XRP
-    CML -.->|hypervisor| XRP
+    %% Region B internal links — dual-router per site, dual-homed CEs
+    DC_P_R1 ---|IS-IS L2| DC_P_R2
+    DC_P_R1 ---|IS-IS L2| MR_PE_R1
+    DC_P_R2 ---|IS-IS L2| MR_PE_R2
+    DC_P_R1 ---|IS-IS L2| HH_PE_R1
+    DC_P_R2 ---|IS-IS L2| HH_PE_R2
+    MR_PE_R1 ---|IS-IS L2| MR_PE_R2
+    HH_PE_R1 ---|IS-IS L2| HH_PE_R2
 
-    %% Management plane reaches both
-    Wazuh -.->|syslog +<br/>Wazuh agents| NSR
-    Wazuh -.->|syslog via<br/>openconnect VPN| XRPE
+    MR_CE -->|eBGP multipath<br/>active-active| MR_PE_R1
+    MR_CE -->|eBGP multipath<br/>active-active| MR_PE_R2
+    HH_CE -->|eBGP LOCAL_PREF<br/>primary| HH_PE_R1
+    HH_CE -->|eBGP LOCAL_PREF<br/>standby| HH_PE_R2
+    HH_CE ---|OSPF area 0| HH_LAN
+
+    CML -.->|hypervisor hosts<br/>all Region B nodes| DC_P_R1
+
+    %% Management plane reaches both regions
+    Wazuh -.->|syslog +<br/>Wazuh agents| SROS_PE1
+    Wazuh -.->|syslog via<br/>openconnect VPN| MR_PE_R1
     MISP -.->|IoC feeds| Wazuh
 
-    class NSR,FRR_P_A,FRR_PE2 nokia
-    class XRP,XRPE,XEPE,CML cisco
-    class MR_CE,HH_CE cisco
+    class SROS_PE1,SROS_PE2 nsros
+    class SRL_P nsrl
+    class DC_P_R1,DC_P_R2,MR_PE_R1,HH_PE_R1,HH_PE_R2 cisco_xr
+    class MR_PE_R2,MR_CE,HH_CE cisco_xe
+    class CML cisco_xr
     class NW_CE,VyOS_CE,HH_LAN mixed
     class OC,NAT,DN bridge
     class Wazuh,MISP mgmt
 ```
 
 **Legend:**
-- 🟦 Blue = Nokia (SR OS classic CLI, IS-IS L2 + eBGP confed)
-- 🟪 Light blue = Cisco (IOS XR / IOS XE, IS-IS L2 + eBGP confed)
-- 🟧 Orange = Multi-vendor CEs and LAN devices
-- 🟩 Green = Interconnect/bridge tier (openconnect, MASQUERADE, VPN endpoint)
+- 🟦 Dark blue = Nokia SR OS (classic CLI, RTC-frozen license, carrier PEs)
+- 🔵 Mid blue = Nokia SR Linux (container, modern data plane, P role)
+- 🟦 Dark blue = Cisco IOS XR (current 7.x, carrier P and PE roles)
+- 🔵 Mid blue = Cisco IOS XE (Cat8000v 17.x, PE alternative and CE roles)
+- 🟧 Orange = Multi-vendor CEs and LAN devices (MikroTik, VyOS, Aruba)
+- 🟩 Green = Interconnect tier (openconnect, MASQUERADE, VPN endpoint)
 - 🟣 Purple = Sentinel Ridge MSP management plane
 - ─── Solid line = data-plane link in topology
 - ┄┄┄ Dashed line = control-plane / management / overlay relationship
 
-**Reading the diagram top-to-bottom:**
+**Topology summary:**
 
-1. **Sentinel Ridge MSP management plane (PC1)** — Wazuh + MISP collect syslog and threat-intel from both regions. MISP IOC feeds drive Wazuh detection rules. Both reach Region B via the same openconnect tunnel.
-2. **Region A (Local on Dell)** — Nokia SR OS PE with FRR P and FRR backup PE. Northwind tenant CE (MikroTik CHR) hangs off the Nokia PE. Always-available, 24/7 operational.
-3. **Interconnect** — Dell WSL2 Ubuntu runs `openconnect` to terminate the VPN; Docker MASQUERADE rewrites container source IPs to the WSL2 host's tun0 address; the DevNet sandbox VPN endpoint exposes Region B's `10.10.20.0/24` to the tunnel.
-4. **Region B (DevNet CML)** — Cisco IOS XR 7.x for P and one PE, Cat8000v IOS XE 17.x for a second PE platform. Maple Ridge and Helix Health tenant CEs hang off the Cisco PEs. Helix Health LAN uses HPE Aruba CX behind the Cisco edge. Ephemeral — exists only during DevNet reservation.
-5. **eBGP confederation across the region boundary** — sub-AS 65101 (Nokia) peers with sub-AS 65102 (Cisco) over the openconnect path. External peers see the consolidated AS 65100 Aurora carrier.
+1. **Region A — Nokia hybrid stack, single-homed customers** (~6 GB total RAM): SR Linux at the P role for lightweight data-plane transit, two SR OS PEs for classic carrier service termination. Customer CEs single-homed reflecting the resource-constrained tier-2 reality.
+2. **Region B — Cisco dual-router per site, dual-homed customers** (9 nodes in CML): Aurora-DC P pair (2× IOS XR), Aurora-MR PE pair (mixed XR + XE — gradual modernisation pattern), Aurora-HH PE pair (pure XR — regulated industry consistency). Maple Ridge CE active-active multipath; Helix Health CE active-standby LOCAL_PREF (audit-friendly path selection).
+3. **eBGP confederation across the region boundary** — Nokia PE-1 (sub-AS 65101) peers with MR-PE-R1 (sub-AS 65102) over the openconnect VPN. External peers see Aurora as a consolidated AS 65100 carrier.
+4. **Asymmetric resilience by design** — Region A accepts single-PE-failure tolerance for lower operational cost; Region B implements production-grade dual-router-per-site discipline. This is realistic SP regional asymmetry, not a deficiency.
 
 ### 3.3 Interconnect — the region boundary
 
