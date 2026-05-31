@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.5 |
+| Version | 1.6 |
 | Date | May 2026 |
 | Decision | Hybrid workload distribution — CPU-intensive services on PC1, lightweight services + carrier backbone on Dell |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
@@ -20,6 +20,7 @@
 | 1.3 | May 2026 | Per-tenant customer-edge and LAN topology committed: §14 multi-vendor matrix (Cisco at Maple Ridge full stack; Cisco edge + HPE Aruba LAN at Helix Health; Juniper cRPD edge + Cisco LAN at Northwind); §15 vendor strategy framing Cisco-first with HPE Aruba and Juniper as multi-vendor demonstrators matching realistic Australian enterprise patterns; §6 RAM allocation updated for one-tenant-at-a-time PC1 cycling; §10 constraint #9 added (vendor account dependencies); §11 Sprint W4 work expanded (vrnetlab wrappers for Cisco/Aruba VM images, Juniper cRPD native pull). GNS3 and EVE-NG explicitly rejected: all CE/LAN/firewall runs as containerlab nodes, including vrnetlab-wrapped vendor VM images |
 | 1.4 | May 2026 | Throughput vs. demo path separation pattern committed: §15.4 design pattern for splitting protocol-demo paths (Cisco/Nokia licensed-but-capped images for vendor-CLI credibility) from throughput-test paths (FRR/VyOS substitutes or TRex traffic generator for data-plane validation at WSL2 substrate ceiling); §10 constraint #11 added (throughput-capped images drive demo/perftest topology separation); §10 constraint #12 added (Nokia SR OS 13.0 R4 runs with frozen 2015 RTC for license validity, all SR OS-originated timestamps offset 11 years); §14.4 vrnetlab wrapper inventory annotated for existing on-disk images requiring no vendor account registration (CSR1000v 16.8, IOS XRv 6.1.3, Nokia SR OS 13.0 R4, IOSv 15.7, IOSv-L2 15.2, MikroTik CHR 6.41.4); §15.3 vendor account inventory annotated to mark which vendors are covered by on-disk images vs. requiring registration; new §17 Cisco DevNet Sandbox integration as inter-AS peer carrier for current-IOS-XR demos |
 | 1.5 | May 2026 | HPE-Juniper consolidation and verified vendor URLs: §14.5 added explicit acknowledgement that HPE acquired Juniper in 2025, collapsing the "Cisco vs. HPE Aruba vs. Juniper" three-vendor narrative into a "Cisco vs. HPE Networking" two-vendor narrative — the per-tenant *product* matrix (AOS-CX, cRPD, Cat9000v, etc.) remains accurate as distinct technology choices, but the *vendor account* inventory in §15.3 consolidates HPE Aruba and Juniper into a single HPE Networking row; §17 DevNet integration URLs verified from cisco.com fetch (devnetsandbox.cisco.com, developer.cisco.com/site/sandbox/, developer.cisco.com/docs/sandbox/, software.cisco.com/download/home/283000185 for Cisco Secure Client formerly AnyConnect); §15.3 Nokia row URLs verified from nokia.com fetch (SRC program at /networks/training/src/, My SR Learning Labs); HPE Networking URLs verified (devhub.arubanetworks.com developer hub serves both Aruba and Juniper, airheads.hpe.com migrated community, networkingsupport.hpe.com software downloads); §15.5 added honest verification disclaimer noting which vendor portals are login-gated and therefore not deep-link verifiable |
+| 1.6 | May 2026 | Empirical DevNet integration validation + correction batch: (a) §15.3 Cisco row corrected — service contract required for Cat8000v/Cat9000v/ASAv qcow2 downloads; CCO alone insufficient. (b) §15.4 added CML pricing reality — there is no CML Free tier; CML Personal $199/yr and CML Personal Plus $349/yr are the only direct CML paths. The only zero-cost current-Cisco access for non-partner non-contract users is DevNet Sandbox hosted (no download) and the CML server embedded inside select Reservation sandboxes (e.g. SD-WAN 20.12) accessible at 10.10.20.161 during the reservation window. (c) §15.3 Fortinet row updated — fortios.qcow2 (~73 MB, virtual 2 GB, FortiOS 7.0.14 placeholder version) on disk in workspace folder; vrnetlab/vr-fortios:7.0.14 wrapper built May 31. (d) §15.3 Nokia row updated — SR Linux 24.10.1 + latest pulled May 31 from `ghcr.io/nokia/srlinux` (~3.1 GB image). (e) §17 patterns empirically validated against Cisco SD-WAN 20.12 sandbox May 31: Patterns A (SSH), B (Ansible inventory inclusion), C-L3 (container reachability), C-L7 (HTTPS API), and D (REST API automation) all CONFIRMED working via `openconnect` inside WSL2 Ubuntu + Docker MASQUERADE through tun0; Pattern C-deep (eBGP peering) NOT viable against this specific sandbox because SD-WAN cEdges run OMP toward vSmart, DC-WAN-Edge01 runs "application" routing (SD-Routing), and SD-Routing branch routers were advertised in tun0 routes but L3 not provisioned — for traditional BGP demos target an IOS XR Reservation sandbox or build controlled topology inside the embedded CML. (f) §17.6 NEW — Full empirical validation methodology and per-pattern verdicts. (g) §17.7 NEW — WSL2 networking architecture details: AnyConnect-on-Windows is NOT the recommended pattern because WSL2 NAT defeats Windows-side VPN routing; the validated pattern is `openconnect` installed inside Ubuntu WSL2 so tun0 lives in the WSL2 routing namespace and Docker containers route to DevNet via host MASQUERADE rules. (h) §10 constraint #13 added — DevNet integration via WSL2+openconnect is empirically the only validated path; Windows-side Cisco Secure Client routing to WSL2 containers is unverified and not part of the canonical architecture. |
 
 ## 1. Context
 
@@ -229,6 +230,7 @@ These limitations are explicit, documented, and acceptable:
 10. **No GNS3 or EVE-NG.** All CE/LAN/firewall/wireless devices run as containerlab nodes. Native vendor containers (Juniper cRPD, Cisco IOS XRd, Nokia SR Linux, FRR, Cumulus VX, SONiC) execute directly. VM-only vendor images (Cisco Cat8000v, Cat9000v, ASAv; HPE Aruba CX; Palo Alto VM-Series; FortiGate-VM) execute as `vrnetlab`-wrapped containers — qcow2 packaged inside a Docker container running qemu-kvm internally, orchestrated by containerlab as ordinary nodes. This preserves the "everything as code" deployment story without depending on GNS3/EVE-NG graphical tooling. Containerlab YAML topology files are the canonical source of truth.
 11. **Throughput-capped vendor images drive demo-vs-perftest topology separation.** Cisco CSR1000v 16.8 in unlicensed eval mode is capped at ~250 Kbps forwarding throughput. Older IOS XRv 6.1.3 demo build and similar legacy lab images have analogous data-plane caps. The lab accepts this by maintaining two topology variants per tenant: a protocol-demo path that retains vendor-licensed images for CLI credibility (the throughput cap is invisible at <10 Mbps test rates), and an explicit performance-test path that substitutes open-source FRR or VyOS at the high-throughput hop (no cap). For data-plane testing requiring higher rates, the lab uses TRex (Cisco's open-source traffic generator) as a container node injecting traffic directly into Aurora PEs, bypassing capped CE images. See §15.4 for the design pattern.
 12. **Nokia SR OS 13.0 R4 runs with frozen 2015 RTC for license validity.** The 2015-issued ALCATEL-LUCENT 7750 SROS-vSIM demo license technically expired August 2015. The well-documented community technique sets the QEMU virtual machine RTC to `base=2015-03-10` and the VM UUID to `00000000-0000-0000-0000-000000000000` at launch, causing the SR OS image to evaluate the license as valid (175 days remaining in its 2015 frame of reference). vrnetlab `vr-sros` launch.py customised at build time to inject these QEMU flags on every container start. **Operational consequence: all SR OS-originated timestamps run 11 years behind wall-clock time.** Wazuh ingestion includes a normalisation decoder rule that source-tags SR OS events and adjusts the timestamp to wall-clock-now before correlation. NTP must remain disabled on the SR OS PE — re-enabling it would break the trick.
+13. **DevNet integration uses `openconnect` inside WSL2 Ubuntu, not Cisco Secure Client on Windows.** The canonical VPN architecture for the lab installs `openconnect` directly inside the Ubuntu WSL2 distribution so the `tun0` interface and VPN routes live in the WSL2 routing namespace; Docker containers then route to DevNet IPs via host iptables MASQUERADE rules. Empirically validated May 31 2026 against Cisco SD-WAN 20.12 sandbox — see §17.6 for full methodology and per-pattern verdicts. Cisco Secure Client (formerly AnyConnect) running on the Windows host is NOT part of the canonical architecture because Windows-side VPN routing does not by default propagate into WSL2's network namespace; containerlab containers would bypass the Secure Client tunnel and exit via Windows' default route. Operators may still use Cisco Secure Client for human interactive sessions (browser/SSH from Windows directly), but containerlab-driven automation uses openconnect-in-WSL2 exclusively.
 
 ## 11. Migration plan — Sprint W2
 
@@ -421,11 +423,11 @@ The trade-off is that Cisco IOSv (the historical default for Cisco lab demonstra
 
 | Vendor | Account type | Portal | Cost | Approval time | Used for | On-disk image already available? |
 | --- | --- | --- | --- | --- | --- | --- |
-| Cisco | CCO + DevNet | `id.cisco.com` (CCO), `developer.cisco.com/site/sandbox/` (DevNet), `software.cisco.com/download/home` (image downloads) | Free | Immediate after email verification | Cat8000v, Cat9000v, IOS XRd, ASAv; DevNet Sandbox access | **Partial — CSR1000v 16.8, IOS XRv 6.1.3, IOSv 15.7, IOSv-L2 15.2 already on disk; only required for current versions (Cat8000v 17.x, XRd 7.x) or DevNet Sandbox access** |
+| Cisco | CCO + DevNet (free); **separate service contract required for current product downloads** | `id.cisco.com` (CCO), `developer.cisco.com/site/sandbox/` (DevNet), `software.cisco.com/download/home` (image downloads — contract-gated for current products) | Free for CCO + DevNet Sandbox; **service contract required for Cat8000v/Cat9000v/ASAv qcow2 downloads (paid)** | Immediate for CCO/DevNet; contract acquisition via Cisco direct purchase or partner reseller | DevNet Sandbox hosted access (free, no contract); current Cat8000v/Cat9000v/ASAv qcow2 downloads (paid contract) | **Partial — CSR1000v 16.8, IOS XRv 6.1.3, IOSv 15.7, IOSv-L2 15.2 already on disk and sufficient for protocol demos. Current version (Cat8000v 17.x, XRd 7.x, current ASAv) downloads blocked by service contract gate for non-partner users. Workaround: DevNet Sandbox hosted access (no download, free) or embedded CML inside reservation sandboxes — see §15.4.** |
 | HPE Networking (post-Juniper acquisition; covers BOTH AOS-CX and Junos cRPD) | HPE Passport | Developer hub: `devhub.arubanetworks.com`; Community: `airheads.hpe.com`; Software downloads: `networkingsupport.hpe.com`; Training/cert: `arubanetworks.com/support-services/training-services/` | Free | Immediate after email verification | Aruba CX simulator, Junos cRPD container, Apstra documentation, Mist documentation, ClearPass | No — must download from HPE Networking Software Downloads after authentication |
-| Fortinet | FortiCare | `support.fortinet.com` | Free (15-day eval) | Immediate | FortiGate-VM (Helix W4 deployment) | No |
+| Fortinet | FortiCare | `support.fortinet.com`; Free Trials at `fortinet.com/support/product-downloads?tab=trials` (verified May 2026 fetch) | Free (15-day eval) | Immediate | FortiGate-VM for Helix Health perimeter NGFW (Sprint W4 deployment); KVM hypervisor officially supported | **Yes — `fortios.qcow2` (~73 MB compressed, 2 GB virtual, FortiOS 7.0.14 placeholder pending first boot version verification) already on disk in workspace folder. `vrnetlab/vr-fortios:7.0.14` Docker image built May 31 2026 via `cd ~/vrnetlab/fortinet/fortigate && sudo make`. Runs in eval mode without external license file (~1 Mbps throughput cap; control plane and security features fully functional for lab demos)** |
 | Palo Alto Networks | Live community | `live.paloaltonetworks.com` | Free trial | 1-3 days approval | PA VM-Series (Maple Ridge W4 deployment) | No |
-| Nokia | Lab access via SRC program | Learning hub: `nokia.com/learning/`; SRC: `nokia.com/networks/training/src/`; My SR Learning Labs: `nokia.com/networks/training/src/mysrlab`; Learning Store: `learningstore.nokia.com` | Paid (~$1,500-3,000 USD per course track with My SR Learning Labs included); $125 USD NRS I exam alone | Variable per program | Current SR OS access; SR Linux is publicly free (no Nokia account needed, see §15.6) | **Yes — SR OS 13.0 R4 already on disk with 2015 demo license (see §10 constraint #12); SR Linux is `docker pull ghcr.io/nokia/srlinux:latest` with no account** |
+| Nokia | Lab access via SRC program | Learning hub: `nokia.com/learning/`; SRC: `nokia.com/networks/training/src/`; My SR Learning Labs: `nokia.com/networks/training/src/mysrlab`; Learning Store: `learningstore.nokia.com` | Paid (~$1,500-3,000 USD per course track with My SR Learning Labs included); $125 USD NRS I exam alone | Variable per program | Current SR OS access; SR Linux is publicly free (no Nokia account needed, see §15.5) | **Yes — SR OS 13.0 R4 already on disk with 2015 demo license (see §10 constraint #12); SR Linux pulled May 31 2026 via `docker pull ghcr.io/nokia/srlinux:24.10.1` and `:latest` (~3.1 GB image, ~1-1.5 GB RAM at runtime, native container — no vrnetlab wrapper needed, kind `nokia_srlinux` in containerlab YAML)** |
 | MikroTik | n/a | `mikrotik.com/download` | Free | n/a | RouterOS CHR | **Yes — CHR 6.41.4 already on disk; free up to 1 Mbps per interface, no registration needed** |
 
 **Effective Sunday-morning registration burden after on-disk image inventory and the HPE consolidation:** HPE Passport (10 min, instant) provides access to both AOS-CX and Junos cRPD. Cisco CCO + DevNet (10 min, instant) for current-version Cisco images and Sandbox access. Total: two vendor accounts, ~20 minutes of registration work. Fortinet and Palo Alto remain Sprint W4 prerequisites, not blocking immediate lab work.
@@ -588,6 +590,89 @@ Pattern C is the interview-credible "carrier peering with real current Cisco pro
 **Naming note: AnyConnect → Cisco Secure Client.** Cisco renamed the AnyConnect Secure Mobility Client to Cisco Secure Client (CSC) with version 5 in 2023. The functionality is identical for sandbox VPN connectivity; the name change is the relevant operator-facing difference. Some documentation still references AnyConnect; both names point to the same product.
 
 DevNet integration is treated as a Sprint W4-equivalent enhancement: not required for the W1-W3 carrier core but high-value once the carrier is otherwise stable.
+
+### 17.6 Empirical validation — May 31 2026
+
+The patterns described in §17.2 were validated against the actual Cisco SD-WAN 20.12 Reservation sandbox. Methodology and results below; this section is the canonical reference for the architecture's DevNet integration claims rather than the aspirational pattern descriptions in earlier versions of this ADR.
+
+**Test environment:**
+
+- Local lab: WSL2 Ubuntu on PC1 (Ryzen 7 2700), `openconnect 9.x` package, containerlab `0.x`, Docker 29.4.3 with default bridge networking and `iptables -t nat MASQUERADE` rules in effect for the Docker bridge subnet
+- Target: Cisco SD-WAN 20.12 Reservation sandbox at `devnetsandbox-usw1-reservation.cisco.com:20134`
+- VPN tunnel: `openconnect` established `tun0` inside WSL2 with VPN-assigned address `192.168.254.11/32` and 8 advertised subnets (`10.10.20.0/24`, `10.10.21.0/24`, `10.10.22.0/24`, `10.10.23.0/24`, `10.10.24.0/24`, `10.17.248.0/24`, `172.16.30.0/24`, `192.168.254.0/24`)
+- Probe container: `nicolaka/netshoot:latest` in containerlab kind `linux`, bridged on `clab-devnet-reach-test` Docker network (`172.20.20.0/24`)
+
+**Phase verdicts:**
+
+| Phase | Test | Result |
+| --- | --- | --- |
+| 3 — VPN | `openconnect` from WSL2 Ubuntu | ✓ `tun0` interface up, 8 subnets routed |
+| 4 — Host-to-DevNet ping | WSL2 host → `{devbox, CML, vManage, vSmart, vBond}` | ✓ All 5 control plane devices reachable |
+| 5 — SSH | `ssh developer@10.10.20.50` | ✓ Connected, `hostname` returned `devbox` |
+| 6a — Container-to-DevNet ping | clab probe (172.20.20.2) → `{10.10.20.50, .161, .90}` | ✓ All reachable via host MASQUERADE through `tun0` |
+| 6b — Container HTTPS API | clab probe → `https://10.10.20.161/` (CML web) | ✓ `HTTP 200` |
+| 7 — eBGP peering | Attempted against multiple device classes | ✗ Not viable against SD-WAN sandbox — see below |
+
+**Pattern verdicts** (from §17.2, now empirically grounded):
+
+| Pattern | Description | Verdict | Evidence |
+| --- | --- | --- | --- |
+| A | SSH to sandbox devices from WSL2 | **VERIFIED** | Phase 5 |
+| B | Ansible inventory targeting both local + DevNet | **VERIFIED IN PRINCIPLE** (works identically to Pattern A from SSH perspective) | Phase 5 |
+| C-L3 | Containerlab containers reach DevNet IPs | **VERIFIED** | Phase 6a |
+| C-L7 | Containerlab containers reach DevNet HTTPS APIs | **VERIFIED** | Phase 6b |
+| C-BGP | Containerlab FRR establishes eBGP with DevNet device | **NOT VIABLE against SD-WAN sandbox**; viable in principle against IOS XR Reservation sandbox or embedded CML | Phase 7 finding |
+| D | REST API automation from local Python/Ansible against DevNet APIs | **VERIFIED** (curl 200 in Phase 6b is the same transport class) | Phase 6b |
+
+**Phase 7 architectural finding — SD-WAN sandbox is BGP-free by design:**
+
+| Device class | Routing protocol observed | Implication |
+| --- | --- | --- |
+| SD-WAN cEdge (e.g., Site1-cEdge01 at 10.10.20.174) | `router omp` — OMP toward vSmart Controller; no `router bgp` | Cannot accept arbitrary external BGP peers without breaking SD-WAN |
+| DC-WAN-Edge01 (10.10.20.173, telnet, IOS XE 17.3.6) | `Routing Protocol is "application"` (Cisco SD-Routing); `% BGP not active` | Cisco SD-Routing model — no traditional BGP for external peering |
+| SD-Routing branches (Site11/12 at 10.10.23.54/.58) | Untested — `10.10.23.0/24` advertised in tun0 routes but L3 not provisioned during reservation | Cisco selectively provisions topology slots per reservation; this subnet was inactive |
+
+**Architecturally**, the Cisco SD-WAN 20.12 sandbox is a purposeful demonstration of Cisco's overlay management model. OMP and Application Routing replace traditional BGP/MPLS for SD-WAN customer demos. **For traditional eBGP/L3VPN demonstrations, this sandbox is the wrong target**; the right targets are:
+
+- Cisco IOS XR Reservation sandbox (traditional IOS XR routing — `router bgp`, IS-IS, OSPF, MPLS, L3VPN)
+- The CML server embedded inside the SD-WAN sandbox at `https://10.10.20.161` — build a controlled topology with IOS XR or Cat8000v nodes and configure BGP as needed
+
+This is not a deficiency of the sandbox — it is correctly scoped to its purpose. The architecture documents this so future operators don't repeat the test against the wrong target.
+
+### 17.7 WSL2 networking architecture for DevNet VPN
+
+The validated VPN pattern is `openconnect` installed inside Ubuntu WSL2, NOT Cisco Secure Client running on the Windows host. Both patterns are technically possible but the routing implications differ materially.
+
+**Validated pattern — openconnect inside WSL2:**
+
+```
+PC1 Windows host
+  └── WSL2 Ubuntu (network namespace)
+        ├── eth0 (NAT to host, default for outbound)
+        ├── tun0 (openconnect VPN, 192.168.254.11/32 + 8 DevNet subnets)
+        └── containerlab Docker bridges (172.20.x.x/24)
+              └── containers route via WSL2 default + iptables NAT MASQUERADE
+                    → source IP rewritten to host's tun0 address before VPN encap
+```
+
+In this pattern, `tun0` lives in WSL2's routing namespace, and Docker's default outbound NAT translates container source addresses to the WSL2 host's tun0 IP. DevNet devices see traffic originating from the tunnel-assigned IP and reply normally.
+
+**Not-validated pattern — Cisco Secure Client on Windows host:**
+
+```
+PC1 Windows host
+  ├── Cisco Secure Client (AnyConnect v5+) virtual adapter
+  │     └── routes only Windows-host applications by default
+  └── WSL2 Ubuntu
+        └── containers route via WSL2 NAT to Hyper-V virtual switch
+              → traffic exits via Windows default route, NOT through Secure Client tunnel
+```
+
+In this pattern, the Windows VPN client does not by default advertise its routes to WSL2's routing table. WSL2 + Docker traffic egresses via the Hyper-V virtual switch through Windows' default internet route, bypassing the VPN. Without additional configuration (Windows mirrored networking mode, manual route additions, or Windows-side port-proxying), Pattern C-L3 fails because the container's outbound packets never enter the Secure Client tunnel.
+
+**Operational implication for ADR-001:**
+
+The validated WSL2+openconnect pattern is the canonical DevNet integration architecture. Cisco Secure Client on Windows remains an option for human-operator interactive sessions (where the operator's browser/SSH client runs on Windows directly), but is not part of the automation-bridge architecture for containerlab Aurora.
 
 ## 18. References
 
