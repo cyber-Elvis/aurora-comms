@@ -15,7 +15,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 1.0 | May 2026 | Initial — full pivot from ADR-001 single-region to two-region carrier with DevNet CML hosting the Cisco-dominant region. Architectural decision driven by May 31 2026 empirical validation that openconnect-in-WSL2 + containerlab + Docker MASQUERADE provides clean L3+L7 reach into DevNet sandbox environments. Includes refined topology per user direction same evening: Region A all-Nokia hybrid (SR Linux P + 2× SR OS PEs, single-homed CEs accepting tier-2 single-PE-failure tolerance); Region B dual-router-per-site (Aurora-DC P pair both XR, Aurora-MR PE pair mixed XR + XE reflecting gradual modernisation, Aurora-HH PE pair pure XR for regulated-industry audit consistency) with dual-homed CEs (Maple Ridge active-active multipath, Helix Health active-standby LOCAL_PREF). Topology diagram in §3.3a updated with per-site subgraphs and platform colour coding. |
+| 1.0 | May 2026 | Initial — full pivot from ADR-001 single-region to two-region carrier with DevNet CML hosting the Cisco-dominant region. Architectural decision driven by May 31 2026 empirical validation that openconnect-in-WSL2 + containerlab + Docker MASQUERADE provides clean L3+L7 reach into DevNet sandbox environments. Same-evening refinements baked in before initial publish: (a) Region A all-Nokia hybrid (SR Linux P + 2× SR OS PEs, single-homed CEs accepting tier-2 single-PE-failure tolerance); (b) Region B dual-router-per-site (Aurora-DC P pair both XR, Aurora-MR PE pair mixed XR + XE reflecting gradual modernisation, Aurora-HH PE pair pure XR for regulated-industry audit consistency) with dual-homed CEs (Maple Ridge active-active multipath, Helix Health active-standby LOCAL_PREF); (c) Helix Health LAN switch (HPE Aruba CX) moved to Region A and reached from Region B's Helix Health CE via GRE-over-IPSec tunnel — CML is Cisco-only natively, so the cross-region pattern demonstrates real MSP customer-LAN extension behaviour; (d) Northwind CE replaced from MikroTik CHR (1 JD, 0.4% market presence) to HPE Aruba EdgeConnect EC-V — covers HP/Aruba (8 JDs / 3.6%) and Silver Peak/EdgeConnect (2 JDs / 0.9%) market gaps and adds SD-WAN story; (e) NEW §3.5 Tenant security, wireless, and ancillary services with market-aligned vendor selection per tenant: FortiGate-VM for Maple Ridge (Fortinet 21 JDs / 9.4% — #2 vendor gap), Palo Alto VM-Series for Helix Health (11 JDs / 4.9%), F5 BIG-IP load balancer for tenant DC scenarios, HPE Aruba Wireless documented architecturally; (f) NEW §3.6 DevNet sandbox ancillary integrations for vendors that don't fit in the topology directly — Cisco Meraki (10 JDs), Catalyst Center + WLC (6 JDs), Cisco AnyConnect (2 JDs), NSO, ACI, Firepower. Lab now provides ~65% weighted coverage of top vendor demand from a 224-JD May 2026 Australian network engineering market scan. Topology diagram in §3.3a updated with per-site subgraphs, GRE cross-region tunnel, FortiGate/Palo Alto perimeter annotation, EdgeConnect at Northwind CE, and platform colour coding. |
 
 ## 1. Context
 
@@ -51,12 +51,18 @@ Aurora's Nokia-flavoured region, hosted entirely on local hardware. **All-Nokia 
 
 **Customer-edge devices in Region A** (single-homed to designated PE):
 
-| Tenant CE | CE platform | Connected to | PE-CE protocol |
-| --- | --- | --- | --- |
-| Northwind CE | MikroTik CHR 6.41.4 | Aurora-PE-1 (single uplink) | eBGP CE-PE |
-| Optional spare CE | VyOS or FRR | Aurora-PE-2 (single uplink) | OSPF CE-PE |
+| Tenant CE | CE platform | Connected to | PE-CE protocol | Justification |
+| --- | --- | --- | --- | --- |
+| **Northwind CE** | **HPE Aruba EdgeConnect EC-V** (formerly Silver Peak) | Aurora-PE-1 (single uplink) | eBGP CE-PE + EdgeConnect overlay | Modern tech company persona; covers HP/Aruba (8 JDs / 3.6%) AND Silver Peak/EdgeConnect (2 JDs / 0.9%) market gaps; adds SD-WAN story to the lab without requiring a separate VeloCloud demo. Replaces MikroTik CHR (which was 1 JD / 0.4% market presence). |
+| Optional spare CE | VyOS or FRR | Aurora-PE-2 (single uplink) | OSPF CE-PE | Open-source CE for offline-friendly demos |
 
-**Region A total RAM**: ~6-7 GB on Dell with all nodes active. Fits comfortably within the 14 GB Aurora workload pool with margin for tenant endpoint VMs.
+**Helix LAN extension into Region A** (cross-region multi-vendor pattern):
+
+| Node | Platform | Connected via | Why hosted in Region A |
+| --- | --- | --- | --- |
+| **Helix Health LAN switch** | **HPE Aruba CX (AOS-CX simulator)** | GRE-over-VPN tunnel from Helix Health CE in Region B to Aurora-PE-2 in Region A; AOS-CX runs locally behind a vrnetlab wrapper | DevNet CML is Cisco-only natively — Aruba CX cannot run there without per-reservation BYOI upload (operationally painful). Hosting Aruba CX locally in Region A and extending it back to the Cisco CE in Region B via GRE-in-VPN demonstrates a real MSP pattern: carrier-provided CE talks to customer-owned LAN over secure transport, vendor-agnostic at the LAN layer. |
+
+**Region A total RAM**: ~10-12 GB on Dell with all nodes active (3 Nokia backbone + Aruba EdgeConnect CE + Aruba CX LAN + spare CE + tenant endpoint VMs). Tight but fits the 14 GB Aurora workload pool. SR Linux for the P role saves the ~1 GB headroom that makes this work.
 
 **Why hybrid SR Linux + SR OS rather than pure SR OS**:
 - SR Linux's design heritage is data-centre fabric and modern programmability — its role as a P-router in Region A demonstrates Nokia's modern fabric NOS handling SP transit duty.
@@ -90,7 +96,10 @@ Each customer CE connects to BOTH PE routers at its local PE site via eBGP. The 
 | --- | --- | --- | --- | --- |
 | Maple Ridge | **Cisco Cat8000v** | MR-PE-R1 (XR) AND MR-PE-R2 (XE) | eBGP CE-PE with multipath | BGP `multipath` for active-active load balancing (Maple Ridge values throughput, accepts asymmetric path) |
 | Helix Health | **Cisco Cat8000v** | HH-PE-R1 (XR) AND HH-PE-R2 (XR) | eBGP CE-PE with LOCAL_PREF | LOCAL_PREF higher on R1; R2 standby (Helix Health values predictable path for compliance — active-standby is auditable) |
-| Helix LAN | HPE Aruba CX (AOS-CX) | Helix Health CE (single connection to LAN) | OSPF area 0 between CE and LAN | n/a |
+
+**Helix LAN extension via GRE — Region B CE to Region A LAN** (cross-region multi-vendor pattern):
+
+Helix Health's LAN switching tier (HPE Aruba CX) lives in Region A's containerlab rather than Region B's CML because CML is Cisco-only natively (see §3.1 for the architectural rationale). The Helix Health CE in Region B establishes a GRE-over-IPSec tunnel through the openconnect path back to the Aruba CX in Region A. This mirrors how MSPs commonly extend customer-owned LAN equipment through carrier-managed CEs without requiring the carrier to host third-party LAN hardware.
 
 #### 3.2.3 Where Cisco SD-WAN fits
 
@@ -107,10 +116,11 @@ If a future demand surfaces a "modern overlay WAN" demonstration scenario, the S
 | Aurora-HH PE pair | 2 | 2× IOS XR |
 | Maple Ridge CE | 1 | 1× Cat8000v |
 | Helix Health CE | 1 | 1× Cat8000v |
-| Helix LAN switch | 1 | 1× HPE Aruba CX |
-| **Total** | **9 nodes** | 5× IOS XR + 3× Cat8000v IOS XE + 1× Aruba CX |
+| **Total** | **8 nodes** | 5× IOS XR + 3× Cat8000v IOS XE |
 
-CML Personal handles 20 nodes — 11 nodes of headroom for growth (additional CEs, route reflectors, traffic generators, lab nodes for protocol tests).
+CML Personal handles 20 nodes — 12 nodes of headroom for growth (additional CEs, route reflectors, traffic generators, lab nodes for protocol tests, F5 BIG-IP load balancer per §3.5).
+
+**Note**: Helix Health's LAN switching tier (HPE Aruba CX) is hosted in Region A, not in CML, and reachable from Helix Health CE via GRE-over-VPN. See §3.1 and the §3.3a topology diagram.
 
 **Region B is ephemeral**: it exists only during an active DevNet sandbox reservation. The topology, configuration, and saved state are reconstructed from version-controlled CML topology YAML files on each fresh reservation.
 
@@ -143,8 +153,9 @@ graph TB
         SRL_P["Aurora-P<br/>Nokia SR Linux 24.10.1<br/>(container, ~1.5 GB)"]
         SROS_PE1["Aurora-PE-1<br/>Nokia SR OS 13.0 R4<br/>(RTC license)"]
         SROS_PE2["Aurora-PE-2<br/>Nokia SR OS 13.0 R4<br/>(RTC license)"]
-        NW_CE["Northwind CE<br/>MikroTik CHR<br/>single-homed"]
+        NW_CE["Northwind CE<br/>HPE Aruba<br/>EdgeConnect EC-V<br/>(SD-WAN, single-homed)"]
         VyOS_CE["Optional CE<br/>VyOS / FRR<br/>single-homed"]
+        ARUBA_CX["Helix LAN<br/>HPE Aruba CX<br/>(AOS-CX)<br/>GRE-tunnelled from Region B"]
     end
 
     %% Interconnect
@@ -175,9 +186,8 @@ graph TB
             HH_PE_R2["HH-PE-R2<br/>IOS XR 7.x"]
         end
 
-        MR_CE["Maple Ridge CE<br/>Cisco Cat8000v<br/>(dual-homed)"]
-        HH_CE["Helix Health CE<br/>Cisco Cat8000v<br/>(dual-homed)"]
-        HH_LAN["Helix Health LAN<br/>HPE Aruba CX<br/>(AOS-CX)"]
+        MR_CE["Maple Ridge CE<br/>Cisco Cat8000v<br/>(dual-homed)<br/>+ FortiGate-VM perimeter"]
+        HH_CE["Helix Health CE<br/>Cisco Cat8000v<br/>(dual-homed)<br/>+ PA VM-Series perimeter"]
     end
 
     %% Region A internal links — single-homed CEs
@@ -205,7 +215,9 @@ graph TB
     MR_CE -->|eBGP multipath<br/>active-active| MR_PE_R2
     HH_CE -->|eBGP LOCAL_PREF<br/>primary| HH_PE_R1
     HH_CE -->|eBGP LOCAL_PREF<br/>standby| HH_PE_R2
-    HH_CE ---|OSPF area 0| HH_LAN
+
+    %% GRE tunnel from Helix CE in Region B back to Helix LAN in Region A (cross-region)
+    HH_CE -.->|GRE-over-IPSec<br/>cross-region tunnel| ARUBA_CX
 
     CML -.->|hypervisor hosts<br/>all Region B nodes| DC_P_R1
 
@@ -219,7 +231,7 @@ graph TB
     class DC_P_R1,DC_P_R2,MR_PE_R1,HH_PE_R1,HH_PE_R2 cisco_xr
     class MR_PE_R2,MR_CE,HH_CE cisco_xe
     class CML cisco_xr
-    class NW_CE,VyOS_CE,HH_LAN mixed
+    class NW_CE,VyOS_CE,ARUBA_CX mixed
     class OC,NAT,DN bridge
     class Wazuh,MISP mgmt
 ```
@@ -259,6 +271,72 @@ The L3 path uses Docker MASQUERADE — Region A's Nokia PE sends BGP packets to 
 **Initial choice for ADR-002 v1.0**: model both regions as **AS 65100 with two BGP confederations** (`65101` for Region A Nokia, `65102` for Region B Cisco-dominant). Confederation BGP keeps the external presentation as a single AS while permitting regional autonomy in route propagation.
 
 Alternative: single iBGP mesh with route reflectors per region. Simpler but less realistic for a multi-region carrier.
+
+### 3.5 Tenant security, wireless, and ancillary services (market-aligned)
+
+Empirical job-market evidence (May 2026 scan of 224 Australian network engineering / infrastructure JDs) shows the lab's tenant services should emphasise enterprise vendors that match real hiring demand rather than purely carrier-flavoured choices. This section maps each tenant to the security, wireless, and load-balancing services that best demonstrate market-aligned skills.
+
+#### 3.5.1 Per-tenant service matrix
+
+| Tenant | Perimeter NGFW | Wireless | LAN switching | Load balancer | Why this combination |
+| --- | --- | --- | --- | --- | --- |
+| **Maple Ridge Logistics** (general SME, dominant volume tenant) | **Fortinet FortiGate-VM 7.0.14** (`vrnetlab/vr-fortios:7.0.14` built locally May 31 2026) | **Cisco WLC** (via DevNet Catalyst Center sandbox — API integration) | Cisco Cat8000v / Cat9000v | **F5 BIG-IP VE** (containerlab via `vrnetlab/f5_bigip`) | Fortinet is #2 vendor in the market (21 JDs, 9.4% of the scan) and is the single most impactful firewall gap to lab. Cisco WLC covers 6 JDs (2.7%). F5 BIG-IP covers 4 JDs (1.8%). Maple Ridge as the bread-and-butter SME tenant gets the highest-demand vendor stack. |
+| **Helix Health Analytics** (regulated industry) | **Palo Alto VM-Series** (Sprint W4 deployment via PA Live community trial) | **HPE Aruba Wireless** (architectural — ClearPass-managed APs documented; deployment via Aruba Central API where available) | **HPE Aruba CX (AOS-CX)** — hosted in Region A, GRE-tunnelled from Region B per §3.2 | F5 BIG-IP VE | Palo Alto is the regulated-industry favourite (11 JDs, 4.9%). HPE/Aruba covers 8 JDs total (3.6%) split between LAN switching and wireless. Helix Health as the regulated tenant gets the compliance-grade NGFW + Aruba LAN+Wireless story. |
+| **Northwind Robotics** (modern tech, cloud-native) | **OPNsense** OR **no perimeter** (Zscaler ZTNA model documented) | n/a (cloud-managed via Meraki/Aruba Central if deployed) | n/a (CE = HPE Aruba EdgeConnect serves as both routing AND SD-WAN overlay; LAN minimal) | n/a | Modern tech company persona — embraces ZTNA / SASE rather than perimeter NGFW. Zscaler mentioned in 2 JDs (0.9%) as architectural design demo. |
+
+#### 3.5.2 Market coverage summary
+
+After §3.5 implementation, the lab demonstrates the following vendors from the 224-JD scan:
+
+| Vendor | JDs | Lab coverage |
+| --- | --- | --- |
+| **Cisco (all)** | 41 (18.3%) | Region B P + PEs (IOS XR + Cat8000v), Maple Ridge LAN, WLC integration via DevNet |
+| **Fortinet/FortiGate** | 21 (9.4%) | Maple Ridge perimeter NGFW (primary firewall demo) |
+| **Palo Alto Networks** | 11 (4.9%) | Helix Health perimeter NGFW |
+| **Cisco Meraki** | 10 (4.5%) | Via DevNet Meraki Always-On sandbox (API automation demo per §3.6) |
+| **HP/Aruba** | 8 (3.6%) | Aruba CX LAN (Helix Health, in Region A) + Aruba EdgeConnect (Northwind CE, in Region A) + Aruba Wireless (architectural) |
+| **Cisco Wireless/WLC** | 6 (2.7%) | Via DevNet Catalyst Center sandbox per §3.6 |
+| **MPLS/SR-MPLS** | 6 (2.7%) | Region A Nokia + Region B Cisco backbones |
+| **F5 BIG-IP** | 4 (1.8%) | Maple Ridge + Helix Health DC load balancer |
+| **Juniper** | 4 (1.8%) | cRPD documented for ADR-001 §14 tenant variations |
+| **Aruba Wireless** | 3 (1.3%) | Documented architectural pattern for Helix Health |
+| **Sophos** | 4 (1.8%) | Not in current lab — deferred |
+| **Silver Peak / EdgeConnect** | 2 (0.9%) | Northwind CE = HPE Aruba EdgeConnect EC-V (combined with HP/Aruba above) |
+| **Nokia SR OS** | 1 (0.4%) | Region A backbone — primary background match |
+
+**Total weighted coverage**: ~65% of the top-vendor demand across the 224-JD scan is demonstrably represented in the lab after §3.5 implementation. The remaining 35% includes vendors that are either lower-priority gaps (Sophos, WatchGuard) or covered conceptually but not hands-on (Cisco SD-WAN/Viptela, Cisco ASA/FTD).
+
+#### 3.5.3 Deployment ordering and dependencies
+
+Many §3.5 components require local image acquisition or vendor account registration. Order of deployment matches Sprint W4 dependencies:
+
+| Component | Status May 31 2026 | Acquisition path |
+| --- | --- | --- |
+| FortiGate-VM 7.0.14 | **Built** (`vrnetlab/vr-fortios:7.0.14`) | Local qcow2 + vrnetlab wrapper |
+| HPE Aruba CX (AOS-CX) | Pending | HPE Networking developer hub (free HPE Passport account); download AOS-CX simulator; build `vrnetlab/aoscx` wrapper |
+| HPE Aruba EdgeConnect EC-V | Pending | HPE Networking; download EC-V qcow2; KVM-direct or vrnetlab wrapper |
+| Palo Alto VM-Series | Pending | Palo Alto Live community trial (free, 1-3 day approval); Sprint W4 |
+| F5 BIG-IP VE | Pending | `vrnetlab/f5_bigip` (in user's vrnetlab clone); F5 trial download |
+| OPNsense | Pending | Open-source ISO; install in containerlab |
+| Cisco WLC + Meraki + AnyConnect demos | Available via DevNet | Sandbox reservation (no local install); see §3.6 |
+
+### 3.6 DevNet sandbox ancillary integrations (adjacent to topology)
+
+Not all market-aligned vendor demonstrations belong inside the Aurora topology. The following integrations are demonstrated via DevNet sandboxes as **adjacent demonstrations** that complement the main topology rather than nodes within it. Each is reachable via the same openconnect-in-WSL2 + Docker MASQUERADE path that connects to Region B's CML (per §3.3 and ADR-001 §17.6).
+
+| Market need | DevNet sandbox | Integration model | Demo flavour |
+| --- | --- | --- | --- |
+| **Cisco Meraki** (10 JDs, 4.5%) | Meraki Sandbox (Reservable) and Meraki Always-On API endpoints | API-driven from local Ansible/Python; pull device inventory, push policies, demonstrate cloud-managed networking | "Cloud-managed networking automation via the Meraki Dashboard API — same Ansible inventory targets both the local Aurora topology and the cloud-managed Meraki org" |
+| **Cisco Catalyst Center + WLC** (6 JDs, 2.7%) | Catalyst Center Always-On v2.3.3.6 + Catalyst Center Sandbox + DevNet WLC | API automation against DNAC; intent-based networking demo | "DNAC-driven device discovery and policy push — modern Cisco intent-based networking automation" |
+| **Cisco AnyConnect VPN** (2 JDs, 0.9%) | Verified May 31 2026 via openconnect-in-WSL2 (per ADR-001 §17.6) | Already in use as the Region A → Region B bridge | "AnyConnect / Cisco Secure Client compatible VPN endpoint demo — I use the openconnect OSS client inside WSL2 to integrate with DevNet sandboxes; the same client and endpoint pattern serves real Cisco Secure Client deployments" |
+| **Cisco SD-WAN (Viptela)** (1 JD, 0.4%) | Cisco SD-WAN 20.12 + SD-WAN 20.18 AlwaysOn | Sandbox-only — Region B does NOT use SD-WAN for its core because ADR-001 §17.6 confirmed SD-WAN sandboxes are BGP-free | "Modern overlay WAN comparison demo against the classic MPLS L3VPN that Aurora's Region B implements" |
+| **NSO / network orchestration** | NSO Always-On + NSO 6.4.4 Reservable | Service-template demos against the topology | "YANG-driven multi-vendor service orchestration" |
+| **Cisco ACI** | ACI Simulator 6.0 + ACI Simulator Always-On | DC fabric demonstration alongside Helix Health DC scenario | "ACI fabric automation for the regulated industry tenant's DC" |
+| **Cisco Firepower + FMC + FTD** | Firepower Management Center + Firepower Threat Defense REST API | Security automation against Helix Health perimeter | "Centralised FMC managing FTD devices alongside Palo Alto perimeter" |
+
+These are NOT additional Aurora nodes — they are separate demonstrations available on demand. Each addresses a specific market vendor that doesn't fit naturally into the carrier topology but is essential to the broader job-market story.
+
+The discipline for using §3.6 services is documented in `docs/devnet-resource-strategy.md` (continuity hierarchy, reservation discipline, credential management).
 
 ## 4. Vendor strategy per region
 
