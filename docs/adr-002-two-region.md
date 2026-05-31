@@ -75,6 +75,102 @@ Aurora's larger, Cisco-dominant region, hosted in the CML server embedded in a C
 - Helix Health Analytics (Cisco edge + Aruba LAN — regulated industry pairing)
 - Larger branches and DC sites for any tenant that benefits from current production-version Cisco code
 
+### 3.3a Topology overview
+
+```mermaid
+graph TB
+    classDef nokia fill:#0066b3,color:#fff,stroke:#003d6b,stroke-width:2px
+    classDef cisco fill:#1e88e5,color:#fff,stroke:#0d47a1,stroke-width:2px
+    classDef mixed fill:#ff9800,color:#fff,stroke:#e65100,stroke-width:2px
+    classDef bridge fill:#43a047,color:#fff,stroke:#1b5e20,stroke-width:2px
+    classDef mgmt fill:#6a1b9a,color:#fff,stroke:#4a148c,stroke-width:2px
+    classDef tenant fill:#757575,color:#fff,stroke:#424242,stroke-width:1px
+
+    %% Management Plane
+    subgraph Mgmt["📡 Sentinel Ridge MSP — Management Plane (PC1)"]
+        Wazuh["Wazuh SIEM<br/>localhost:443"]
+        MISP["MISP threat intel<br/>localhost:8443"]
+    end
+
+    %% Region A — Nokia (Local)
+    subgraph RegA["🟦 REGION A — Nokia (Local on Dell, sub-AS 65101)"]
+        direction TB
+        NSR["Nokia PE-1<br/>SR OS 13.0 R4<br/>(RTC-frozen license)"]
+        FRR_P_A["Aurora P<br/>FRR"]
+        FRR_PE2["Aurora PE-2<br/>FRR backup"]
+        NW_CE["Northwind CE<br/>MikroTik CHR"]
+        VyOS_CE["Optional CE<br/>VyOS / FRR"]
+    end
+
+    %% Interconnect
+    subgraph IC["🔄 Interconnect — WSL2 + openconnect + MASQUERADE"]
+        OC["Dell WSL2 Ubuntu<br/>openconnect<br/>tun0: 192.168.254.x"]
+        NAT["Docker iptables<br/>MASQUERADE NAT"]
+        DN["DevNet VPN endpoint<br/>devnetsandbox-usw1<br/>-reservation.cisco.com:20134"]
+    end
+
+    %% Region B — Cisco (DevNet CML)
+    subgraph RegB["🟪 REGION B — Cisco-dominant (DevNet CML, sub-AS 65102, ephemeral)"]
+        direction TB
+        CML["CML Server<br/>https://10.10.20.161<br/>(hosts Region B topology)"]
+        XRP["Aurora P<br/>IOS XR 7.x"]
+        XRPE["Aurora PE-1<br/>IOS XR 7.x<br/>(eBGP boundary)"]
+        XEPE["Aurora PE-2<br/>Cat8000v IOS XE 17.x"]
+        MR_CE["Maple Ridge CE<br/>Cat8000v"]
+        HH_CE["Helix Health CE<br/>Cat8000v"]
+        HH_LAN["Helix Health LAN<br/>HPE Aruba CX"]
+    end
+
+    %% Region A internal links
+    NW_CE -->|OSPF / eBGP CE-PE| NSR
+    VyOS_CE -->|eBGP CE-PE| FRR_PE2
+    NSR ---|IS-IS L2| FRR_P_A
+    FRR_P_A ---|IS-IS L2| FRR_PE2
+
+    %% Interconnect path — the region boundary
+    NSR -.->|eBGP confed<br/>AS 65101 → 65102| OC
+    OC --> NAT
+    NAT --> DN
+    DN -.->|tun0 IP as<br/>BGP neighbor| XRPE
+
+    %% Region B internal links
+    MR_CE -->|OSPF CE-PE| XRPE
+    HH_CE -->|OSPF CE-PE| XEPE
+    HH_CE ---|dot1x VLAN| HH_LAN
+    XRPE ---|IS-IS L2| XRP
+    XEPE ---|IS-IS L2| XRP
+    CML -.->|hypervisor| XRP
+
+    %% Management plane reaches both
+    Wazuh -.->|syslog +<br/>Wazuh agents| NSR
+    Wazuh -.->|syslog via<br/>openconnect VPN| XRPE
+    MISP -.->|IoC feeds| Wazuh
+
+    class NSR,FRR_P_A,FRR_PE2 nokia
+    class XRP,XRPE,XEPE,CML cisco
+    class MR_CE,HH_CE cisco
+    class NW_CE,VyOS_CE,HH_LAN mixed
+    class OC,NAT,DN bridge
+    class Wazuh,MISP mgmt
+```
+
+**Legend:**
+- 🟦 Blue = Nokia (SR OS classic CLI, IS-IS L2 + eBGP confed)
+- 🟪 Light blue = Cisco (IOS XR / IOS XE, IS-IS L2 + eBGP confed)
+- 🟧 Orange = Multi-vendor CEs and LAN devices
+- 🟩 Green = Interconnect/bridge tier (openconnect, MASQUERADE, VPN endpoint)
+- 🟣 Purple = Sentinel Ridge MSP management plane
+- ─── Solid line = data-plane link in topology
+- ┄┄┄ Dashed line = control-plane / management / overlay relationship
+
+**Reading the diagram top-to-bottom:**
+
+1. **Sentinel Ridge MSP management plane (PC1)** — Wazuh + MISP collect syslog and threat-intel from both regions. MISP IOC feeds drive Wazuh detection rules. Both reach Region B via the same openconnect tunnel.
+2. **Region A (Local on Dell)** — Nokia SR OS PE with FRR P and FRR backup PE. Northwind tenant CE (MikroTik CHR) hangs off the Nokia PE. Always-available, 24/7 operational.
+3. **Interconnect** — Dell WSL2 Ubuntu runs `openconnect` to terminate the VPN; Docker MASQUERADE rewrites container source IPs to the WSL2 host's tun0 address; the DevNet sandbox VPN endpoint exposes Region B's `10.10.20.0/24` to the tunnel.
+4. **Region B (DevNet CML)** — Cisco IOS XR 7.x for P and one PE, Cat8000v IOS XE 17.x for a second PE platform. Maple Ridge and Helix Health tenant CEs hang off the Cisco PEs. Helix Health LAN uses HPE Aruba CX behind the Cisco edge. Ephemeral — exists only during DevNet reservation.
+5. **eBGP confederation across the region boundary** — sub-AS 65101 (Nokia) peers with sub-AS 65102 (Cisco) over the openconnect path. External peers see the consolidated AS 65100 Aurora carrier.
+
 ### 3.3 Interconnect — the region boundary
 
 Region A and Region B are connected at L3 over the openconnect VPN tunnel:
