@@ -2,6 +2,19 @@
 
 Snapshot of where each Aurora component actually lives, the ADR drift discovered, and the planned migration.
 
+## Migration session outcome (2026-06-07 ~03:30 AEST)
+
+The Dell migration ran and **pivoted on a hard hardware limit**. Summary:
+
+- **Images transferred + loaded on Dell.** All 6 vrnetlab images (5.8 GB gzipped) saved on PC1, transferred to Dell over the **direct gigabit ethernet cable** (PC1 `192.168.200.1` ↔ Dell `192.168.200.2`; Tailscale WSL↔WSL was DERP-relayed and unusably slow at ~1-2 MB/s), staged on **Dell E:** (`/mnt/e/aurora-image-transfer/`, per request) and `docker load`-ed into Dell's native dockerd. Patched `launch.py` (3 patches) + SR OS license staged into `~/vrnetlab/nokia/sros/`.
+- **❌ KVM on Dell-WSL is impossible.** `wsl: Nested virtualization is not supported on this machine`. Root cause: **Windows 10** (WSL2 nested virt is Win11-only) on a **Skylake i5-6300U** (not Win11-eligible), VBS running. Not fixable. So vrnetlab VM-NOSes (SR OS, FortiGate, PA-VM, CSR, vIOS) **cannot run on Dell-WSL**.
+- **✅ SR Linux runs on Dell-WSL** (container-native, no KVM) — smoke-tested OK (7220 IXR-D3L, v24.10.1, all managers up).
+- **Pivot (decided):** Region A SR OS PEs + firewalls run in **Dell's GNS3** (QEMU + WHPX host-level acceleration — works on Win10, already license-valid). **Dell-WSL** hosts **SR Linux (Aurora-P)** + container workloads. Loaded vrnetlab VM images on Dell are cold-storage/failover only (the runnable source-of-truth stays on PC1). See ADR-002 v1.2 and `memory/dell-wsl2-no-nested-virt.md`.
+- **Dell baseline established:** Ubuntu-22.04, systemd, native docker, tailscale (`100.107.71.87`), openssh-server, qemu-utils. WSL user is **`elvis-pc`**.
+- **Temporary plumbing to clean up:** the `netsh portproxy :2222→WSL:22` on Dell-Windows (goes stale on each `wsl --shutdown`); E: tarballs are redundant with PC1 and can be pruned if E: space is needed.
+
+Below is the pre-migration snapshot that prompted the session.
+
 ## Current actual deployment
 
 ### PC1 (FORTY3S-PC1, Ryzen 7 2700, 32 GB)

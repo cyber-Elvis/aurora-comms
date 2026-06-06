@@ -2,6 +2,8 @@
 
 Step-by-step migration plan to host Aurora Region A on Dell PC per ADR-002 v1.1 §3.1. Target session: next focused 3-hour block, fresh head.
 
+> **OUTCOME (2026-06-07): EXECUTED, PIVOTED.** Phases 1-3 completed (Dell baseline up, 6 images transferred over the gigabit ethernet cable and staged on Dell E:, vrnetlab + patched launch.py + license staged). **Phase 4 blocked permanently:** Dell-WSL cannot run KVM — `wsl: Nested virtualization is not supported on this machine` (Windows 10 + Skylake i5-6300U, not fixable). **Resolution:** Region A SR OS runs in **Dell GNS3** (WHPX accel), Dell-WSL runs **SR Linux + containers**, PC1 keeps the runnable vrnetlab VM-NOS stack. The vrnetlab-on-Dell-WSL goal of this plan is **abandoned**; Phases 5-7 below are superseded by ADR-002 v1.2. The `elvis-pc` username, ethernet/Tailscale IPs, portproxy, and E: storage are recorded in `aurora-deployment-status.md`. Plan retained for history.
+
 ## Pre-migration state
 
 PC1 hosts everything (per `aurora-deployment-status.md`). Dell hosts only GNS3 SR OS. ADR-002 v1.1 designates Dell as Region A host. We migrate to close the drift.
