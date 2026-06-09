@@ -1,0 +1,167 @@
+<mxfile host="app.diagrams.net" type="device" version="24.7.0">
+  <diagram id="region-a-topo" name="Region A — CCIE">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="Aurora Communications — REGION A  (Dell GNS3, AS 64496)&#10;Four-tier SP: MPLS P/PE core + Customer Edge + simulated Internet Edge (transit · IXP · RPKI/ROV) · IPv4+IPv6 dual-stack · ref: region-a-plan.md v1.2" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;fontColor=#1a237e;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="8" width="1520" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- ===== TIER CONTAINERS ===== -->
+        <mxCell id="c_inet" value="INTERNET EDGE  —  simulated (RFC 5398 doc ASNs · RFC 5737/3849 doc prefixes · SLURM lab VRPs)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9e9e9e;dashed=1;verticalAlign=top;align=left;fontSize=12;fontStyle=1;fontColor=#616161;spacingLeft=12;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1520" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="c_core" value="AURORA AS 64496  —  MPLS CORE   (IS-IS L2 wide · LDP on Lo0 · iBGP-VPNv4 full mesh, no RR)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1565c0;dashed=1;verticalAlign=top;align=left;fontSize=12;fontStyle=1;fontColor=#1565c0;spacingLeft=12;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="380" width="1520" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="c_ce" value="CUSTOMER EDGE  +  TENANT WORKLOADS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#9e9e9e;dashed=1;verticalAlign=top;align=left;fontSize=12;fontStyle=1;fontColor=#616161;spacingLeft=12;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="720" width="1520" height="340" as="geometry" />
+        </mxCell>
+
+        <!-- ===== INTERNET EDGE NODES ===== -->
+        <mxCell id="n_ta" value="Transit-A  (AS 64497)&#10;transit-a-csr · CSR1000v 16.08&#10;orig: 0.0.0.0/0 · ::/0&#10;+ 192.0.2.0/24 → 8×/28" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6a1b9a;strokeColor=#4a148c;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="110" width="210" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n_tb" value="Transit-B  (AS 64498)&#10;transit-b-iol · IOL-XE 17.15&#10;orig: 0/0 · ::/0  (backup)&#10;same mock-Internet set" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6a1b9a;strokeColor=#4a148c;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="110" width="210" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n_ixf" value="IXP fabric (L2)  —  Melbourne IXP&#10;10.255.3.0/24 · AS-less peering LAN" style="ellipse;whiteSpace=wrap;html=1;fillColor=#00897b;strokeColor=#00695c;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="620" y="110" width="290" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="n_rs" value="IXP RS  (AS 64499)&#10;ixp-rs1 · FRR  (rpki ✓)&#10;.10 · next-hop preserved&#10;multilateral route server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#26a69a;strokeColor=#00695c;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="500" y="220" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n_con" value="Content/CDN  (AS 64500)&#10;ixp-content1 · FRR&#10;.20 · 198.51.100.0/25 (3×/28)&#10;2001:db8:c0::/48" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#26a69a;strokeColor=#00695c;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="695" y="220" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n_eye" value="Eyeball ISP  (AS 64501)&#10;ixp-eyeball1 · FRR&#10;.30 · 198.51.100.128/25 (5×/28)&#10;2001:db8:e0::/48" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#26a69a;strokeColor=#00695c;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="900" y="220" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n_rpki" value="RPKI RP — Routinator&#10;rpki-rp1 @ PC1 192.168.200.1&#10;SLURM lab VRPs&#10;RTR :3323 → ROV enforcers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#455a64;strokeColor=#263238;fontColor=#ffffff;fontSize=10;align=center;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="230" width="210" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ===== CORE NODES ===== -->
+        <mxCell id="n_pe1" value="Aurora-PE-1  ·  Nokia SR OS 13.0R4&#10;Lo0 10.0.0.2/32 · AS 64496&#10;iBGP-VPNv4 full mesh · LDP&#10;eBGP: Transit-A + IXP&#10;VPRN Northwind  RD/RT 64496:3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0066b3;strokeColor=#003d6b;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="430" width="260" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="n_pe2" value="Aurora-PE-2  ·  Nokia SR OS 13.0R4&#10;Lo0 10.0.0.3/32 · AS 64496&#10;iBGP-VPNv4 full mesh · LDP&#10;VPRN Helix  RD/RT 64496:2&#10;Helix LAN trunk (VLAN 100/200)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0066b3;strokeColor=#003d6b;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="670" y="430" width="260" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="n_pe3" value="Aurora-PE-3  ·  Cisco IOS-XRv 6.1.3&#10;Lo0 10.0.0.4/32 · AS 64496&#10;iBGP-VPNv4 full mesh · LDP&#10;eBGP: Transit-B + IXP&#10;★ ROV enforcer (C1) ← RPKI-RTR&#10;→ future inter-region eBGP (Region B)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565c0;strokeColor=#0d47a1;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="430" width="260" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="n_p" value="Aurora-P  ·  Nokia SR Linux 24.10&#10;Lo0 10.0.0.1/32 · NET 49.0001.0010.0000.0001.00&#10;IS-IS L2 + LDP transit · NO BGP" style="ellipse;whiteSpace=wrap;html=1;fillColor=#42a5f5;strokeColor=#0066b3;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="360" y="600" width="320" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== CUSTOMER EDGE NODES ===== -->
+        <mxCell id="n_nwce" value="Northwind CE  ·  FortiGate 7.0.14&#10;AS 64512 (private CE) — DEFAULT&#10;eBGP→PE-1; Aurora originates&#10;203.0.113.128/25 (remove-private-as)&#10;CE + FortiSD-WAN + NGFW" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ee3124;strokeColor=#a61b13;fontColor=#ffffff;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="760" width="260" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="n_hlan" value="Helix LAN  ·  HPE Aruba CX 10.16&#10;L2 — VLAN 100 data / 200 mgmt&#10;trunk→PE-2 VPRN (standalone mode)&#10;[prod: GRE from Region-B Helix CE]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#e65100;fontColor=#000000;fontSize=10;align=center;" vertex="1" parent="1">
+          <mxGeometry x="670" y="760" width="260" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="n_spare" value="Spare CE (optional) · Cisco IOSv 15.7&#10;AS 64513 — or AS 64502&#10;(BYO-AS public-customer lab)&#10;eBGP→PE-3 · on-demand" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5c9bd5;strokeColor=#1565c0;fontColor=#ffffff;fontSize=10;align=center;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="765" width="260" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="n_nwwl" value="Northwind workloads&#10;nginx · Redis · Prometheus&#10;Grafana · dev-wks (iperf3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;fontSize=9;align=center;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="930" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n_hwl" value="Helix workloads&#10;Orthanc DICOM · EMR (nginx)&#10;doctor-wks (iperf3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#000000;fontSize=9;align=center;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="930" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== IS-IS / LDP BACKBONE (solid blue) ===== -->
+        <mxCell id="e_p_pe1" value="IS-IS L2 · LDP&#10;10.255.0.0/31" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#1565c0;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe1" target="n_p">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_p_pe2" value="IS-IS L2 · LDP&#10;10.255.0.2/31" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#1565c0;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe2" target="n_p">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_p_pe3" value="IS-IS L2 · LDP&#10;10.255.0.4/31" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#1565c0;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe3" target="n_p">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== iBGP VPNv4 FULL MESH (dashed purple) ===== -->
+        <mxCell id="e_ibgp12" value="iBGP VPNv4&#10;10.0.0.2 ↔ .3" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#7b1fa2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe1" target="n_pe2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ibgp23" value="iBGP VPNv4&#10;10.0.0.3 ↔ .4" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#7b1fa2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe2" target="n_pe3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ibgp13" value="iBGP VPNv4  10.0.0.2 ↔ .4" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#7b1fa2;fontSize=9;endArrow=none;startArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=1;" edge="1" parent="1" source="n_pe1" target="n_pe3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="220" y="690" /><mxPoint x="1380" y="690" /></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== eBGP TRANSIT (solid purple) ===== -->
+        <mxCell id="e_ta_pe1" value="eBGP 64497–64496&#10;10.255.2.0/30 · v6 /127&#10;default → LOCAL_PREF 200" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#6a1b9a;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_ta" target="n_pe1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_tb_pe3" value="eBGP 64498–64496&#10;10.255.2.4/30 · v6 /127&#10;default → LOCAL_PREF 100 (backup)" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#6a1b9a;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_tb" target="n_pe3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== IXP FABRIC L2 (solid teal) ===== -->
+        <mxCell id="e_pe1_ixf" value="IXP port 10.255.3.1" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#00897b;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe1" target="n_ixf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pe3_ixf" value="IXP port 10.255.3.3" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#00897b;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe3" target="n_ixf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rs_ixf" value=".10" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#00897b;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_rs" target="n_ixf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_con_ixf" value=".20" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#00897b;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_con" target="n_ixf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_eye_ixf" value=".30" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#00897b;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_eye" target="n_ixf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== RS REFLECTION (dashed teal) — content/eyeball prefixes to PEs at LP300 ===== -->
+        <mxCell id="e_rs_pe1" value="RS-reflected → LP 300" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#00897b;fontSize=8;endArrow=open;startArrow=none;" edge="1" parent="1" source="n_rs" target="n_pe1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rs_pe3" value="RS-reflected → LP 300" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#00897b;fontSize=8;endArrow=open;startArrow=none;" edge="1" parent="1" source="n_rs" target="n_pe3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== RPKI-RTR (dashed grey) ===== -->
+        <mxCell id="e_rpki_pe3" value="RPKI-RTR&#10;192.168.200.1:3323&#10;ROV (C1 → C3 all-ingress)" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#455a64;fontSize=8;endArrow=open;startArrow=none;" edge="1" parent="1" source="n_rpki" target="n_pe3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== PE–CE (solid dark) ===== -->
+        <mxCell id="e_pe1_nw" value="eBGP 64512–64496&#10;private CE handoff" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe1" target="n_nwce">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pe2_helix" value="VLAN trunk&#10;VPRN 64496:2" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;strokeColor=#333333;strokeWidth=2;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe2" target="n_hlan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pe3_spare" value="eBGP 64513/64502" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;strokeColor=#333333;fontSize=9;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_pe3" target="n_spare">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== WORKLOADS (dotted) ===== -->
+        <mxCell id="e_nw_wl" value="LAN" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;dashPattern=1 3;strokeColor=#999999;fontSize=8;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_nwce" target="n_nwwl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_helix_wl" value="LAN" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;dashed=1;dashPattern=1 3;strokeColor=#999999;fontSize=8;endArrow=none;startArrow=none;" edge="1" parent="1" source="n_hlan" target="n_hwl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== LEGEND ===== -->
+        <mxCell id="legend" value="LEGEND&#10;Nodes:  ◼ SR OS PE (Nokia)   ◼ SR Linux P   ◼ IOS-XR PE (Cisco)   ◼ Transit (CSR/IOL)   ◼ IXP / FRR   ◼ FortiGate CE   ◼ Aruba LAN   ◼ IOSv spare   ◼ RPKI/Routinator   ◻ Workloads&#10;Links:  ── IS-IS L2 + LDP    ─ ─ iBGP VPNv4 (full mesh)    ── eBGP transit    ── IXP eBGP (L2 fabric)    ─ ─→ RS-reflected (LP 300)    ─ ─→ RPKI-RTR    ··· workload LAN&#10;Policy:  LOCAL_PREF  IXP 300 &gt; Transit-A 200 &gt; Transit-B 100   ·   reject RPKI-Invalid at edge   ·   no transit→IXP leak   ·   max-prefix per transit   ·   ROV target = every eBGP ingress (Phase C1 XR-only → C3 all)&#10;Build phases:  A) IPv4 BGP fabric  →  B) IPv6 dual-stack  →  C) RPKI/ROV     |     Lab-only: doc ASNs/prefixes + SLURM VRPs — never advertised to the real Internet" style="text;html=1;align=left;verticalAlign=top;fontSize=10;whiteSpace=wrap;fillColor=#fafafa;strokeColor=#bdbdbd;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1080" width="1520" height="150" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
