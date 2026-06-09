@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.3 |
+| Version | 1.4 |
 | Date | June 2026 |
 | Supersedes | ADR-001 v1.6 single-region MSP carrier decision |
 | Triggered by | Empirical DevNet integration validation per ADR-001 §17.6 (May 31 2026) |
@@ -15,6 +15,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.4 | Jun 8 2026 | **Dell capacity envelope re-validated — Dell becomes the real Region A bench, not a constrained validation rig.** Empirical 7-node steady-state confirmed on Dell GNS3 (NokiaSROS×2 + SR-Linux-24.10 + IOS-XRv 6.1.3 + CSR1000v + FortiGate 7.0.14 + ArubaOS-CX 10.16.1040): VM **used 8.2 GiB / available 11 GiB** (declared 16.1 GB → actual RSS 8.3 GB — qemu overcommit at idle works), no OOM, no crashes. The v1.3-era framing of "one heavyweight at a time" was correct for cold starts and for dedicated NGFW/DC-switch-class nodes, but **too pessimistic for steady-state fabric** — Region A can comfortably hold 7-8 protocol-light multi-vendor nodes. **The true constraint is CPU, not RAM**: the same 7-node run drove the GNS3 VM's load average to **9.26 on 2 physical cores (4.6× oversubscribed)** but the box stayed responsive because most vCPUs idle-block on protocol keepalives. **Revised rules** (full set in new §3.9): (a) **steady-state Region A fabric (5-7 nodes, settled BGP/IS-IS/OSPF) runs fine on Dell**; (b) **cold-start storms hurt** — concurrent boots, BGP re-convergence, Snort/IOSd init, large config pastes — **stagger node bring-up in waves of 2-3 and let each settle**; (c) heavyweight singletons (FTDv 16 GB, Cat9kv 16 GB, FMC 8 GB, PA-VM 11 6.5 GB, XRv9000 16 GB) **stay singleton on-demand**, never in the fabric, and 4-vCPU singletons need GNS3 `cpu_throttling=80` or they crash the whole GNS3 VM. **Validated arsenal**: SR OS 13.0 R4 (licensed) ×2, SR Linux 24.10.1, IOS-XRv 6.1.3, CSR1000v 16.08, vIOS-L2 15.2, IOSv 15.7, IOL-XE (RAM-resolved — root cause was `ram=256` default, not the previously-suspected CPU-feature gap), ASAv 9.22, FortiGate 7.0.14, **Aruba CX 10.16.1040** (formerly only documented as "in HPE export-compliance queue" in v1.1; now boot-validated and templated), vSRX3 22.3R1, FTDv 7.2.0 (full FDM bringup to `>`), FMC 7.2.0 (8 GB lab-mode confirmed), Cat9kv 17.10.1 (reaches IOS-XE config dialog), IOS-XRv9000 6.0.1 (with `cpu_throttling=80`), PA-VM 11.0.0. **Doesn't run on Dell** (genuine no-gos): Arista cEOS 4.30.2F (GNS3 `/gns3/init.sh` preempts PID 1 → EOS agents never start) → **chosen workaround: containerlab on PC1**; Cisco Nexus 9300v 9.3.4 (triple-nested-virt hang at boot, kernel never loads) → **chosen workaround: defer to Region B via DevNet CML**, plan in `memory/nexus-9300v-via-devnet-cml-region-b.md`. **Cloud tier scope reduction**: Oracle Always-Free is **NOC/monitoring only** (LibreNMS + NetBox + Grafana + Prometheus, Tailscale-attached); DigitalOcean credit is **burst capacity only** (FTDv+FMC together = 24 GB is the canonical case). The v1.3-era hedge toward "cloud as Region A overflow" is retired — v1.4 settles that Dell carries the fabric, which **realigns with ADR-002 v1.1's original intent** (the PC1 vrnetlab drift was convenience, not design). The universal lever discovered: **`-cpu host` is the single most important QEMU option for heavy crypto / IOS-XE boxes on this nested-virt host** — it cracked FTDv's FIPS POST *and* Cat9kv's IOSd configured-not-on-time watchdog with the same flag. Per-node recipes (RAM, vCPU, options, disk interfaces, "things that look broken but are normal") live in `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/sros-gns3-license-recipe.md`, `memory/aurora-image-version-choices.md`. |
 | 1.3 | Jun 7 2026 (morning) | **Correction to v1.2 — the Dell GNS3 accelerator is NOT WHPX; it's VMware nested virt, and it's mutually exclusive with WSL2.** Verified inside the GNS3 VM (`/dev/kvm` present, `vmx` on 2 cores, 3 QEMU nodes running `-enable-kvm`) and on the host (`HypervisorPlatform`/WHPX = **Disabled**, no `qemu*` process on Windows). The real mechanism: GNS3 runs QEMU inside a **VMware Workstation "GNS3 VM"** with **"Virtualize Intel VT-x/EPT"** enabled, which requires the **Windows hypervisor DISABLED** (`bcdedit /set hypervisorlaunchtype off`) so VMware's VMM sits at L0 and passes nested VT-x into the GNS3 VM. **Implication 1:** in this mode Dell is a **full second KVM host** — it can accelerate the *entire* qcow2/vmdk/ova arsenal (FMC, IOS-XRv9000, PA-VM 11, Nexus, vSRX, …), not just SR OS. **Implication 2 (critical):** Hyper-V (which WSL2 requires) and VMware nested virt **cannot coexist** — Dell is **mode-switched** via `bcdedit /set hypervisorlaunchtype off` (GNS3-KVM, WSL2 dead) ↔ `auto` (WSL2/containers, no GNS3 KVM) + reboot. So the v1.2 claim that Dell-WSL hosts SR Linux/containers *while* GNS3 runs SR OS is **false** — those are exclusive states. **Resolution:** keep Dell in **VMware-GNS3-KVM mode** as the VM-NOS bench; move **SR Linux / container / Tailscale / NOC** roles to **PC1 + (planned) Oracle Always-Free**. Cloud tier (DO build/demo, Oracle Always-Free NOC) to be formalised separately. |
 | 1.2 | Jun 7 2026 (early hours) | **Region A SR OS host = Dell GNS3, not Dell-WSL.** The June 6 Dell migration (per `dell-migration-plan.md`, to host Region A vrnetlab on Dell-WSL) ran and hit a hard limit: **Dell-WSL cannot provide `/dev/kvm`** — `wsl: Nested virtualization is not supported on this machine`. Root cause is **Windows 10** (WSL2 nested virtualization is a Windows 11-only feature) on a **Skylake i5-6300U** (not Win11-eligible); VBS also running. Not practically fixable. Consequence: the §3.1 VM-based NOSes (SR OS PE-1/PE-2, and any vrnetlab firewall) **cannot run under Dell-WSL**. **Resolution:** SR OS PEs (and Region-A firewalls) run in **Dell's GNS3** instead — QEMU + WHPX host-level acceleration on the Windows host, which works on Win10 and is already license-valid. **Dell-WSL** hosts the container-native **Aurora-P (SR Linux)** + tenant/container workloads (smoke-tested working, no KVM). All 6 vrnetlab images were transferred to Dell (ethernet, staged on E:) and loaded as **cold-storage/failover**; the runnable vrnetlab VM-NOS source-of-truth remains on **PC1** (Ryzen, KVM works). §3.1's role assignments are unchanged in intent — only the SR OS *hypervisor substrate* on Dell changes from WSL2/vrnetlab to GNS3/WHPX. Operational facts (users, ethernet `192.168.200.x` link, Tailscale `100.107.71.87`, E: storage) captured in `aurora-deployment-status.md` and `memory/`. |
 | 1.1 | May 31 2026 (late evening) | Same-day refinement batch following four architectural reconsiderations: (a) **FortiGate-VM 7.0.14 reassigned from Maple Ridge perimeter → Northwind CE** as a consolidated CE + SD-WAN (FortiSD-WAN native) + NGFW appliance — single-appliance branch consolidation matches Northwind's tech-forward persona and resolves the EdgeConnect EC-V access gap. (b) **HPE Aruba EdgeConnect EC-V deferred to W4+** pending HPE Aruba sales-engagement trial (commercial product, ~2-6 week procurement); FortiGate covers the SD-WAN demonstration story until EdgeConnect access materialises. (c) **Maple Ridge perimeter security simplified to IOS XE zone-based firewall (ZBFW) on the existing Cat8000v CE** — persona-aligned (Maple Ridge values pragmatic carrier-managed CE with integrated security over a separate dedicated NGFW); supplemental cloud-delivered security via Cisco Umbrella DNS through §3.6 DevNet ancillary integrations. (d) **Palo Alto VM-Series 9.0.4 OVA acquired** (`/Software images/PA-VM-ESX-9.0.4.ova`, 3.1 GB, May 31 2026); 30-day evaluation authcode requested from Palo Alto Networks via the standard eval program — unlicensed mode supports zones, security policy, BGP, OSPF, NAT, virtual routers for Monday's interview demo; subscription features (Threat Prevention, URL Filtering, WildFire, DNS Security, GlobalProtect) activate when authcode arrives within ~24-72 hours. **NEW §3.7 — Tenant Workload Layer**: lightweight per-tenant Linux containers (Helix: Orthanc DICOM + HL7 simulator + nginx EMR-mock; Maple Ridge: nginx ERP-mock + PostgreSQL + CoreDNS; Northwind: nginx SaaS-mock + Redis + Prometheus/Grafana) attached to each LAN segment as traffic sources/sinks for end-to-end demonstrations of App-ID, security policy, URL filtering, and latency/throughput. Total ~2 GB RAM cost across all tenants. **NEW §3.8 — Data Centre Compute Domain**: Cisco UCS Platform Emulator (UCSPE) for service profile management plane fluency, Linux compute host running §3.7 workload containers, DMTF Redfish mockup as vendor-agnostic out-of-band management API — demonstrates server architecture fluency without physical hardware. HPE OneView trial deferred to W3+. Mermaid topology in §3.3a regenerated for FortiGate at Northwind, Palo Alto at Helix Health CE, IOS XE ZBFW annotation at Maple Ridge, and tenant workload + DC compute nodes. §9 constraint added for Palo Alto evaluation-mode licensing window. §13 risks expanded for EdgeConnect deferral and PA-VM authcode delivery timing. |
@@ -65,7 +66,7 @@ Aurora's Nokia-flavoured region, hosted entirely on local hardware. **All-Nokia 
 | --- | --- | --- | --- |
 | **Helix Health LAN switch** | **HPE Aruba CX (AOS-CX simulator)** | GRE-over-VPN tunnel from Helix Health CE in Region B to Aurora-PE-2 in Region A; AOS-CX runs locally behind a vrnetlab wrapper | DevNet CML is Cisco-only natively — Aruba CX cannot run there without per-reservation BYOI upload (operationally painful). Hosting Aruba CX locally in Region A and extending it back to the Cisco CE in Region B via GRE-in-VPN demonstrates a real MSP pattern: carrier-provided CE talks to customer-owned LAN over secure transport, vendor-agnostic at the LAN layer. |
 
-**Region A total RAM**: ~9-11 GB on Dell with all nodes active (3 Nokia backbone + FortiGate-VM Northwind CE at ~2 GB + Aruba CX LAN at ~4 GB + spare CE + tenant workload containers per §3.7). Tight but fits the 14 GB Aurora workload pool. SR Linux for the P role saves the ~1 GB headroom that makes this work. FortiGate-VM is lighter than EdgeConnect EC-V would have been (~2 GB vs ~4 GB typical), so the v1.0 → v1.1 substitution is also a net RAM reduction.
+**Region A total RAM** (revised v1.4): ~18 GB declared across 7-8 nodes, but only ~9-10 GB **actual idle RSS** in the Dell GNS3 VM (qemu overcommit at idle means guests touch only ~45% of declared RAM — see §3.9 for measurements). Comfortably within the 19 GiB GNS3 VM with ~8-10 GB headroom for additional lights. SR Linux for the P role saves the ~1 GB headroom that makes this work. FortiGate-VM is lighter than EdgeConnect EC-V would have been (~2 GB vs ~4 GB typical), so the v1.0 → v1.1 substitution is also a net RAM reduction. The pre-v1.4 framing of "9-11 GB tight fit on a 14 GB Aurora workload pool" was based on Dell-WSL+vrnetlab assumptions; v1.2/v1.3 moved SR OS to Dell GNS3 (VMware nested-virt KVM, 19 GB GNS3 VM), and v1.4's empirical 7-node validation confirms the full multi-vendor fabric runs with headroom. The **true bound is CPU during cold-start storms** (4.6× oversubscribed on 2 physical cores) — operational rule: stagger node bring-up in waves of 2-3, let each settle before starting the next.
 
 **Why hybrid SR Linux + SR OS rather than pure SR OS**:
 - SR Linux's design heritage is data-centre fabric and modern programmability — its role as a P-router in Region A demonstrates Nokia's modern fabric NOS handling SP transit duty.
@@ -496,6 +497,92 @@ This matches the senior-engineer interview reality: the SP Pre-Sales role expect
 When the interviewer asks about server experience:
 
 > "My server architecture strategy in ADR-002 §3.8: Cisco UCSPE for UCS Manager and service profile fluency, DMTF Redfish mockup for vendor-agnostic BMC standards-based automation, and K3s on a Linux compute host for modern container orchestration as the §3.7 tenant workload fabric. HPE Compute is W3+ via Tech Pro Community access and OneView trial procurement — same architectural deferral pattern as EdgeConnect EC-V. I'm deliberately building this as multi-vendor standards-based design rather than single-vendor specialisation because that's what SP Pre-Sales conversations require. For production hands-on, my current professional environment uses [TheirCare's actual server stack]."
+
+### 3.9 Dell GNS3 capability envelope (added v1.4)
+
+Between June 7-8 2026 the full Dell GNS3 NOS arsenal was boot-validated under the upgraded GNS3 VM (2.2.59, Ubuntu 26.04, VMware nested-virt KVM, **2 physical cores / 19 GiB RAM**). This section captures the empirical capacity envelope, the revised operational rules, and the Region A inventory implications. Per-node recipes (QEMU options, disk interfaces, blocker history) live in `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/sros-gns3-license-recipe.md`, and `memory/aurora-image-version-choices.md`.
+
+#### 3.9.1 Validated arsenal — fabric vs singleton
+
+**Fabric nodes** — boot under the fabric load envelope, can run together as the steady-state Region A:
+
+> Nokia SR OS 13.0 R4 (×2, licensed), Nokia SR Linux 24.10.1, Cisco IOS-XRv 6.1.3, Cisco CSR1000v 16.08.01, Cisco vIOS-L2 15.2, Cisco IOSv 15.7, Cisco IOL-XE (IOL-AdvEnterprise-L3), Cisco ASAv 9.22, Fortinet FortiGate 7.0.14, HPE Aruba CX 10.16.1040, Juniper vSRX3 22.3R1.
+
+**Singleton heavyweights** — boot successfully but each consumes a major fraction of the VM's RAM and CPU; must run **alone**, never as part of the running fabric:
+
+> Cisco FTDv 7.2.0 (16 GB / 4 vCPU / `-cpu host` / virtio disk — full FDM bringup reaches FTD `>`); Cisco FMC 7.2.0 (8 GB lab-mode confirmed); Cisco Cat9kv 17.10.1 (16 GB / 4 vCPU / `-cpu host` — reaches IOS-XE config dialog); Cisco IOS-XRv9000 6.0.1 (16 GB / 4 vCPU + `cpu_throttling=80` — without throttle it crashes the GNS3 VM); Palo Alto PA-VM 11.0.0 (6.5 GB).
+
+The universal lever for the heavy crypto / IOS-XE singletons: **`-cpu host`** (KVM CPU passthrough, gives the guest native AES-NI/SSSE3/SSE4 rather than qemu64's generic CPU). The same flag cracked FTDv's FIPS Self-Test failure *and* Cat9kv's "IOSd not configured on time" reload loop — emulated crypto/SIMD paths were the common bottleneck.
+
+#### 3.9.2 NOSes that don't run on Dell
+
+| NOS | Root cause | Chosen workaround |
+| --- | --- | --- |
+| **Arista cEOS 4.30.2F** | GNS3's docker `/gns3/init.sh` takes PID 1, so EOS agents (Sysdb, EosAgent, …) never start → `Cli: Connection refused`. Not fixable via template configuration. | **Run cEOS via containerlab on PC1** — containerlab gives the container a proper init so EOS agents come up. SR Linux 24.10.1 covers the GNS3 container role in Region A; cEOS moves out of GNS3 entirely. |
+| **Cisco Nexus 9300v 9.3.4** | Hard-diagnosed nested-virt hang at early boot: qemu alive but RSS frozen at ~42 MB (kernel never loads), one vCPU pinned 90-100%, **0 bytes ever on the serial**. Image valid (md5 match, `qemu-img check` clean); 3 CPU/vCPU combinations tested, all identical hang. Triple-stacked virtualization (VMware → GNS3-VM KVM → NX-OS) is the wall. | **Defer to Region B via DevNet CML.** The CML "NX-OS 9000" node definition *is* the 9300v, running on Cisco's non-triple-nested infrastructure. Build the EVPN-VXLAN fabric in CML and export topology YAML to persist across ephemeral sandbox reservations. Plan in `memory/nexus-9300v-via-devnet-cml-region-b.md`. |
+
+Cisco IOL was on the no-go list pre-v1.4 (suspected CPU-feature gap under nested virt). **Re-diagnosed and resolved during the v1.4 work**: the issue was RAM — default `ram=256 / nvram=128` caused `%SYS-2-MALLOCFAIL` at Init → crashinfo dump. Template now ships `ram=2048, nvram=1024`, and IOL reaches `IOU1#` (`show version` = IOS-XE 17.15.1). IOL is back on the fabric list.
+
+#### 3.9.3 Empirical capacity envelope
+
+The 7-node steady-state validation (NokiaSROS×2 + SR-Linux + IOS-XRv 6.1.3 + CSR1000v + FortiGate + ArubaOS-CX) produced these measurements on the Dell GNS3 VM:
+
+| Metric | Value |
+| --- | --- |
+| Declared RAM across qemu nodes | 16.1 GB |
+| Actual qemu RSS (steady-state idle) | 7.3 GB |
+| Docker SR Linux footprint | ~1.0 GB |
+| **VM used / available RAM** | **8.2 GiB / 11 GiB** (of 19 GiB total) |
+| **VM load average (1/5/15 min)** | **9.26 / 8.89 / 8.85** on **2 physical cores** (4.6× oversubscribed but stable) |
+| OOM kills | 0 |
+
+Two findings:
+
+1. **qemu overcommit at idle works.** 16 GB of declared fabric fits in 7-8 GB of actual RSS because guests only fault in pages they actually touch — a converged control plane is much cheaper than the dimensioned "as if under load" RAM.
+2. **CPU is the real constraint, not RAM** — and only during **cold-start storms or convergence events**, not steady state. The same 7-node mix running at load average 9 stays responsive because most vCPUs idle-block on protocol keepalives.
+
+#### 3.9.4 Operational rules (revised v1.4)
+
+**Rule 1 — Fabric stays fabric, singletons stay singleton.** Never combine the singleton list (§3.9.1) with the fabric. Bringing up a singleton means stopping the fabric — Region A goes offline for the duration. This is the architectural cost of FTDv/Cat9kv/XRv9k feature demos.
+
+**Rule 2 — Stagger Region A cold-start in waves.** When bringing the fabric up from cold, start 2-3 nodes at a time and wait until each settles its protocols (BGP/IS-IS/OSPF converged) before starting the next wave. **Concurrent cold boots can crash the GNS3 server** — observed once at load ~2.5 with a single 4-vCPU heavy thrashing. The 7-node steady-state runs fine at load ~9 because the convergence storm has already passed.
+
+**Rule 3 — Singletons need `cpu_throttling=80`.** GNS3's `cpu_throttling` setting wraps qemu in `cpulimit --lazy --pid=<qemu> --limit=80`, capping qemu at 80% of one core. Without it, XRv9000's sustained 4-vCPU thrash took down the entire GNS3 VM (ping 100% loss; Dell host stayed up; lab disks intact). With throttle=80, XRv9k boots solo all the way to its login prompt with no crash. **Mandatory** for any 4-vCPU singleton on this 2-core box.
+
+**Rule 4 — Soak test fabric changes with `clear bgp *`.** "It boots" is not "the fabric is stable." Before declaring a Region A topology change stable, run a deliberate control-plane disturbance (`clear bgp *` from one PE, or a CE restart) and confirm the box absorbs the re-convergence without GNS3 server restart or qemu OOM. 30-60 minute soak.
+
+#### 3.9.5 Region A inventory implication
+
+With v1.4 capacity, Region A's default **steady-state fabric** on Dell expands from the pre-v1.4 "tight ~9-11 GB" estimate to comfortably:
+
+| Role | Node | Declared / actual idle |
+| --- | --- | --- |
+| Aurora-P | SR Linux 24.10.1 | ~1 GB / ~1 GB |
+| Aurora-PE-1 | SR OS 13.0 R4 (licensed) | 2 GB / ~0.5 GB |
+| Aurora-PE-2 | SR OS 13.0 R4 (licensed) | 2 GB / ~0.5 GB |
+| Cisco interop PE / spare | IOS-XRv 6.1.3 | 3 GB / ~1 GB |
+| Region A Cisco CE / offline fallback | CSR1000v 16.08.01 | 4 GB / ~3 GB |
+| Northwind CE | FortiGate 7.0.14 | 1 GB / ~0.6 GB |
+| Helix LAN | Aruba CX 10.16.1040 | 4 GB / ~1.7 GB |
+| Tenant workload containers (§3.7) | nginx + Redis + Prometheus + Grafana + Orthanc + … | ~1.5-2 GB / ~1-1.5 GB |
+| **Total** | **~18 GB declared / ~9-10 GB actual** | |
+
+Headroom for additional lights (IOSv, vIOS-L2, MikroTik, IOL, ASAv): ~8-10 GB. **Region A is no longer fabric-poor.**
+
+A bonus from validating Aruba CX 10.16.1040 natively on Dell: the v1.0 architectural reason for the Helix-LAN-via-GRE-cross-region pattern (§3.1/§3.2.2) was that DevNet CML is Cisco-only and Aruba CX couldn't run there without BYOI. That cross-region GRE remains a useful **MSP demonstration pattern** ("carrier-managed CE in Region B reaching customer-owned LAN in Region A over secure transport"), but it's no longer a workaround for a hosting gap — it's now an explicit architectural choice.
+
+The §3.1 Region A description, the tenant-CE mappings in §3.1/§3.5, and the topology diagram in §3.3a remain valid in shape — v1.4 expands the inventory and confirms the platform mix runs.
+
+#### 3.9.6 Cloud tier scope reduction
+
+Pre-v1.4 framing implicitly treated **Oracle Always-Free as Region A overflow** — push SR Linux + containers + NOC there if Dell got tight. v1.4 disproves the premise: Dell carries the real fabric. Cloud scope narrows:
+
+| Cloud | Pre-v1.4 implicit role | v1.4 scope |
+| --- | --- | --- |
+| **Oracle Always-Free** (ARM Ampere A1, up to 4 OCPU / 24 GiB RAM always-free) | "Push SR Linux + containers + NOC here if Dell tight" | **NOC / monitoring only**: LibreNMS + NetBox + Grafana + Prometheus, Tailscale-attached to the Dell+PC1 mesh. Operational lens, not lab fabric. Does not host any Aurora data-plane or control-plane node. |
+| **DigitalOcean $200 credit** | "Build / demo environment" | **Burst capacity only**: short-lived droplets for tests that genuinely exceed Dell's RAM ceiling — FTDv + FMC together (24 GB total) is the canonical case. Not a steady-state component. |
+
+This realigns with **ADR-002 v1.1's original intent**: Region A on Dell, Region B in DevNet CML, cloud tier as operational + burst. The v1.3-era hedge toward "cloud as fabric overflow" was a defensive position against under-validated Dell capacity; v1.4 settles the question.
 
 ## 4. Vendor strategy per region
 

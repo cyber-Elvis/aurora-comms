@@ -13,6 +13,18 @@ The Dell migration ran and **pivoted on a hard hardware limit**. Summary:
 - **Dell baseline established:** Ubuntu-22.04, systemd, native docker, tailscale (`100.107.71.87`), openssh-server, qemu-utils. WSL user is **`elvis-pc`**.
 - **Temporary plumbing to clean up:** the `netsh portproxy :2222→WSL:22` on Dell-Windows (goes stale on each `wsl --shutdown`); E: tarballs are redundant with PC1 and can be pruned if E: space is needed.
 
+## GNS3 NOS validation — known blockers (2026-06-08, refined)
+
+Full image arsenal boot-tested on **Dell GNS3** (VMware nested-virt KVM, i5-6300U **2 physical cores / 19 GB VM**). After the full sweep, **two NOSes genuinely do not run on the Dell** and have chosen paths forward; a third (IOL) initially looked unresolved but was traced to a RAM default.
+
+| Node | Status | Notes / workaround |
+| --- | --- | --- |
+| **cEOS (Arista)** | **Won't run** — not fixable via template | GNS3's docker `/gns3/init.sh` takes over PID 1, so EOS agents never start → `Cli: Connection refused`. **Decision:** run cEOS via **containerlab on PC1** (containerlab gives the container a proper init so the EOS agents come up). SR Linux 24.10.1 already covers the GNS3 container role in Region A. |
+| **Cisco Nexus 9300v 9.3.4** | **Won't run** — triple-nested-virt hang | qemu alive, RSS frozen at ~42 MB (kernel never loads), one vCPU pinned 90-100%, 0 bytes ever on the serial. Image valid (md5 match, `qemu-img check` clean); 3 CPU/vCPU combinations all hang identically. Triple-stacked virtualization (VMware → GNS3-VM KVM → NX-OS) is the wall. **Decision:** defer to **Region B via DevNet CML** (the CML "NX-OS 9000" node definition *is* the 9300v, on Cisco's non-triple-nested infra). Build the EVPN-VXLAN fabric in CML and export topology .yaml to persist across ephemeral reservations. Plan in `memory/nexus-9300v-via-devnet-cml-region-b.md`. |
+| **Cisco IOL / IOU** | ✅ **Resolved** — root cause was RAM, not CPU features | The original "CPU lacks SSSE3/SSE4" theory turned out wrong (the GNS3 VM *does* expose those instructions). Actual cause: default GNS3 IOU template ran with `ram=256 / nvram=128`, so IOS-XE 17.15 exhausts its Processor memory pool at Init → `%SYS-2-MALLOCFAIL` → crashinfo dump. **Fix:** set the template and node to `ram=2048, nvram=1024`. IOL now reaches `IOU1#`, `show version` = IOS-XE 17.15.1. License (`gns3vm = 73635fd3b0a13ad0`) is valid; no keygen attempted (license bypass declined). |
+
+Everything else that was boot-validated, plus the host RAM/CPU limits (steady-state fabric vs singleton heavyweights; FTDv/Cat9kv need `-cpu host`; XRv9k needs `cpu_throttling=80`), is captured in `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, and ADR-002 §3.9 (added v1.4 — the Dell capability envelope, formalising this validation as architecture).
+
 Below is the pre-migration snapshot that prompted the session.
 
 ## Current actual deployment
