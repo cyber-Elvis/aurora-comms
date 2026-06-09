@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.4 |
+| Version | 1.5 |
 | Date | June 2026 |
 | Supersedes | ADR-001 v1.6 single-region MSP carrier decision |
 | Triggered by | Empirical DevNet integration validation per ADR-001 §17.6 (May 31 2026) |
@@ -15,6 +15,7 @@
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 1.5 | Jun 8 2026 (evening) | **Housekeeping sweep — two stale sections caught by the v1.4 review brought into line with executed reality. No architectural intent changes.** **§6 corrected — VPN endpoint moves from Dell WSL2 to PC1 WSL2.** v1.0 chose Dell because Region A was supposed to be on Dell-WSL containerlab; v1.3 then confirmed that **Hyper-V (which WSL2 requires) and VMware nested virt (which Dell GNS3 requires) are mutually exclusive on the same host**, and v1.2/v1.3/v1.4 settled Dell permanently into GNS3-KVM mode — which makes Dell WSL2 **structurally unavailable** as a persistent service host. PC1 WSL2 holds the openconnect bridge instead. Region-boundary path is now: Dell GNS3 Region A fabric → PC1 WSL2 over **ethernet (192.168.200.1/.2, ~gigabit)** with Tailscale (`100.116.32.29` ↔ `100.109.74.61`) as fallback → openconnect tun0 → DevNet CML. The §3.3a topology Mermaid label and the §11 runbook command updated to match. **§10 Phase 2 rewritten — vrnetlab-wrappers-on-Dell-WSL replaced by qcow2-imports-into-Dell-GNS3.** The v1.1-era build queue (`vr-pan`, `aoscx`, `vr-sros`, `vr-vios-l2`, `vr-routeros`, `vr-csr`, `vr-fortios`) assumed the Dell-WSL+vrnetlab path which v1.2 abandoned. Actual workflow since v1.2: cifs-mount Dell E: on the GNS3 VM → `qemu-img convert` or direct copy into `/opt/gns3/images/QEMU/` → create templates via the controller REST API at `http://192.168.200.2:3080/v2`. Phase 2 now reads as a **snapshot of what was actually imported** (the v1.4-validated arsenal from §3.9) rather than a forward-looking build list. PC1 vrnetlab containers (Nokia SR OS, FortiGate, PA-VM 9.0.4, CSR1000v, vIOS-L2, SR Linux) remain as the **failover/offline copy** of Region A per v1.2's resolution; `aurora-deployment-status.md` is the source of truth for that running state. |
 | 1.4 | Jun 8 2026 | **Dell capacity envelope re-validated — Dell becomes the real Region A bench, not a constrained validation rig.** Empirical 7-node steady-state confirmed on Dell GNS3 (NokiaSROS×2 + SR-Linux-24.10 + IOS-XRv 6.1.3 + CSR1000v + FortiGate 7.0.14 + ArubaOS-CX 10.16.1040): VM **used 8.2 GiB / available 11 GiB** (declared 16.1 GB → actual RSS 8.3 GB — qemu overcommit at idle works), no OOM, no crashes. The v1.3-era framing of "one heavyweight at a time" was correct for cold starts and for dedicated NGFW/DC-switch-class nodes, but **too pessimistic for steady-state fabric** — Region A can comfortably hold 7-8 protocol-light multi-vendor nodes. **The true constraint is CPU, not RAM**: the same 7-node run drove the GNS3 VM's load average to **9.26 on 2 physical cores (4.6× oversubscribed)** but the box stayed responsive because most vCPUs idle-block on protocol keepalives. **Revised rules** (full set in new §3.9): (a) **steady-state Region A fabric (5-7 nodes, settled BGP/IS-IS/OSPF) runs fine on Dell**; (b) **cold-start storms hurt** — concurrent boots, BGP re-convergence, Snort/IOSd init, large config pastes — **stagger node bring-up in waves of 2-3 and let each settle**; (c) heavyweight singletons (FTDv 16 GB, Cat9kv 16 GB, FMC 8 GB, PA-VM 11 6.5 GB, XRv9000 16 GB) **stay singleton on-demand**, never in the fabric, and 4-vCPU singletons need GNS3 `cpu_throttling=80` or they crash the whole GNS3 VM. **Validated arsenal**: SR OS 13.0 R4 (licensed) ×2, SR Linux 24.10.1, IOS-XRv 6.1.3, CSR1000v 16.08, vIOS-L2 15.2, IOSv 15.7, IOL-XE (RAM-resolved — root cause was `ram=256` default, not the previously-suspected CPU-feature gap), ASAv 9.22, FortiGate 7.0.14, **Aruba CX 10.16.1040** (formerly only documented as "in HPE export-compliance queue" in v1.1; now boot-validated and templated), vSRX3 22.3R1, FTDv 7.2.0 (full FDM bringup to `>`), FMC 7.2.0 (8 GB lab-mode confirmed), Cat9kv 17.10.1 (reaches IOS-XE config dialog), IOS-XRv9000 6.0.1 (with `cpu_throttling=80`), PA-VM 11.0.0. **Doesn't run on Dell** (genuine no-gos): Arista cEOS 4.30.2F (GNS3 `/gns3/init.sh` preempts PID 1 → EOS agents never start) → **chosen workaround: containerlab on PC1**; Cisco Nexus 9300v 9.3.4 (triple-nested-virt hang at boot, kernel never loads) → **chosen workaround: defer to Region B via DevNet CML**, plan in `memory/nexus-9300v-via-devnet-cml-region-b.md`. **Cloud tier scope reduction**: Oracle Always-Free is **NOC/monitoring only** (LibreNMS + NetBox + Grafana + Prometheus, Tailscale-attached); DigitalOcean credit is **burst capacity only** (FTDv+FMC together = 24 GB is the canonical case). The v1.3-era hedge toward "cloud as Region A overflow" is retired — v1.4 settles that Dell carries the fabric, which **realigns with ADR-002 v1.1's original intent** (the PC1 vrnetlab drift was convenience, not design). The universal lever discovered: **`-cpu host` is the single most important QEMU option for heavy crypto / IOS-XE boxes on this nested-virt host** — it cracked FTDv's FIPS POST *and* Cat9kv's IOSd configured-not-on-time watchdog with the same flag. Per-node recipes (RAM, vCPU, options, disk interfaces, "things that look broken but are normal") live in `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/sros-gns3-license-recipe.md`, `memory/aurora-image-version-choices.md`. |
 | 1.3 | Jun 7 2026 (morning) | **Correction to v1.2 — the Dell GNS3 accelerator is NOT WHPX; it's VMware nested virt, and it's mutually exclusive with WSL2.** Verified inside the GNS3 VM (`/dev/kvm` present, `vmx` on 2 cores, 3 QEMU nodes running `-enable-kvm`) and on the host (`HypervisorPlatform`/WHPX = **Disabled**, no `qemu*` process on Windows). The real mechanism: GNS3 runs QEMU inside a **VMware Workstation "GNS3 VM"** with **"Virtualize Intel VT-x/EPT"** enabled, which requires the **Windows hypervisor DISABLED** (`bcdedit /set hypervisorlaunchtype off`) so VMware's VMM sits at L0 and passes nested VT-x into the GNS3 VM. **Implication 1:** in this mode Dell is a **full second KVM host** — it can accelerate the *entire* qcow2/vmdk/ova arsenal (FMC, IOS-XRv9000, PA-VM 11, Nexus, vSRX, …), not just SR OS. **Implication 2 (critical):** Hyper-V (which WSL2 requires) and VMware nested virt **cannot coexist** — Dell is **mode-switched** via `bcdedit /set hypervisorlaunchtype off` (GNS3-KVM, WSL2 dead) ↔ `auto` (WSL2/containers, no GNS3 KVM) + reboot. So the v1.2 claim that Dell-WSL hosts SR Linux/containers *while* GNS3 runs SR OS is **false** — those are exclusive states. **Resolution:** keep Dell in **VMware-GNS3-KVM mode** as the VM-NOS bench; move **SR Linux / container / Tailscale / NOC** roles to **PC1 + (planned) Oracle Always-Free**. Cloud tier (DO build/demo, Oracle Always-Free NOC) to be formalised separately. |
 | 1.2 | Jun 7 2026 (early hours) | **Region A SR OS host = Dell GNS3, not Dell-WSL.** The June 6 Dell migration (per `dell-migration-plan.md`, to host Region A vrnetlab on Dell-WSL) ran and hit a hard limit: **Dell-WSL cannot provide `/dev/kvm`** — `wsl: Nested virtualization is not supported on this machine`. Root cause is **Windows 10** (WSL2 nested virtualization is a Windows 11-only feature) on a **Skylake i5-6300U** (not Win11-eligible); VBS also running. Not practically fixable. Consequence: the §3.1 VM-based NOSes (SR OS PE-1/PE-2, and any vrnetlab firewall) **cannot run under Dell-WSL**. **Resolution:** SR OS PEs (and Region-A firewalls) run in **Dell's GNS3** instead — QEMU + WHPX host-level acceleration on the Windows host, which works on Win10 and is already license-valid. **Dell-WSL** hosts the container-native **Aurora-P (SR Linux)** + tenant/container workloads (smoke-tested working, no KVM). All 6 vrnetlab images were transferred to Dell (ethernet, staged on E:) and loaded as **cold-storage/failover**; the runnable vrnetlab VM-NOS source-of-truth remains on **PC1** (Ryzen, KVM works). §3.1's role assignments are unchanged in intent — only the SR OS *hypervisor substrate* on Dell changes from WSL2/vrnetlab to GNS3/WHPX. Operational facts (users, ethernet `192.168.200.x` link, Tailscale `100.107.71.87`, E: storage) captured in `aurora-deployment-status.md` and `memory/`. |
@@ -125,7 +126,11 @@ If a future demand surfaces a "modern overlay WAN" demonstration scenario, the S
 
 CML Personal handles 20 nodes — 12 nodes of headroom for growth (additional CEs, route reflectors, traffic generators, lab nodes for protocol tests, F5 BIG-IP load balancer per §3.5). The PA-VM 9.0.4 in CML requires BYOI reference-platform upload (CML supports adding non-Cisco vendor images as custom node definitions).
 
-**Alternative deployment**: Palo Alto VM-Series can run locally on Dell containerlab via `vrnetlab/vr-pan:9.0.4` and reach Region B's HH-PE pair through the same openconnect-in-WSL2 + MASQUERADE path as Region A's Nokia PE-1. This avoids the BYOI upload effort and keeps PA-VM available across DevNet reservations. Recommended deployment for v1.1 is **PA-VM-on-Dell-with-openconnect-bridge** rather than CML BYOI.
+**Alternative deployment** (revised v1.5): Palo Alto VM-Series has two off-CML deployment paths, both reaching Region B's HH-PE pair through the openconnect-in-WSL2 + MASQUERADE bridge (now hosted on PC1 per §6, not Dell):
+- **PA-VM 11.0.0 in Dell GNS3** — singleton heavyweight, 6.5 GB / 2 vCPU / ide, validated per §3.9.1. Modern build, preferred for ongoing feature demos. Cannot run alongside the Dell GNS3 Region A fabric (one-heavyweight-at-a-time rule from §3.9.4) — bring up on-demand, take Region A's running fabric offline for the duration.
+- **PA-VM 9.0.4 in PC1 vrnetlab** (`vrnetlab/paloalto_pa-vm:9.0.4`, the v1.1 build) — failover/portable path. Lighter footprint, can run alongside other PC1 services. Older PAN-OS but functional for architectural and protocol-level demos.
+
+Both paths avoid CML BYOI upload effort and keep PA-VM available across DevNet reservations. v1.1's "PA-VM-on-Dell-WSL-vrnetlab" recommendation is **retired** — Dell-WSL is dead while Dell GNS3 is up (§6, v1.3 hypervisor mutex).
 
 **Note**: Helix Health's LAN switching tier (HPE Aruba CX) is hosted in Region A, not in CML, and reachable from Helix Health CE via GRE-over-VPN. See §3.1 and the §3.3a topology diagram.
 
@@ -173,7 +178,7 @@ graph TB
 
     %% Interconnect
     subgraph IC["🔄 Interconnect — openconnect + MASQUERADE"]
-        OC["Dell WSL2 Ubuntu<br/>openconnect<br/>tun0: 192.168.254.x"]
+        OC["PC1 WSL2 Ubuntu<br/>openconnect<br/>tun0: 192.168.254.x<br/>(v1.5: moved from Dell)"]
         NAT["Docker iptables<br/>MASQUERADE NAT"]
         DN["DevNet VPN endpoint<br/>devnetsandbox-usw1<br/>-reservation.cisco.com:20134"]
     end
@@ -298,7 +303,8 @@ Region A and Region B are connected at L3 over the openconnect VPN tunnel:
 
 ```
 Region A (Local, Dell containerlab)
-  ↕  WSL2 host tun0 (via Dell or PC1, decision in §6)
+  ↕  PC1 WSL2 host tun0 (v1.5 — moved from Dell per §6; v1.3 hypervisor-mutex)
+  ↕  ethernet 192.168.200.x (Dell ↔ PC1) — primary; Tailscale fallback
   ↕  openconnect VPN
   ↕  DevNet sandbox internal network 10.10.20.0/24
 Region B (CML, embedded in DevNet sandbox)
@@ -645,16 +651,32 @@ A fresh DevNet reservation + Region B redeploy takes ~30-45 minutes from reserva
 | Async development (no demo pressure) | Reserve up to 7-day slot; use the long window for protocol experimentation |
 | Always-available access | Region B is intentionally NOT always-available; this is a documented constraint, not a deficiency |
 
-## 6. Where VPN terminates — Dell or PC1?
+## 6. Where VPN terminates — PC1 (revised v1.5; was Dell in v1.0)
 
-The WSL2 host running `openconnect` becomes the "DevNet edge" of Region A. Two choices:
+The WSL2 host running `openconnect` becomes the "DevNet edge" of Region A. v1.0 chose Dell because Region A was supposed to be on Dell-WSL containerlab. That premise no longer holds:
 
-| Choice | Implications |
-| --- | --- |
-| **VPN on Dell WSL2** | Dell already hosts Region A's containerlab. Region A → DevNet path is local, fastest. PC1 reaches DevNet via Dell (or via its own separate openconnect). |
-| **VPN on PC1 WSL2** | PC1 has Wazuh + MISP + Cowork already. Adds VPN as another always-on burden. Region A on Dell would need to route via PC1 over the GRE/tailnet path to reach DevNet — adds latency and complexity. |
+- v1.2 found Dell-WSL **cannot provide `/dev/kvm`** (Windows 10 + Skylake hard limit), and moved Region A's SR OS PEs into **Dell GNS3** instead.
+- v1.3 confirmed that the Dell GNS3 KVM substrate requires **Hyper-V disabled** (`bcdedit /set hypervisorlaunchtype off`) so VMware Workstation's nested-virt VMM can sit at L0. **Hyper-V — which WSL2 itself requires — and VMware nested virt are mutually exclusive on the same host.**
+- v1.4 confirmed Dell-GNS3 is the real Region A bench, and Dell stays permanently in GNS3-KVM mode.
 
-**Decision for ADR-002 v1.0**: VPN runs on **Dell** because Dell hosts Region A's backbone and the region-boundary BGP needs the shortest path. PC1 retains its existing role (Wazuh + MISP + Cowork + tenant endpoint VMs).
+**Consequence**: Dell WSL2 is **structurally unavailable** as a persistent service host while Region A is up. The openconnect bridge therefore cannot live on Dell.
+
+**Decision (v1.5)**: openconnect VPN terminates on **PC1 WSL2**. PC1 already runs Wazuh + MISP + the PC1 vrnetlab failover stack, has systemd + native dockerd + Tailscale (`100.116.32.29`), and is the natural always-on lab service host. The added openconnect daemon is a marginal burden alongside what's already there.
+
+**Region-boundary path** (v1.5):
+
+```
+Region A on Dell GNS3 (192.168.200.2)
+  ↕  ethernet cable Dell ↔ PC1 (192.168.200.1/.2, ~gigabit)    ← primary, fast
+  ↕  Tailscale (Dell-Windows 100.109.74.61 ↔ PC1-WSL 100.116.32.29)  ← fallback when ethernet down
+  ↕  PC1 WSL2 Ubuntu — openconnect tun0 (192.168.254.x)
+  ↕  DevNet sandbox internal network 10.10.20.0/24
+Region B on CML (embedded in the DevNet sandbox)
+```
+
+**Operational implication**: the region-boundary BGP session crosses the ethernet hop (Dell GNS3 PE → PC1 WSL2 tun0) instead of being co-located on the same WSL2 host as in v1.0. Latency cost is negligible (~0.3 ms over gigabit); the architectural cost is one more L3 hop in the path, which is reasonable given v1.3's hypervisor mutex constraint. The ~150-250 ms Australia → Cisco US-West WAN latency (§9.3) still dominates total RTT.
+
+**PC1's other roles are unchanged**: Wazuh + MISP + Cowork + tenant endpoint VMs continue as in v1.0. The PC1 vrnetlab Region A failover/offline copy (Nokia SR OS, FortiGate, PA-VM, CSR, vIOS-L2, SR Linux) introduced in v1.2 also continues — those containers and the openconnect daemon coexist fine on PC1's resources.
 
 ## 7. What's deprecated from ADR-001 v1.6
 
@@ -701,28 +723,38 @@ These explicit limitations are accepted as part of the ADR-002 decision:
 
 Commit `docs/adr-002-two-region.md` to repo. Reference from `docs/lab-architecture.md` (ADR-001 v1.6) header as "Superseded by ADR-002".
 
-### Phase 2 — Region A local infrastructure (Monday morning, post-v1.1 refinement)
+### Phase 2 — Region A local infrastructure (revised v1.5: snapshot of executed reality)
 
-Priority vrnetlab wrappers, building only what Region A actually needs (revised in v1.1 for FortiGate at Northwind, PA-VM at Helix CE, AOS-CX in queue):
+> **v1.5 rewrite**: the original v1.1 build queue assumed Region A on **Dell WSL2 containerlab** with **vrnetlab wrappers**. That premise was abandoned in v1.2 when Dell-WSL was found incapable of `/dev/kvm` (Win10 + Skylake hard limit). The executed workflow since v1.2 is **qcow2/vmdk/ova imports into Dell GNS3 over cifs from Dell E:**, not vrnetlab builds. PC1 vrnetlab containers (the v1.0 build set) remain as the failover/offline copy of Region A. This phase is therefore a **snapshot of what was actually imported and validated**, not a forward-looking build list.
 
-- **`vrnetlab/vr-pan:9.0.4`** — Palo Alto VM-Series 9.0.4 (HIGH — Helix Health CE perimeter NGFW; OVA in hand May 31 2026; unlicensed-mode demo viable for Monday interview; eval authcode applied when arrives)
-- **`vrnetlab/aoscx:10.16.1040`** — HPE Aruba CX simulator (HIGH — Helix Health LAN switching in Region A; OVA download Monday morning when HPE review queue expires)
-- `vr-sros` — Nokia SR OS 13.0 R4 with RTC patch (HIGH — required for Nokia PE)
-- `vr-vios-l2` — Cisco IOSv-L2 (MEDIUM — LAN switching alternative for "always-available" tenants in Region A)
-- `vr-routeros` — MikroTik CHR (LOW — was high priority in v1.0 when MikroTik was Northwind CE; demoted in v1.1 because FortiGate now serves that role; kept as backup/spare CE option)
-- `vr-csr` — Cisco CSR1000v 16.8 (MEDIUM — offline fallback for Cisco CE when DevNet unavailable)
-- **`vrnetlab/vr-fortios:7.0.14`** — already built May 31 2026; no rebuild needed
+**Executed import path (since v1.2)**:
 
-Skip from ADR-001 v1.6 marathon:
-- `vr-vios` (IOS XE L3) — DevNet CML provides newer
-- `vr-xrv` (IOS XR 6.1.3) — DevNet CML provides current 7.x
+1. Image source-of-truth on `Dell E:\Software images-20260530T120140Z-3-001\Software images\` and `\images\` (also mirrored on PC1 as the master copy per `memory/aurora-dell-access-facts.md`).
+2. cifs-mount Dell E: on the GNS3 VM as `/mnt/e` (`//192.168.200.2/e` via the gigabit ethernet link).
+3. For each NOS: copy the qcow2 (or unzip → untar → `qemu-img convert -O qcow2` for OVA/vmdk) into `/opt/gns3/images/QEMU/`.
+4. Create a template via the GNS3 controller REST API (`http://192.168.200.2:3080/v2/templates`, `compute_id: "vm"`).
+5. Smoke-test by booting a node in the validation project; capture per-node recipe (QEMU options, disk interface, RAM, vCPU) into the template so future nodes inherit it.
 
-Build session ordering (Monday morning, ~120-150 min total):
-1. Pull HPE AOS-CX `.ova.zip` (when download approval lands), extract `.vmdk`, convert to qcow2, build `vrnetlab/aoscx` (~35 min)
-2. Extract PA-VM OVA tar, convert vmdk to qcow2, build `vrnetlab/vr-pan:9.0.4` (~45 min — PA-VM first boot is slow)
-3. Build `vr-sros` with RTC patch (~30 min)
-4. Smoke-test all three nodes via SSH + brief BGP/zone config (~20 min)
-5. Commit ADR-002 v1.1 + new tenant workload YAML stubs (~10 min)
+**Imported and validated** (the v1.4-validated arsenal — see §3.9.1 for the full table with recipes):
+
+| Role family | Image | Template / node recipe highlights |
+| --- | --- | --- |
+| Nokia SR OS PEs (Region A) | `NokiaSROS-13.0R4-licensed.qcow2` (flattened from the previously-licensed GNS3 2.1.21 node) | 2 GB / 1 vCPU / ide; QEMU options `-uuid 00000000-... -rtc base=2015-03-10` (license-locked all-zeros UUID + 2015-03-10 RTC freeze). Recipe in `memory/sros-gns3-license-recipe.md`. License 175 days remaining. |
+| Nokia SR Linux P | `ghcr.io/nokia/srlinux:24.10.1` (docker, runs on the GNS3 VM's dockerd) | Needs a `USER user` image rebuild for GNS3 init compatibility; AUX console for `sr_cli`. Recipe in `memory/gns3-nos-boot-quirks.md`. |
+| Northwind CE | `fortios.qcow2` (FortiGate 7.0.14) | 1 GB / 1 vCPU / ide + 30 GB blank `hdb` data disk. |
+| Helix LAN | `AOS-CX_Switch_Simulator_10_16_1040_ova.zip` → `ArubaOS-CX-10.16.1040.qcow2` | 4 GB / 2 vCPU / ide / `-nographic`. 30-day trial license unactivated — do not activate until ready to demo subscription features. |
+| Cisco interop / offline fallback PE | `iosxrv-k9-demo-6.1.3.qcow2`, `csr1000v-universalk9.16.08.01.qcow2` | Standard ide/qemu64 defaults; no special options. |
+| Lights | IOSv 15.7, vIOS-L2 15.2, MikroTik CHR, IOL-XE (`ram=2048, nvram=1024` — fixed v1.4), ASAv 9.22 | All boot under steady-state fabric load. |
+| Singleton heavyweights (on-demand only) | FTDv 7.2.0, FMC 7.2.0, Cat9kv 17.10.1, IOS-XRv9000, PA-VM 11.0.0 | Each requires a specific recipe (`-cpu host`, virtio disks, `cpu_throttling=80`, RAM/vCPU bumps) — see §3.9.1 and `memory/gns3-nos-boot-quirks.md`. |
+
+**Skipped** (DevNet CML provides current production versions):
+
+- IOS XR 7.x — DevNet CML provides current; on-disk XRv 6.1.3 retained as offline fallback only.
+- IOS XE 17.x P/PE — DevNet CML provides current; CSR1000v 16.08 retained as offline fallback only.
+
+**PC1 vrnetlab failover stack** (v1.0 build set, retained per v1.2 §3.1):
+
+`vrnetlab/nokia_sros:13.0.R4` (licensed), `vrnetlab/vr-fortios:7.0.14`, `vrnetlab/paloalto_pa-vm:9.0.4`, `vrnetlab/cisco_csr1000v:16.08.01`, `vrnetlab/cisco_vios:L2-15.2`, plus the SR Linux container — all on PC1 with `--restart=unless-stopped`, reachable via Tailscale `100.116.32.29`. These are the **offline/failover** copy of Region A, not the running fabric. Source of truth for that running state: `docs/aurora-deployment-status.md`.
 
 ### Phase 3 — Region B CML topology design (Sunday late / Monday morning)
 
@@ -769,7 +801,7 @@ containerlab inspect -t clab-region-a.yml
 ```
 # 1. Reserve DevNet sandbox (manual via DevNet portal)
 # 2. Capture VPN credentials
-# 3. Connect openconnect in Dell WSL2
+# 3. Connect openconnect in PC1 WSL2 (v1.5 — moved from Dell; Dell-WSL is dead while GNS3 is up)
 sudo openconnect --user=<dev-username> <vpn-endpoint>
 
 # 4. Capture tun0 IP for region-boundary BGP
