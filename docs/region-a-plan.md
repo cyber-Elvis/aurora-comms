@@ -3,11 +3,11 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Date | June 2026 |
 | Scope | Steady-state Region A fabric on Dell GNS3 — four tiers: **P/core + PE + Customer Edge + Internet Edge** (simulated upstream transit + IXP peering + **lab RPKI/ROV** + **IPv4/IPv6 dual-stack**) + tenant workloads |
 | Excludes | Singleton heavyweights (FTDv, Cat9kv, FMC, XRv9000, PA-VM 11), Region B (DevNet CML), inter-region BGP confederation, routing-protocol authentication (TCP-AO/MD5). **NOT excluded but explicitly lab-only:** ASNs are RFC 5398 *documentation* ASNs (not registered), prefixes are RFC 5737/3849 *documentation* space, RPKI uses local SLURM VRPs (not real RIR ROAs) — nothing is ever advertised to the real Internet. |
-| Revision | v1.1 adds the Internet Edge as a full lab SP edge: documentation-ASN transit + IXP, RPKI/ROV (Routinator + SLURM), and IPv6 dual-stack. v1.0 was backbone + CE/LAN + tenant workloads only. |
+| Revision | v1.2 actions a pre-implementation review: makes §4 self-canonical for Region A (ip-plan.md superseded + IPv6 bug fixed), adds the C1→C2→C3 ROV phasing + PE-1 enforcement-gap note, documents the Northwind private-AS-64512-default / BYO-AS-64502-optional model, pins the RPKI cache to PC1 `192.168.200.1:3323`, switches test prefixes to exact /28s, fixes "iBGP RR-client"→"full-mesh PE", and adds RS→PE reflection arrows. Records the FRR-rpki (PASS) and SR OS RPKI (12.0R1+) smoke results. v1.1 added the Internet Edge (doc-ASN transit + IXP + RPKI/ROV + dual-stack); v1.0 was backbone + CE/LAN + workloads. |
 | Source of truth for design | ADR-002 §3.1 (intent), §3.9 (Dell capability envelope, validated arsenal, operational rules) |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 | Related | `docs/adr-002-two-region.md`, `docs/design.md`, `docs/ip-plan.md`, `docs/runbook.md`, `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/sros-gns3-license-recipe.md` |
@@ -41,7 +41,7 @@ Region A is a four-tier SP: **P/core → PE → Customer Edge → Internet Edge*
 
 ### 2.3 Internet Edge (simulated upstream transit + IXP peering + lab RPKI)
 
-ASNs are **RFC 5398 documentation ASNs** (64496–64511); prefixes are **RFC 5737/3849 documentation space**. Aurora itself = **AS 64496** (the carrier; replaces the v1.0 "65100" placeholder). Northwind/customer public-facing ASN = **AS 64502**.
+ASNs are **RFC 5398 documentation ASNs** (64496–64511); prefixes are **RFC 5737/3849 documentation space**. Aurora itself = **AS 64496** (the carrier; replaces the v1.0 "65100" placeholder). Northwind customer = **AS 64512 (private CE, default model)** or **AS 64502 (optional BYO-AS public customer)** — see §4 for the two models.
 
 | Role | Node name | NOS | AS | RAM (declared / idle RSS) | vCPU | Recipe ref |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -144,8 +144,10 @@ graph TB
     RS --- IXF
     CON --- IXF
     EYE --- IXF
-    RS -.->|RS-reflected routes| CON
-    RS -.->|RS-reflected routes| EYE
+    CON -.->|advertise| RS
+    EYE -.->|advertise| RS
+    RS -.->|RS-reflected<br/>peer routes| PE1
+    RS -.->|RS-reflected<br/>peer routes| PE3
     RPKI -.->|RPKI-RTR VRPs<br/>(ROV enforce)| PE3
 
     %% IS-IS / LDP backbone
@@ -235,17 +237,21 @@ The Internet Edge sits **north of Aurora AS 64496** and is entirely simulated �
 
 ## 4. IP and AS plan (Region A slice)
 
-Canonical source: `docs/ip-plan.md`. Region A specific allocations (Aurora carrier **AS 64496** — documentation ASN; Region A sub-AS confederation reuses a doc ASN where confederation is modelled):
+> **Canonical source = THIS section** for Region A (Aurora carrier **AS 64496**, documentation ASNs/prefixes). `docs/ip-plan.md` is the older **ADR-001-era single-region** IP plan (AS65100, `10.1.0.0/16`, 4 routers Mel/Syd/Bri/Gel) and is **superseded for Region A** — it carries a banner pointing here and is pending a v2.0 refresh to the two-region model. Do not pull ASNs/RDs/RTs from `ip-plan.md` for Region A.
 
 | Node | Loopback (Lo0) | Mgmt | Role |
 | --- | --- | --- | --- |
 | Aurora-P (SR Linux) | 10.0.0.1/32 | 192.168.200.11/24 | IS-IS L2 / LDP only (no BGP) |
-| Aurora-PE-1 (SR OS) | 10.0.0.2/32 | 192.168.200.12/24 | iBGP RR-client (full mesh), Northwind CE peering |
-| Aurora-PE-2 (SR OS) | 10.0.0.3/32 | 192.168.200.13/24 | iBGP RR-client, Helix LAN local VPRN |
-| Aurora-PE-3 (IOS-XRv) | 10.0.0.4/32 | 192.168.200.14/24 | iBGP RR-client, Cisco CE spare peering, **future inter-region eBGP to Region B** |
-| Northwind CE (FortiGate) | 10.0.1.1/32 | DHCP from PE-1 link | eBGP to PE-1, AS 64512 (Northwind private AS) |
-| Spare CE (IOSv, optional) | 10.0.1.2/32 | DHCP from PE-3 link | eBGP to PE-3, AS 64513 |
+| Aurora-PE-1 (SR OS) | 10.0.0.2/32 | 192.168.200.12/24 | iBGP full-mesh PE, Northwind CE peering, Transit-A + IXP |
+| Aurora-PE-2 (SR OS) | 10.0.0.3/32 | 192.168.200.13/24 | iBGP full-mesh PE, Helix LAN local VPRN |
+| Aurora-PE-3 (IOS-XRv) | 10.0.0.4/32 | 192.168.200.14/24 | iBGP full-mesh PE, spare CE peering, Transit-B + IXP, **future inter-region eBGP to Region B** |
+| Northwind CE (FortiGate) | 10.0.1.1/32 | DHCP from PE-1 link | eBGP to PE-1, **AS 64512 (private customer AS — default model, see below)** |
+| Spare CE (IOSv, optional) | 10.0.1.2/32 | DHCP from PE-3 link | eBGP to PE-3, AS 64513 (or AS 64502 in the BYO-AS customer scenario) |
 | Helix LAN switch (Aruba CX) | n/a (L2) | 192.168.200.16/24 | VLAN 100 (Helix data), VLAN 200 (Helix mgmt) |
+
+**Northwind / customer AS model** (resolves the 64502-vs-64512 ambiguity):
+- **Default — private customer CE (AS 64512).** Northwind's FortiGate CE peers eBGP to PE-1 as private **AS 64512**; **Aurora (AS 64496) originates/aggregates the customer's public block** (`203.0.113.128/25`) on PE-1 and advertises it outward. The customer has *no public BGP presence* — the common MSP model. Exercises `remove-private-as`, provider-originated PI/PA space, customer route filtering, FortiGate NAT/security, "customer wants Internet, not their own BGP."
+- **Optional experiment — BYO-AS public customer (AS 64502).** A customer that brings its own ASN/prefix and originates it, with Aurora as transit. Stand this up on the **spare IOSv CE** (or a second Northwind mode). Exercises customer prefix-lists, max-prefix, **RPKI origin validation of the customer origin**, no-transit-leak, and customer-origin propagation to transit/IXP. Richer policy surface — kept optional, not the default path.
 
 **Internet Edge AS / addressing** — all ASNs **RFC 5398 documentation ASNs** (64496–64511); all prefixes **RFC 5737 (IPv4) / RFC 3849 (IPv6) documentation space**. (Real Tier-1s use registered public 2-byte ASNs like Telstra AS1221 / Vocus AS4826 — explicitly out of scope; we model the *behaviour* with doc ASNs.)
 
@@ -257,7 +263,8 @@ Canonical source: `docs/ip-plan.md`. Region A specific allocations (Aurora carri
 | `ixp-rs1` (route server) | **64499** | none (RS reflects only, next-hop preserved) | multilateral eBGP to PE-1, PE-3, content, eyeball |
 | `ixp-content1` | **64500** | 3 CDN /28s (`198.51.100.0/25`) + `2001:db8:c0::/48` | eBGP to RS |
 | `ixp-eyeball1` | **64501** | 5 eyeball /28s (`198.51.100.128/25`) + `2001:db8:e0::/48` | eBGP to RS |
-| Northwind/customer | **64502** | customer block (`203.0.113.128/25`) + `2001:db8:bbbb::/48` | eBGP to Aurora-PE-1 (CE) |
+| Northwind/customer (**optional** BYO-AS) | **64502** | customer block (`203.0.113.128/25`) + `2001:db8:bbbb::/48`, **self-originated** | eBGP (BYO-AS scenario only) |
+| Northwind CE (**default**) | 64512 (private) | — (Aurora originates `203.0.113.128/25` on its behalf) | eBGP to PE-1; `remove-private-as` outbound |
 
 Backbone p2p links: `10.255.0.0/24` /31s (IPv4) + `2001:db8:ffff::/64`-derived /127s (IPv6) — `aurora-p ↔ pe-1` = `10.255.0.0/31`, `↔ pe-2` = `10.255.0.2/31`, `↔ pe-3` = `10.255.0.4/31`.
 
@@ -268,11 +275,11 @@ Internet-edge links (dual-stack):
 - PE-3 ↔ Transit-B: `10.255.2.4/30` + `2001:db8:ffff:2::2/127`
 - IXP peering LAN (`ixp-fabric`): `10.255.3.0/24` — PE-1 `.1`, PE-3 `.3`, RS `.10`, content `.20`, eyeball `.30`; v6 `2001:db8:ffff:3::/64` with matching host IDs.
 
-**RPKI-RTR**: `rpki-rp1` (Routinator on PC1) serves RTR on **TCP 3323**, reached from the GNS3 edge routers via a GNS3 **Cloud node bridged to `192.168.200.x`** → PC1. ROV-enforcing routers configure it as their RPKI cache server.
+**RPKI-RTR cache endpoint = `192.168.200.1:3323` (PC1), used everywhere.** `rpki-rp1` (Routinator) runs on **PC1 (192.168.200.1)** and serves RTR on **TCP 3323**. The GNS3 edge routers reach it over their management segment via a GNS3 **Cloud node bridged to the Dell `192.168.200.x` interface** (nodes' mgmt = `192.168.200.11-16`, same /24 as PC1 `.1` / Dell `.2`). Every ROV enforcer configures its RPKI cache server as **`192.168.200.1` port `3323`** — do not use a `10.255.x.x` address for the cache.
 
 Aurora mock public/PI block: `203.0.113.0/25` (TEST-NET-3 — never real, safe for sim). Customer block `203.0.113.128/25`.
 
-VPRN service IDs and route distinguishers: see `docs/ip-plan.md` for the canonical table.
+**VPRN RD/RT convention** (canonical here; supersedes the `65100:<id>` form in `ip-plan.md`): RD = `64496:<customer_id>`, RT = `target:64496:<customer_id>`. Customer IDs: Northwind 3, Helix 2, Maple Ridge 1 (per `ip-plan.md` §8 numbering, re-based to AS 64496).
 
 ## 5. Protocols
 
@@ -327,15 +334,23 @@ Real route-origin-validation workflow without paying an RIR. Build Phase C — l
 | `198.51.100.128/25` + `2001:db8:e0::/48` | 64501 (eyeball) | Valid |
 | `192.0.2.0/24` slices | (intentionally **no** VRP) | NotFound |
 
-**Enforcement points & fallback**: ROV is enforced first on **`aurora-pe-3` (IOS-XR)** — mature RTR/ROV support. SR OS 13.0R4's origin-validation coverage is **to verify on the node**; if incomplete, keep enforcement on the IOS-XR PE and/or stand up an **FRR node as the reference ROV enforcer** (FRR `rpki` module — confirm the docker image ships it, §10). Transits (`transit-a-csr` CSR 16.08, `transit-b-iol` IOL-XE 17.15) are also RTR-capable if we want ROV at the transit boundary too.
+**Enforcement is phased; the design target is ROV at *every* eBGP ingress.** Real networks roll ROV out one platform at a time (mixed-vendor capability gaps), so we mirror that:
 
-**Test matrix** (the point of the whole exercise):
+- **Phase C1 — XR-only.** Enforce ROV on **`aurora-pe-3` (IOS-XR 6.1.3, mature RTR/ROV)** and prove Valid/Invalid/NotFound here first. Fast, certain success.
+- **Phase C2 — FRR reference enforcer** for the IXP side (and as the reference implementation). **FRR's `rpki` module is CONFIRMED present** in the official image — `librtr.so.0.8.0` (rtrlib) ships in `frrouting/frr:latest`; §10 smoke test passed.
+- **Phase C3 — all eBGP ingress.** Enforce on Transit-A@PE-1, Transit-B@PE-3, IXP@PE-1 and PE-3. **SR OS supports origin-validation** (Nokia feature since release **12.0R1** — RTR `rpki-session` + route-policy `from validation-state {valid|invalid|not-found}`), so 13.0R4 PEs *can* enforce. (Live CLI confirmation on our node is deferred to the **GUI console at build time** — headless telnet was blocked by the single-client serial clog; feature availability is not in doubt.)
+
+> **⚠ Enforcement gap to mind (review finding, HIGH).** Until C3, **PE-1 also ingests Transit-A + IXP without ROV**, so an Invalid route entering via PE-1 would be accepted and propagated internally before PE-3 ever sees it. Keep the C1 demo honest one of two ways: **(a)** introduce the forged-Invalid route **only through a PE-3-facing session**, or **(b)** add PE-1 as an enforcer (or an FRR ROV node in front of it) early. The C3 target closes the gap by enforcing at every ingress.
+
+**Reject vs de-prefer**: v1.1 default is **reject** Invalid at the edge (cleaner demo); de-preference (set low LOCAL_PREF on Invalid, keep as last resort) is the documented softer alternative for a "graceful rollout" scenario.
+
+**Test matrix** (the point of the whole exercise — for C1, introduce the Invalid via PE-3 only):
 
 | State | Setup | Expected on enforcer |
 | --- | --- | --- |
 | **Valid** | content prefix originated by 64500 (matches VRP) | accepted, normal best-path |
 | **Invalid** | re-originate the content prefix from `ixp-eyeball1` (64501) — wrong origin | **rejected** (or de-preferenced) — does not win best-path |
-| **NotFound** | `192.0.2.0/24` slice (no VRP minted) | accepted but marked NotFound; policy treats as normal (don't reject NotFound) |
+| **NotFound** | `192.0.2.0/28` slice from `192.0.2.0/24` (no VRP minted) | accepted but marked NotFound; policy treats as normal (don't reject NotFound) |
 
 **Guardrail**: documentation prefixes/ASNs and SLURM VRPs are lab-only — they must **never** be advertised toward any real Internet path (there is none in Region A, but the rule is stated so it survives a future Region B / cloud interconnect).
 
@@ -416,7 +431,7 @@ POST /v2/projects/{region-a}/nodes/{ixp-eyeball1}/start
 - PE-3: `show bgp ipv4 unicast neighbors 10.255.2.5` → Transit-B Established; default present (backup, LOCAL_PREF 100).
 - PE-1 / PE-3: BGP session to `ixp-rs1` (`10.255.3.10`) Established; content/eyeball prefixes received via the route server.
 - `ixp-rs1` (FRR): `vtysh -c "show bgp summary"` → 4 neighbours Established (PE-1, PE-3, content, eyeball).
-- Route preference check: on PE-1, `show router route-table <content /24>` → next-hop via `ixp-fabric` (LOCAL_PREF 300), **not** via a transit. This is the "peer-over-transit" proof.
+- Route preference check: on PE-1, `show router route-table 198.51.100.0/28` (a content /28) → next-hop via `ixp-fabric` (LOCAL_PREF 300), **not** via a transit. This is the "peer-over-transit" proof.
 
 ### Wave 4 — Tenant workload containers (~2 min)
 
@@ -442,7 +457,7 @@ Verify:
 - VPRNs Northwind (PE-1) and Helix (PE-2) show route counts > 0.
 - **Both transit sessions Established; default route present (Transit-A primary, Transit-B backup).**
 - **IXP route server has 4 sessions; content/eyeball prefixes prefer IXP over transit.**
-- An ICMP from `helix-doctor-wks` to a mock Internet /24 (originated by `transit-a-csr`) succeeds — validates the end-to-end service chain **all the way to simulated Internet egress**.
+- An ICMP from `helix-doctor-wks` to a mock Internet /28 (e.g. `192.0.2.0/28`, originated by `transit-a-csr`) succeeds — validates the end-to-end service chain **all the way to simulated Internet egress**.
 
 ## 7. Smoke tests (per-node)
 
@@ -462,12 +477,12 @@ Compact reference; expand into Ansible playbooks as the topology stabilises.
 | Transit-A (PE-1 view) | `show router bgp neighbor 10.255.2.1` | Established; `0.0.0.0/0` received, LOCAL_PREF 200 |
 | Transit-B (PE-3 view) | `show bgp ipv4 unicast neighbors 10.255.2.5` | Established; `0.0.0.0/0` received, LOCAL_PREF 100 (backup) |
 | IXP route server (`ixp-rs1`) | `vtysh -c "show bgp summary"` | 4 neighbours Established (PE-1, PE-3, content, eyeball) |
-| IXP route preference (PE-1) | `show router route-table <content /24>` | next-hop via `ixp-fabric` (LOCAL_PREF 300), not a transit |
+| IXP route preference (PE-1) | `show router route-table 198.51.100.0/28` (content /28) | next-hop via `ixp-fabric` (LOCAL_PREF 300), not a transit |
 | Transit failover | shut Transit-A session on PE-1 → `show router route-table 0.0.0.0/0` | default reconverges to Transit-B (LOCAL_PREF 100) |
 | Egress reachability | from a tenant workload: `ping <mock Internet /28 .1>` | succeeds via Transit-A |
 | IPv6 dual-stack (PE-3) | `show bgp ipv6 unicast summary` / `ping6 <2001:db8:a::1>` | v6 sessions Established; v6 egress works |
 | Routinator (`rpki-rp1`) | `routinator vrps \| wc -l` | VRP count > 0 (SLURM assertions loaded) |
-| RTR session (PE-3) | `show rpki server` (IOS-XR) | cache `10.255.x.x:3323` ACTIVE; records loaded |
+| RTR session (PE-3) | `show rpki server` (IOS-XR) | cache `192.168.200.1:3323` (PC1) ACTIVE; records loaded |
 | ROV Valid | content prefix from 64500 | `show bgp <pfx>` → origin-AS **valid**, installed |
 | ROV Invalid | re-originate content prefix from 64501 | origin-AS **invalid** → **rejected** (not best-path) |
 | ROV NotFound | a `192.0.2.0/24` slice (no VRP) | origin-AS **not-found** → accepted, normal policy |
@@ -551,9 +566,10 @@ Forward-wave order per §6. Do not skip the convergence gates — that's what br
 - **Helix LAN behaviour when Region B comes up** — when Region B's Helix CE is reachable via GRE, the standalone-mode local VPRN on Aurora-PE-2 should switch to forwarding-only (no local BGP advert) so Region B's CE owns the Helix routing. Document the mode-switch procedure.
 - **Workload upgrade path** — Phase 3 of §3.7 in ADR-002 calls for Orthanc + Mirth + Synthea for Helix and full Prometheus alerting for Northwind; phasing.
 - **Backup / restore drill** — verify §8.7 rsync + GNS3 project import round-trip.
-- **FRR-in-GNS3-docker smoke test** (blocks the Internet Edge) — the docker pattern is validated (SR Linux runs as a GNS3 docker node), but FRR (`quay.io/frrouting/frr`) as a GNS3 docker node hasn't been tested here. ~10-min smoke: pull the image, create a docker template, boot one node, confirm `vtysh` + a basic eBGP session. **Also confirm the image ships the `rpki` module** (`vtysh -c "show rpki"` / `rtrlib`) — if not, build a small custom FRR image with `--enable-rpki`, or use BIRD2 for the RS, or keep ROV only on the IOS-XR PE. Fallback: FRR via the GNS3 VM docker daemon attached as a cloud/host node.
-- **RPKI/ROV build (Phase C)** — deploy Routinator on PC1 as a docker container; author the **SLURM exceptions file** (`locallyAddedAssertions` for the §5.2 VRP set); wire a **GNS3 Cloud node** bridging the topology mgmt segment to `192.168.200.x` so the edge routers reach RTR :3323 on PC1; configure `aurora-pe-3` as the RTR client + ROV policy; run the valid/invalid/notfound matrix.
-- **Verify SR OS 13.0R4 RPKI support** on the node — if origin-validation/`rpki-session` config is incomplete, keep ROV on the IOS-XR PE (and/or FRR) and note it.
+- ✅ **FRR-in-GNS3-docker + rpki module — DONE (2026-06-08).** `frrouting/frr:latest` (Docker Hub) pulled on the GNS3 VM; **`librtr.so.0.8.0` (rtrlib) ships in the image → RPKI module supported.** quay.io has FRR under version tags (10.2–10.6, `master`), not `:latest` — pin `quay.io/frrouting/frr:10.6.1` or use Docker Hub `:latest`. Still TODO: boot one as an actual GNS3 docker node + a basic eBGP session (the *image* is cleared; the *GNS3 node wiring* is a quick build-time check).
+- ✅ **SR OS 13.0R4 RPKI — resolved via Nokia release history.** Origin-validation (RTR `rpki-session` + route-policy `from validation-state`) is a Nokia feature since **12.0R1**, so 13.0R4 supports it. Live CLI confirmation on our node deferred to the **GUI console at build time** (headless telnet was blocked by the single-client serial clog — see `memory/gns3-nos-boot-quirks.md`). Not a blocker for the plan.
+- **RPKI/ROV build (Phase C)** — deploy Routinator on **PC1 (192.168.200.1)** as a docker container; author the **SLURM exceptions file** (`locallyAddedAssertions` for the §5.2 VRP set); wire a **GNS3 Cloud node** bridging the topology mgmt segment to `192.168.200.x` so the edge routers reach RTR **`192.168.200.1:3323`**; configure `aurora-pe-3` (C1) then all eBGP ingress (C3) as RTR clients + ROV policy; run the valid/invalid/notfound matrix.
+- **`ip-plan.md` v2.0 refresh** — fold the two-region (ADR-002) AS/IP/RD-RT model into `ip-plan.md` so it becomes truly canonical again, or formally retire it in favour of per-region plan §4s. Currently it carries a superseded banner pointing here.
 - **Internet-edge v1.2 roadmap** — BGP communities for TE; second diverse transit for true multi-homing; selective bilateral IXP peering; deliberate route-leak demo; routing-protocol authentication.
 
 ## 11. References

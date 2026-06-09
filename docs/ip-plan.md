@@ -3,8 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Document version | 1.0 |
-| Status | Active |
+| Status | **Superseded for Region A** (ADR-001-era single-region plan) |
 | Last updated | May 2026 |
+
+> ⚠ **This is the ADR-001-era single-region IP plan** (4 routers Melbourne/Sydney/Brisbane/Geelong, Aurora `AS65100`, backbone `10.1.0.0/16`). It **predates ADR-002's two-region model**. For **Region A**, the canonical IP/AS/RD-RT source is now **`docs/region-a-plan.md` §4** (Aurora `AS64496`, documentation ASNs/prefixes, backbone `10.255.0.0/24`, Internet edge with transit/IXP/RPKI). **Do not pull Region A ASNs/RDs/RTs from this doc.** A v2.0 refresh to align this file with the two-region model is pending (`region-a-plan.md` §10 follow-up).
 
 ## 1. Address allocation summary
 
@@ -84,7 +86,9 @@ Total addresses consumed: 6 links × 2 = 12 IPs in 10.1.0.0/16.
 
 ## 5. BGP AS plan
 
-| AS | Use |
+> **Superseded for Region A** — see `docs/region-a-plan.md` §4. Region A now uses **RFC 5398 documentation ASNs**: Aurora `64496`, transits `64497/64498`, IXP RS/content/eyeball `64499/64500/64501`, customer `64502` (public BYO-AS) / `64512` (private CE). The private-AS scheme below is the legacy ADR-001 single-region model.
+
+| AS | Use (legacy ADR-001 model) |
 | --- | --- |
 | 65100 | Aurora Communications (private AS for the lab; production would use a public ASN) |
 | 65200 | Reserved — first simulated upstream transit (W3+) |
@@ -105,11 +109,13 @@ This convention scales: when L1/L2 hierarchy is introduced (post-eight POPs), re
 
 ## 7. IPv6 plan (W3 — future state)
 
-| Block | Use |
+> **Bug fixed + superseded**: the previous `2001:db8:aurora::/48` was **invalid IPv6** (`aurora` is not hex). Corrected below to valid documentation space (`2001:db8::/32`, RFC 3849). For Region A the canonical IPv6 plan is `docs/region-a-plan.md` §4 (`2001:db8:aaaa::/48` Aurora PI, `2001:db8:ffff::/…` infra links, etc.).
+
+| Block | Use (legacy single-region model) |
 | --- | --- |
-| 2001:db8:aurora::/48 | Aurora address space |
-| 2001:db8:aurora::1/128, ::2/128, ::3/128, ::4/128 | Loopbacks |
-| 2001:db8:aurora:1212::/127 | Melbourne ↔ Sydney |
+| 2001:db8::/48 | Aurora address space |
+| 2001:db8::1/128, ::2/128, ::3/128, ::4/128 | Loopbacks |
+| 2001:db8:0:1212::/127 | Melbourne ↔ Sydney |
 | (and so on per /127 per link) | |
 
 P2P /127 per RFC 6164. Dual-stack on every interface.
