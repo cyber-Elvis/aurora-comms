@@ -1,4 +1,29 @@
-# Aurora Deployment Status (as of Sunday 2026-06-07 00:30 AEST)
+# Aurora Deployment Status
+
+> **Latest state: 2026-06-14** (top). The 2026-06-07 migration snapshot is kept below as the historical record.
+
+## Current state — 2026-06-14: Region A re-vendored to Cisco (ADR-003)
+
+**Region A backbone is now Cisco**, not Nokia (decision recorded in `adr-003-revendor-cisco-region-a.md`; executable plan in `region-a-plan.md` v2.1):
+
+| Role / POP alias | Now | Was |
+| --- | --- | --- |
+| Aurora-P / MEL-P | **IOL-AdvEnterprise-L3** (IS-IS L2 + LDP) | SR Linux 24.10 |
+| Aurora-PE-1 / MEL-PE1 | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Transit-A + Melbourne IXP) | SR OS 13.0R4 |
+| Aurora-PE-2 / BNE-PE1 | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Helix/Brisbane edge) | SR OS 13.0R4 |
+| Aurora-PE-3 / SYD-PE1 | IOS-XRv 6.1.3 (Region B/C edge + first ROV enforcer) | IOS-XRv 6.1.3 |
+| Geelong / GEL access | `region-a-ce-spare` placeholder now; target light `Aurora-PE-4` later | historical Geelong POP concept |
+
+- **Build in progress (GNS3 project `ops-lab`, `d8119db0-…`):** Aurora-P + Aurora-PE-1 **created, linked (e0/0↔e0/0), booted** (IOL-L3, at enable prompt), being configured per `region-a-plan.md` §6 Wave 1 (IS-IS L2 + LDP → iBGP VPNv4 → L3VPN VRF CUST-A). Console-driven via the `iolcfg.py` socket helper on the GNS3 VM (Python 3.14 → no `telnetlib`, raw-socket telnet instead).
+- **Nokia archived, not deleted.** SR OS 13.0R4 licensed qcow2 + RTC recipe cold-stored (md5 recorded, `memory/sros-gns3-license-recipe.md`); SR Linux stopped. Recoverable via git history + cold storage. PC1 vrnetlab SR OS stays as offline failover.
+- **vJunos-router does NOT run on the Dell** — boots its Wind River host, the inner Junos VM won't start (triple-nested wall), clean poweroff (`memory/gns3-nos-boot-quirks.md`). **Juniper → Region B** (vSRX/vJunos via CML BYOI) + **cloud cRPD**; **vSRX runs standalone-local** for Junos/firewall practice.
+- **Three-region model (ADR-003):** A = local Dell GNS3 Cisco (permanent); B = DevNet CML Cisco **+ Juniper**; C = cloud edge (DigitalOcean containerlab: cRPD + FRR + Routinator + public-IP route-server).
+- **Cloud credits / lifecycle:** Oracle A$400 trial (exp ~**Jul 8**, always-free ARM capacity-blocked); DigitalOcean $200 (exp **Jul 30** → Region C); AWS $120 (earmarked **Mac host — out of scope**). Teardown reminders set for Jul 7 / Jul 30 (Claude app + Google Calendar). `memory/cloud-credits.md`.
+- **Working model:** Claude drives device consoles; user coaches (device setup, command sequences, MOP/evidence template) and verifies via the GNS3 API. `memory/lab-coaching-workflow.md`.
+
+---
+
+# Snapshot — Sunday 2026-06-07 00:30 AEST
 
 Snapshot of where each Aurora component actually lives, the ADR drift discovered, and the planned migration.
 

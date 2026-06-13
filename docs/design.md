@@ -1,16 +1,18 @@
 # Aurora Communications — Network Design Document
 
+> **Current scope note (ADR-003 v1.1, 2026-06-14):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.1, with Region B in DevNet CML and Region C in cloud. The **Melbourne/Sydney/Brisbane/Geelong POP geography remains current**; older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
+
 | Field | Value |
 | --- | --- |
-| Document version | 1.0 |
-| Status | Active — W1 baseline complete |
+| Document version | 1.1 |
+| Status | Reference / protocol design; executable Region A build superseded by ADR-003 |
 | Owner | Network Architecture (Elvis Ifeanyi Nwosu) |
-| Last updated | May 2026 |
+| Last updated | 2026-06-14 |
 | Supersedes | n/a (initial document) |
 
 ## 1. Purpose and scope
 
-Aurora Communications is a fictional Australian regional IP carrier operated as the network tier of the Sentinel Ridge MSP teaching/portfolio environment. This document describes the W1 backbone — four POPs, single AS, IS-IS + MPLS-LDP + iBGP. It is the canonical reference for what the network is and why it is that way. Manual configurations, Ansible templates, and verification scripts must reproduce what is described here.
+Aurora Communications is a fictional Australian regional IP carrier operated as the network tier of the Sentinel Ridge MSP teaching/portfolio environment. This document describes the national POP model — Melbourne, Sydney, Brisbane, and Geelong — plus the reference protocol shape: single AS, IS-IS + MPLS-LDP + iBGP. `region-a-plan.md` is canonical for the current Cisco implementation details; this file is canonical for why the carrier geography and protocol choices exist.
 
 Out of scope for this revision: customer L3VPN service definitions, eBGP peering policy with upstream transit, edge access (PE-CE) configuration. These will be documented separately as they are added.
 
@@ -70,6 +72,8 @@ Geographic scope: four POPs in Melbourne (HQ + core), Sydney, Brisbane, and Geel
 **Future:** IPv6 dual-stack lands in W3 — `2001:db8:aurora::/48` allocated, `/128` per loopback, `/127` per P2P link per RFC 6164.
 
 ### 3.5 Platform — FRR for the lab, Nokia SR OS / Cisco IOS-XR for production reference
+
+> **Superseded for the executable build (ADR-003 v1.1, 2026-06-14).** This W1 baseline used FRR containers for rapid protocol validation. The built **Region A is now a Cisco GNS3 core** — IOL-AdvEnterprise-L3 (P + PE-1/PE-2) + IOS-XRv 6.1.3 (PE-3) per `region-a-plan.md` v2.1. FRR is retained for the **IXP route-server / RPKI** role (its real-world niche), not as the PE platform; Nokia SR OS is archived. The protocol design below (IS-IS / LDP / BGP-VPNv4) is vendor-agnostic and still applies.
 
 **Decision:** All four PEs run FRRouting (FRR) latest in Docker containers via Containerlab. Multi-vendor reference configurations (Nokia SR OS, Cisco IOS-XR) are maintained in `lab/manual/` for the same intent.
 

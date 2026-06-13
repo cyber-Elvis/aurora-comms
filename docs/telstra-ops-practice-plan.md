@@ -8,7 +8,7 @@
 | Cadence | ~5+ hrs/day, 10 working days |
 | Weighting | Balanced: Cisco R&S · Juniper · firewalls (Forti/PA/FTD/ASA) · process/tooling |
 | Upgrade images | DevNet CML (multi-version Cisco) + vendor trial portals (FortiOS/PAN-OS) |
-| Context | `memory/telstra-techops-role.md` · lab from `region-a-plan.md` / `gns3-vm-ram-budget.md` |
+| Context | `memory/telstra-techops-role.md` · `docs/adr-003-revendor-cisco-region-a.md` (build-then-operate) · lab from `region-a-plan.md` v2.1 / `gns3-vm-ram-budget.md` |
 
 ## 0. How to use this · what "ready" means
 
@@ -32,16 +32,18 @@ A Check Point, Netskope, Citrix ADC, or Arbor you've never seen behaves like the
 
 ## 1. Foundation (Day 0 — do this first)
 
+> **Build-then-operate (ADR-003).** This practice layers on the **Region A Cisco core** (`region-a-plan.md` v2.1) — IOL-L3 P + PEs + IOS-XRv, IS-IS/LDP/iBGP-VPNv4 + MPLS L3VPN, mapped to the Melbourne/Sydney/Brisbane/Geelong POP overlay. That backbone *is* the network you run/patch/troubleshoot below: build it first (underway in `ops-lab`), then operate it. Juniper practice = **vSRX standalone-local** now (+ Region B later); firewalls (Forti/PA/FTD) are singleton heavyweights brought up solo.
+
 | Task | What | Where |
 | --- | --- | --- |
-| **Archive Nokia** | Stop SR Linux (light, no loss). **Cold-store** the licensed SR OS qcow2 + recipe (do NOT delete — irreplaceable). | Dell GNS3 |
+| **Region A Cisco core** | The baseline backbone to operate on — IOL-L3 P + PE-1/PE-2 + IOS-XRv PE-3, IS-IS/LDP/iBGP-VPNv4 + L3VPN. Build per `region-a-plan.md` §6 (underway: P + PE-1 booted). | Dell GNS3 (`ops-lab`) |
+| **Nokia archived** | Done as part of the re-vendor (ADR-003): SR Linux stopped; SR OS qcow2 + recipe cold-stored (do NOT delete — irreplaceable). Recoverable if a multivendor-local story is wanted later. | Dell GNS3 |
 | **Ops tooling stack** | **NetBox** (CMDB/source-of-truth), **Oxidized** (config backup/versioning), **LibreNMS** or Grafana+Prometheus+snmp_exporter (monitoring), **Ansible** control node. Reuse the existing **Wazuh + MISP** for SIEM/threat-intel. | PC1 (off the Dell budget); Oracle Always-Free optional |
-| **DevNet CML access** | Free DevNet account + AnyConnect/openconnect; confirm you can reserve a sandbox with embedded CML (multi-version IOS-XE/XR/NX-OS for real upgrades). | PC1 openconnect |
+| **DevNet CML access** | Free DevNet account + AnyConnect/openconnect; reserve a sandbox with embedded CML (multi-version IOS-XE/XR/NX-OS for real upgrades + Region B Cisco/Juniper). | PC1 openconnect |
 | **ServiceNow dev instance** | Free developer instance — practice Change/Incident records (the role is ITSM-driven). | cloud |
 | **ITIL refresh** | 1-hr skim: Change / Incident / Problem management, CAB, maintenance windows. | — |
-| **`ops-lab` GNS3 project** | Empty project for the enterprise-edge + security topology you'll build into. | Dell GNS3 |
 
-**Done when:** Nokia archived; NetBox+Oxidized+monitoring reachable from PC1 and pulling from the first device; CML reservable; ServiceNow instance live.
+**Done when:** Region A Cisco core up + smoke-passing (`region-a-plan.md` §7); Nokia archived; NetBox+Oxidized+monitoring reachable from PC1 and pulling from the first device; CML reservable; ServiceNow instance live.
 
 ## 2. Week 1 — platform fluency + real upgrade mechanics (one platform/day)
 
