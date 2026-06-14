@@ -20,3 +20,7 @@ ops/access/*.local.yml
 ops/access/*.local.json
 ops/access/*_private*
 ops/access/id_aurora_*
+
+# Claude Code local/personal state (permission allowlist, prefs) — not shared.
+# A shared project settings.json (if ever added) is intentionally NOT ignored.
+.claude/settings.local.json
