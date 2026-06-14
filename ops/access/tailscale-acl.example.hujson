@@ -1,0 +1,42 @@
+{
+  // Example only. Apply in the Tailscale admin console after replacing tags/users
+  // with the actual tailnet policy model.
+  "tagOwners": {
+    "tag:hosts": ["autogroup:admin"],
+    "tag:lab": ["tag:hosts"],
+    "tag:cloud-edge": ["tag:hosts"]
+  },
+
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["tag:hosts"],
+      "dst": [
+        "tag:lab:22",
+        "tag:lab:23",
+        "tag:lab:3080",
+        "tag:cloud-edge:22"
+      ]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:hosts"],
+      "dst": ["tag:hosts:22", "tag:hosts:3389", "tag:hosts:5985", "tag:hosts:5986"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:cloud-edge"],
+      "dst": ["tag:cloud-edge:51820"]
+    }
+  ],
+
+  // No rule grants tag:lab -> tag:hosts. Default deny enforces host isolation.
+  "ssh": [
+    {
+      "action": "accept",
+      "src": ["tag:hosts"],
+      "dst": ["tag:hosts"],
+      "users": ["autogroup:nonroot"]
+    }
+  ]
+}

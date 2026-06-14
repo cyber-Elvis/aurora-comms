@@ -1,98 +1,93 @@
 # Aurora Communications
 
-> Tier 1 — fictional Australian regional carrier. POPs in Melbourne (HQ + core), Sydney, Brisbane, and Geelong. AS65100. The Nokia showcase tier.
+Aurora Communications is a fictional Australian Tier 1 / managed-carrier lab. The current build path is:
 
-## Carrier profile
-
-| Attribute | Value |
-| --- | --- |
-| AS number | 65100 (private — would be a real AS in production) |
-| POPs | Melbourne (HQ + core), Sydney, Brisbane, Geelong |
-| Backbone IGP | IS-IS L1/L2, with the L1/L2 boundary at Brisbane |
-| MPLS | LDP everywhere; one engineered LSP via RSVP-TE (Melbourne→Sydney) |
-| BGP | 2× route reflectors at Melbourne core; eBGP to 2× upstream + 1× IXP |
-| Security | RPKI Routinator + ROV at the eBGP edge; BGP FlowSpec for DDoS |
-| Customer services | VPRN (L3VPN), VPLS (multipoint Ethernet), Epipe (E-Line), DIA, SD-WAN headend |
-
-## Topology
-
-```
-                              Internet
-                                  │
-                ┌─────────────────┼─────────────────┐
-                │                 │                 │
-            Upstream-1         Upstream-2          IXP
-              (eBGP)             (eBGP)          (eBGP)
-                │                 │                 │
-                └────────┬────────┴────────┬────────┘
-                         │                 │
-                    ┌────▼─────────────────▼────┐
-                    │  Melbourne core (RR1+RR2) │
-                    │   Cisco IOS-XRd RR        │
-                    └──┬──────┬──────┬──────────┘
-                       │      │      │
-              ┌────────▼─┐ ┌──▼───┐ ┌▼──────────┐
-              │ Sydney   │ │ Bris │ │ Geelong   │
-              │  PE/P    │ │ PE/P │ │ regional  │
-              │  (FRR)   │ │ (SRL)│ │ (FRR)     │
-              └──────────┘ └──────┘ └───────────┘
-
-Customer service edge:
-  Maple Ridge HQ ──► Sydney PE     (VPRN export RT 65100:100)
-  Maple Ridge DC ──► Melbourne PE  (VPRN)
-  Maple Ridge NSW──► Sydney PE     (VPRN)
-  Helix Health   ──► Melbourne PE  (DIA + scrubbing)
-  Northwind HQ   ──► Melbourne PE  (DIA underlay → SD-WAN spoke)
-  Northwind R&D  ──► Geelong PE    (DIA underlay → SD-WAN spoke)
+```text
+Cisco Region A (Dell GNS3, building now)
+  -> Juniper/Cisco Region B (DevNet CML)
+  -> Cloud Region C (DigitalOcean / containerlab edge)
+  -> Secure management + data-plane rings (ADR-004)
+  -> Build the network first, then operate it with TechOps discipline
 ```
 
-## What lives in this repo
+The lab is now aligned to the Telstra Protect/Secure TechOps role: Cisco routing and switching, Juniper, Fortinet, Palo Alto, Cisco security, monitoring, change control, incident response, and software/content patching.
 
-| Component | Status | Phase | Path |
+## Current Architecture
+
+| Region | Purpose | Main platforms | Status |
 | --- | --- | --- | --- |
-| Containerlab + WSL2/Docker setup | not started | Sprint W1 | `lab-setup/` |
-| Backbone — 4× FRR P-routers + IS-IS L1/L2 | not started | Sprint W1 | `backbone/` |
-| MPLS-LDP + RSVP-TE engineered LSP | not started | Sprint W1 | `backbone/mpls.md` |
-| BGP route reflectors (2× RR) | not started | Sprint W1 | `bgp/` |
-| eBGP peering (2× upstream + 1× IXP) | not started | Sprint W1 | `bgp/peering.md` |
-| VPRN (L3VPN) for Maple Ridge — 3 sites | not started | Sprint W2 | `services/vprn-mr/` |
-| VPLS multipoint Carrier Ethernet demo | not started | Sprint W2 | `services/vpls/` |
-| Epipe (E-Line) demo | not started | Sprint W2 | `services/epipe/` |
-| RPKI Routinator + RoV at eBGP edge | not started | Sprint W2 | `security/rpki/` |
-| BGP communities + import/export policy | not started | Sprint W3 | `bgp/policy/` |
-| BGP FlowSpec rule for DDoS | not started | Sprint W3 | `security/flowspec/` |
-| LibreNMS + Grafana NOC monitoring | not started | Sprint W3 | `noc/` |
-| SD-WAN headend terminating Northwind spokes | not started | Sprint W4 | `sdwan/` |
-| Cisco IOS-XRd RR (multi-vendor credibility) | not started | Sprint W4 | `iosxr/` |
+| Region A | Permanent local ISP/core bench | Cisco IOL-L3 P/PE core, IOS-XRv PE, FortiGate, Aruba CX, CSR/IOL transit, FRR IXP, Routinator | Active build |
+| Region B | Multi-site enterprise / Cisco + Juniper extension | DevNet CML IOS-XE, IOS-XR, NX-OS, vSRX/vJunos where available | Planned next |
+| Region C | Cloud edge / public-facing routing model | cRPD, FRR, Routinator, route-server patterns | Planned |
 
-## Multi-vendor strategy
+Region labels are **deployment domains**, not the carrier's geography. The national service-provider topology remains Australia-wide:
 
-| Node role | Implementation | Why |
-| --- | --- | --- |
-| P-routers | FRR (FRRouting) | Free, light (~150 MB/container), supports IS-IS+LDP+MPLS |
-| 2× PEs | Nokia SR Linux (free) | Keeps Nokia visible in the diagram |
-| 1× RR | Cisco IOS XRd (free with login) | Multi-vendor BGP fluency story |
-| Customer edge | Cisco IOSv in GNS3 | Doubles as CCNA prep environment |
-
-## JD coverage
-
-| Skill | JDs / context |
+| POP | Active lab role |
 | --- | --- |
-| Nokia SR OS context (VPRN, VPLS, Epipe) | Telco roles — TasNetworks, Optus, NBN, Efiniti |
-| BGP / IS-IS / MPLS-LDP / RSVP-TE | 17 JDs (8%); telco core |
-| RPKI + FlowSpec | BGP security; carrier DDoS handling |
-| Carrier Ethernet / MEF (E-Line, E-LAN, E-Tree) | Carrier/ISP service portfolio |
-| SD-WAN headend | 15 JDs (~7%); growing AU market |
-| Cisco IOS-XR exposure | Closes Cisco gap at carrier scale |
+| Melbourne | Core/transit/IXP hub: `Aurora-P` + `Aurora-PE-1`, Transit-A, Melbourne IXP |
+| Sydney | Major interconnect and Region B/C handoff: `Aurora-PE-3`, Transit-B, first ROV enforcer |
+| Brisbane | Regional enterprise edge: `Aurora-PE-2`, Helix access/LAN services |
+| Geelong | Regional access POP placeholder now; target light `Aurora-PE-4` / GEL edge once the Cisco core is stable |
+| Adelaide | South-central aggregation POP; target `ADL-PE1` |
+| Perth | Western Australia POP; target `PER-PE1`, cloud/interstate latency practice |
+| Darwin | Northern Australia remote POP; target `DRW-PE1`, constrained/remote operations practice |
+| Tasmania / Hobart | Island POP; target `HBA-PE1` / `TAS-PE1`, submarine/backhaul-failure scenarios |
 
-## Working notes
+Nokia SR OS/SR Linux is archived, not deleted. The licensed SR OS recipe remains preserved because it is valuable and hard to recreate, but it is no longer the active Region A core.
 
-- **Containerlab on the desktop:** WSL2 + Docker on Win 11. FRR runs as Docker images; SR Linux and IOS-XRd are also containerized. Total backbone RAM footprint is ~5 GB.
-- **NOC ↔ MSP NOC:** syslog from all Aurora nodes ships to the Sentinel Ridge MSP Wazuh manager (Dell laptop). This is intentional — it lets the MSP demonstrate cross-tier monitoring.
-- **Why a carrier tier on top:** five years of Nokia SR OS production experience is the rarest and most differentiated thing on the verified resume. The carrier tier puts that experience back at the top of the lab where hiring managers reading TasNetworks, Optus, or NBN job descriptions will see it first.
+## Source Of Truth
 
-## Cross-references
+Read these in order. ADR-003 and ADR-004 are the current architectural decisions; ADR-002 remains only as a stable historical reference for earlier two-region/Nokia/containerlab reasoning and empirical Dell/DevNet findings.
 
-- Master plan: `Sentinel_Ridge_Lab_Design.docx`
-- Build tracker (hours, status): `Sentinel_Ridge_Lab_Tracker.xlsx`
-- Customer service edges live in: `maple-ridge/`, `helix-health/`, `northwind-robotics/`
+| Document | Purpose |
+| --- | --- |
+| `docs/adr-003-revendor-cisco-region-a.md` | Current decision: Cisco Region A, Juniper/Cisco Region B, cloud Region C |
+| `docs/adr-004-secure-rings-host-isolation.md` | Secure management/data-plane rings, per-agent access, and host-isolation model |
+| `docs/region-a-plan.md` | Executable Region A build and operations plan, including the national POP overlay |
+| `docs/telstra-ops-practice-plan.md` | Two-week TechOps practice plan layered on top of the built network |
+| `docs/aurora-deployment-status.md` | Current environment and validation state |
+| `docs/devnet-resource-strategy.md` | Region B / DevNet / cloud resource strategy |
+| `docs/runbook.md` | Operational runbook notes and pending split |
+| `ops/access/` | Non-secret SSH helper, inventory, vendor snippets, Tailscale ACL example, and validation runbook |
+
+## Region A Build Shape
+
+Region A is a four-tier service-provider fabric:
+
+- Cisco P/PE core: IS-IS L2, LDP, iBGP VPNv4 full mesh, MPLS L3VPN.
+- Simulated Internet edge: documentation ASNs, transit-A/transit-B, IXP route server, RPKI/ROV.
+- Enterprise/customer edge: FortiGate, Aruba CX, optional IOSv CE.
+- Tenant workloads: Helix and Northwind service/workstation containers.
+
+The Dell GNS3 VM is resource-constrained but stable for the protocol-light Region A fabric when nodes are brought up in waves. Heavy security/DC nodes such as FTDv, FMC, PA-VM, Cat9kv, and XRv9000 are singleton-on-demand.
+
+## Operating Model
+
+The lab is intentionally build-then-operate:
+
+1. Build a believable ISP-to-enterprise network.
+2. Add security overlays and customer edge services.
+3. Onboard devices into source-of-truth, config backup, monitoring, and logging.
+4. Practise TechOps work against the live network: pre-checks, MOPs, software/content updates, rollback, incident response, RCA, and change closure.
+
+That order matters. Patching and upgrade drills only become meaningful once there is real routing, security policy, monitoring, and customer impact to preserve.
+
+## Secure Access Model
+
+ADR-004 adds the privileged-access and containment layer:
+
+- `admin` is Elvis's break-glass account.
+- `aurora-codex` and `aurora-claude` are per-agent automation accounts for lab nodes only.
+- Automation uses SSH public keys first; private keys stay on PC1 or another approved operator host.
+- PC1, PC2/Dell, DigitalOcean, and Oracle host OSes are never routed lab nodes.
+- The management ring is Tailscale-based; the lab data-plane ring is built from virtual edge routers and WireGuard links.
+- Lab nodes must not initiate SSH/RDP/SMB/WinRM/hypervisor/admin sessions to PC1, PC2, or cloud host OSes.
+
+## Diagrams
+
+- `docs/region-a-topology.drawio` is refreshed for the Cisco Region A core.
+- `docs/region-a-topology.png` requires a local drawio/diagrams.net renderer before it can be regenerated from the updated source.
+
+## Historical Context
+
+Earlier Aurora plans were Nokia-led and containerlab-first. Those records remain at the stable `docs/adr-002-two-region.md` path for traceability, but ADR-003 and ADR-004 supersede the active build and security model. Old Nokia operational detail will be moved into an archive appendix when the historical docs get their cleanup pass.

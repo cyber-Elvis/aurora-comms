@@ -12,3 +12,11 @@ node_modules/
 
 # Containerlab runtime — auto-generated per deploy, contains TLS keys and SSH state
 clab-*/
+
+# Aurora access/runtime material - never commit private keys, local inventories, or secrets
+ops/access/private/
+ops/access/secrets/
+ops/access/*.local.yml
+ops/access/*.local.json
+ops/access/*_private*
+ops/access/id_aurora_*

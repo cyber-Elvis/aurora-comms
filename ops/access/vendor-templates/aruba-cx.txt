@@ -1,0 +1,14 @@
+! Aruba CX placeholder template.
+! Use local admin during build; migrate to TACACS+ command accounting later.
+
+hostname <HOSTNAME>
+ssh server vrf mgmt
+
+user admin group administrators password plaintext <YOU_SET_THIS_ON_BOX>
+user aurora-codex group administrators
+user aurora-codex authorized-key ssh-ed25519 <AURORA_CODEX_PUBLIC_KEY_BODY>
+user aurora-claude group administrators
+user aurora-claude authorized-key ssh-ed25519 <AURORA_CLAUDE_PUBLIC_KEY_BODY>
+
+! Restrict management-plane source IPs with a control-plane ACL where supported.
+! Enforce node-to-host deny rules at the site demarcation/firewall.

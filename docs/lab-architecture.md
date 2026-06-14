@@ -1,14 +1,16 @@
 # Aurora & Sentinel Ridge — Lab Architecture (ADR-001)
 
+> **Current scope note (ADR-003 v1.2 / ADR-004 v1.0, 2026-06-14):** this ADR-001 document is the historical workload-placement record. The active lab is now Cisco Region A on Dell GNS3, Juniper/Cisco Region B in DevNet CML, and Region C cloud edge, followed by TechOps operations practice. The national POP geography remains Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart; Region A/B/C are deployment domains. ADR-004 adds the current secure-access invariant: PC1, PC2/Dell, DO, and Oracle are protected host anchors, while virtual edge routers represent those sites in the lab data-plane ring. Use `docs/adr-003-revendor-cisco-region-a.md`, `docs/adr-004-secure-rings-host-isolation.md`, `docs/region-a-plan.md`, `docs/devnet-resource-strategy.md`, and `docs/telstra-ops-practice-plan.md` for current execution.
+
 | Field | Value |
 | --- | --- |
-| Status | Accepted |
-| Version | 1.6 |
-| Date | May 2026 |
-| Decision | Hybrid workload distribution — CPU-intensive services on PC1, lightweight services + carrier backbone on Dell |
+| Status | Accepted historically; active placement superseded by ADR-003 where noted |
+| Version | 1.7 |
+| Date | 2026-06-14 |
+| Decision | Historical hybrid workload distribution; active lab = Cisco Region A on Dell GNS3, Region B in DevNet CML, Region C cloud edge |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 | Supersedes | n/a (initial) |
-| Related | `docs/design.md`, `docs/ip-plan.md`, `BACKLOG.md` |
+| Related | `docs/adr-003-revendor-cisco-region-a.md`, `docs/adr-004-secure-rings-host-isolation.md`, `docs/region-a-plan.md`, `docs/design.md`, `docs/ip-plan.md`, `BACKLOG.md` |
 
 ## Revision history
 
@@ -333,7 +335,7 @@ The three Sentinel Ridge MSP tenants are deliberately heterogeneous to reflect r
 
 - **Cisco fluency.** Cat8000v at Maple Ridge + Helix Health edge, Cat9000v across both Maple Ridge and Northwind LAN. IOS XE CLI exposure at both routing and switching layers — directly relevant for Cisco-shop Australian enterprises.
 - **Multi-vendor LAN competence.** Aruba CX (AOS-CX) at Helix Health LAN. ArubaOS-CX command structure differs from Cisco IOS XE — demonstrates ability to operate non-Cisco LAN environments without retraining.
-- **Carrier-grade routing in the customer edge.** Juniper cRPD at Northwind. cRPD runs the same routing protocols (BGP, IS-IS, OSPF, MPLS) as Juniper's carrier gear (vMX, MX series) — the lightest of the routing containers (~500 MB) and the closest in-container approximation of real Junos behaviour.
+- **Carrier-grade routing in the customer edge.** Juniper cRPD at Northwind. cRPD runs the same routing protocols (BGP, IS-IS, OSPF, MPLS) as Juniper's carrier gear (vMX, MX series) — the lightest of the routing containers (~500 MB) and the closest in-container approximation of real Junos behaviour. **(Superseded — ADR-003, 2026-06-14: in the built lab, Northwind CE in Region A is FortiGate; the Juniper presence — vSRX + vJunos — lives in Region B (CML), and cRPD is the Region C cloud-edge routing node. The "Junos in a container" intent is preserved, relocated off the Region A customer edge.)**
 - **Realistic Australian patterns.** Pure Cisco, mixed Cisco+Aruba, mixed Juniper+Cisco — the three pairings cover the dominant enterprise configurations observable in AU customer environments today.
 
 ### 14.3 PE-CE protocol per tenant

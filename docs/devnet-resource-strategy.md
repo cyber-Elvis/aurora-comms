@@ -6,12 +6,14 @@
 | Version | 1.0 |
 | Date | May 2026 |
 | Purpose | Long-term tiered DevNet sandbox strategy for Aurora Communications lab; backup hierarchy for maintenance windows; adoption timeline |
-| Related | `docs/adr-002-two-region.md` (canonical Region B hosting decision), `docs/lab-architecture.md` (ADR-001 v1.6 §17 DevNet integration), `docs/runbook.md` (operational diagnostics) |
+| Related | `docs/adr-002-two-region.md` (canonical Region B hosting decision), `docs/adr-003-revendor-cisco-region-a.md` (Region B = Cisco **+ Juniper**; three-region model), `docs/adr-004-secure-rings-host-isolation.md` (secure rings and host isolation), `docs/lab-architecture.md` (ADR-001 v1.6 §17 DevNet integration), `docs/runbook.md` (operational diagnostics) |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 
 ## 1. Scope and intent
 
-ADR-002 chose Cisco Modeling Labs Reservable as the canonical host for Aurora Region B (Cisco-dominant). This document is the **operational reference** that surrounds that decision:
+ADR-002 chose Cisco Modeling Labs Reservable as the canonical host for Aurora Region B (Cisco-dominant). **Per ADR-003 (2026-06-14), Region B also hosts the lab's Juniper presence — vSRX + vJunos via CML BYOI** (CML's non-nested infrastructure runs vJunos, which the triple-nested Dell cannot). Non-Cisco *cloud* resources (Oracle / DigitalOcean / AWS, and the Region C cloud edge) are **out of scope here** — see `adr-003-revendor-cisco-region-a.md` §2.4–2.6, `memory/cloud-credits.md`, and `aurora-deployment-status.md`. This document is the **operational reference** that surrounds that decision:
+
+ADR-004 governs access to Region B/C control surfaces: DevNet, cloud hosts, PC1, and PC2 are management anchors, not routed lab nodes. Lab reachability should be represented by virtual edge nodes and per-zone automation keys, with Tailscale/WireGuard controls preventing lab-node pivots into PC1, PC2, or cloud host OSes.
 
 - Which specific DevNet sandboxes form the long-term lab stack
 - How to fall back when primary resources are unavailable (maintenance, queue exhaustion, regional outage)

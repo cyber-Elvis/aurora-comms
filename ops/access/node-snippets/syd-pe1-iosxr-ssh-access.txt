@@ -1,0 +1,35 @@
+! SYD-PE1 / Aurora-PE-3 / Cisco IOS-XRv
+! Purpose: initial SSH + local break-glass + per-agent key accounts.
+! Replace placeholders on the console. Do not commit real secrets or public keys.
+
+configure terminal
+ hostname SYD-PE1-CISCO-IOSXR-RT01
+ domain name lab.aurora
+ ssh server v2
+ ssh server rate-limit 60
+ username admin
+  group root-system
+  secret <YOU_SET_ADMIN_SECRET_ON_BOX>
+ !
+ username aurora-codex
+  group root-system
+  sshkey <AURORA_CODEX_LOCAL_PUBLIC_KEY>
+ !
+ username aurora-claude
+  group root-system
+  sshkey <AURORA_CLAUDE_LOCAL_PUBLIC_KEY>
+ !
+ ipv4 access-list MGMT-SOURCES
+  10 permit ipv4 host 192.168.200.1 any
+  20 permit ipv4 host 192.168.200.2 any
+  30 permit ipv4 host 100.118.0.46 any
+  999 deny ipv4 any any log
+ !
+commit
+
+! Apply MGMT-SOURCES to the management interface/VRF once the IOS-XR management
+! interface name is confirmed from the running node.
+!
+! Expected access helper:
+! .\ops\access\aurora-ssh.ps1 syd-pe1
+! .\ops\access\aurora-ssh.ps1 syd-pe1 -UseCodex -IdentityFile $HOME\.ssh\aurora-codex-local-ed25519

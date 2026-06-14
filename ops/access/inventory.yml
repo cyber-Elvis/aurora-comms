@@ -1,0 +1,163 @@
+# Non-secret Aurora access inventory.
+# Do not put passwords, private keys, secret hashes, API tokens, or cloud credentials here.
+
+nodes:
+  - alias: mel-p1
+    hostname: MEL-P-CISCO-IOL-RT01
+    host: 192.168.200.11
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: active
+
+  - alias: mel-pe1
+    hostname: MEL-PE1-CISCO-IOL-RT01
+    host: 192.168.200.12
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: active
+
+  - alias: bne-pe1
+    hostname: BNE-PE1-CISCO-IOL-RT01
+    host: 192.168.200.13
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: planned
+
+  - alias: syd-pe1
+    hostname: SYD-PE1-CISCO-IOSXR-RT01
+    host: 192.168.200.14
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: planned
+
+  - alias: gel-pe1
+    hostname: GEL-PE1-CISCO-IOL-RT01
+    host: 192.168.200.15
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: reserved
+
+  - alias: helix-sw
+    hostname: BNE-ACC1-ARUBA-CX-SW01
+    host: 192.168.200.16
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: planned
+
+  - alias: adl-pe1
+    hostname: ADL-PE1-CISCO-IOL-RT01
+    host: 192.168.200.17
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: reserved
+
+  - alias: per-pe1
+    hostname: PER-PE1-CISCO-IOL-RT01
+    host: 192.168.200.18
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: reserved
+
+  - alias: drw-pe1
+    hostname: DRW-PE1-CISCO-IOL-RT01
+    host: 192.168.200.19
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: reserved
+
+  - alias: hba-pe1
+    hostname: HBA-PE1-CISCO-IOL-RT01
+    host: 192.168.200.20
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: reserved
+
+  - alias: sros-legacy-lab
+    hostname: NOKIA-SROS-13R4-ARCHIVE
+    host: TBD
+    port: 22
+    profile: sros-legacy
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    status: archived
+
+  - alias: pc2-gns3
+    hostname: PC2-GNS3-VM
+    host: 100.118.0.46
+    port: 22
+    profile: modern
+    default_user: gns3
+    zone: local
+    credential_scope: host
+    status: active
+
+  - alias: pc1-edge
+    hostname: PC1-EDGE-VIRTUAL-RT01
+    host: TBD
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-edge
+    status: planned
+
+  - alias: pc2-edge
+    hostname: PC2-EDGE-VIRTUAL-RT01
+    host: TBD
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: local
+    credential_scope: lab-edge
+    status: planned
+
+  - alias: do-edge
+    hostname: DO-EDGE-VIRTUAL-RT01
+    host: TBD
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: cloud
+    credential_scope: lab-edge
+    status: planned
+
+  - alias: oci-edge
+    hostname: OCI-EDGE-VIRTUAL-RT01
+    host: TBD
+    port: 22
+    profile: modern
+    default_user: admin
+    zone: cloud
+    credential_scope: lab-edge
+    status: planned

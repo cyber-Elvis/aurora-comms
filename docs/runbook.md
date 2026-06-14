@@ -1,5 +1,7 @@
 # Aurora Communications — Operational Runbook
 
+> **Scope note (ADR-003 v1.2 / ADR-004 v1.0, 2026-06-14).** The commands below are the **W1 containerlab/FRR baseline** (`clab-aurora-*`, `vtysh`). The **built Region A is now a Cisco GNS3 core** mapped to the Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP overlay — for current Region A operations use `region-a-plan.md` §6 (bring-up waves), §7 (per-node smoke tests, IOS/IOS-XR `show` commands), and §8 (ops + MOP shape). For secure SSH/access workflows use `ops/access/` and validate the ADR-004 host-isolation controls. A region-specific runbook split (Region A GNS3 + Region B CML) is a pending follow-up.
+
 ## 1. Quick health check
 
 Run after any deploy or change. All four checks should succeed.
@@ -95,7 +97,7 @@ Expected results:
 1. Edit `lab/backbone/topology.clab.yml`: add the new node + its links.
 2. Create `lab/backbone/<newpop>/{daemons,frr.conf,vtysh.conf}` (copy from existing PE; adjust IPs and NET).
 3. Update each existing PE's `frr.conf`: add the iBGP neighbour for the new PE (until W2 RR migration removes this step).
-4. Update `docs/ip-plan.md` with the new loopback and link assignments.
+4. Update the region-specific plan first (`docs/region-a-plan.md` §4 for Region A), then mirror any cross-region summary changes into `docs/ip-plan.md`.
 5. Redeploy.
 
 ## 5. Known issues
