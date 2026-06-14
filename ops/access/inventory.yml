@@ -4,9 +4,10 @@
 nodes:
   - alias: mel-p1
     hostname: MEL-P-CISCO-IOL-RT01
-    host: 192.168.200.11
+    host: 10.255.191.11
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -14,9 +15,10 @@ nodes:
 
   - alias: mel-pe1
     hostname: MEL-PE1-CISCO-IOL-RT01
-    host: 192.168.200.12
+    host: 10.255.191.12
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -24,9 +26,10 @@ nodes:
 
   - alias: bne-pe1
     hostname: BNE-PE1-CISCO-IOL-RT01
-    host: 192.168.200.13
+    host: 10.255.191.13
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -34,9 +37,10 @@ nodes:
 
   - alias: syd-pe1
     hostname: SYD-PE1-CISCO-IOSXR-RT01
-    host: 192.168.200.14
+    host: 10.255.191.14
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -44,9 +48,10 @@ nodes:
 
   - alias: gel-pe1
     hostname: GEL-PE1-CISCO-IOL-RT01
-    host: 192.168.200.15
+    host: 10.255.191.15
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -54,9 +59,10 @@ nodes:
 
   - alias: helix-sw
     hostname: BNE-ACC1-ARUBA-CX-SW01
-    host: 192.168.200.16
+    host: 10.255.191.16
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -64,9 +70,10 @@ nodes:
 
   - alias: adl-pe1
     hostname: ADL-PE1-CISCO-IOL-RT01
-    host: 192.168.200.17
+    host: 10.255.191.17
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -74,9 +81,10 @@ nodes:
 
   - alias: per-pe1
     hostname: PER-PE1-CISCO-IOL-RT01
-    host: 192.168.200.18
+    host: 10.255.191.18
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -84,9 +92,10 @@ nodes:
 
   - alias: drw-pe1
     hostname: DRW-PE1-CISCO-IOL-RT01
-    host: 192.168.200.19
+    host: 10.255.191.19
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node
@@ -94,9 +103,10 @@ nodes:
 
   - alias: hba-pe1
     hostname: HBA-PE1-CISCO-IOL-RT01
-    host: 192.168.200.20
+    host: 10.255.191.20
     port: 22
     profile: modern
+    proxy_jump: gns3@100.118.0.46
     default_user: admin
     zone: local
     credential_scope: lab-node

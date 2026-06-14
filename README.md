@@ -83,10 +83,25 @@ ADR-004 adds the privileged-access and containment layer:
 - The management ring is Tailscale-based; the lab data-plane ring is built from virtual edge routers and WireGuard links.
 - Lab nodes must not initiate SSH/RDP/SMB/WinRM/hypervisor/admin sessions to PC1, PC2, or cloud host OSes.
 
+Current live slice:
+
+- `MEL-P-CISCO-IOL-RT01` is reachable as `mel-p1` at `10.255.191.11`.
+- `MEL-PE1-CISCO-IOL-RT01` is reachable as `mel-pe1` at `10.255.191.12`.
+- Both are accessed through the GNS3 VM jump host `gns3@100.118.0.46`.
+- Both `aurora-codex` and `aurora-claude` have been verified on the MEL pair with local PC1-held Ed25519 keys.
+
+Use:
+
+```powershell
+.\ops\access\aurora-ssh.ps1 mel-p1 -UseCodex -IdentityFile $HOME\.ssh\aurora-codex-local-ed25519
+.\ops\access\aurora-ssh.ps1 mel-pe1 -UseCodex -IdentityFile $HOME\.ssh\aurora-codex-local-ed25519
+```
+
 ## Diagrams
 
 - `docs/region-a-topology.drawio` is refreshed for the Cisco Region A core.
-- `docs/region-a-topology.png` requires a local drawio/diagrams.net renderer before it can be regenerated from the updated source.
+- `docs/region-a-topology.svg` is the current committed Cisco Region A export.
+- `docs/region-a-topology-screenshot.png` is a local working screenshot unless explicitly committed.
 
 ## Historical Context
 

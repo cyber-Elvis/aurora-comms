@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.0 |
-| Date | 2026-06-14 |
+| Version | 1.1 |
+| Date | 2026-06-15 |
 | Relates | ADR-002, ADR-003, `docs/region-a-plan.md`, `docs/ip-plan.md`, `ops/access/` |
 | Driver | Telstra Protect/Secure practice requires privileged access management, segmentation, blast-radius containment, and auditability |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
@@ -142,7 +142,22 @@ No password, private key, `secret 9` hash, API token, or cloud credential belong
 - Full command restriction is deferred until TACACS+ exists, so build-phase local accounts remain powerful.
 - The data-plane ring adds routing realism, but it must be built carefully so it does not bypass host isolation.
 
-## 4. Required validation
+## 4. Implementation status
+
+As of 2026-06-15, the first local management slice is live:
+
+- GNS3 VM `tap-aurora-mgmt` provides the local node-management demarc at `10.255.191.1/24`.
+- `mel-p1` (`10.255.191.11`) and `mel-pe1` (`10.255.191.12`) are reached from PC1 through `gns3@100.118.0.46`.
+- `aurora-codex` and `aurora-claude` local Ed25519 keys exist on PC1 only; public key bodies are installed on the MEL pair.
+- Both per-agent accounts have been verified by SSH hostname checks against `MEL-P-CISCO-IOL-RT01` and `MEL-PE1-CISCO-IOL-RT01`.
+
+Still pending for ADR-004 completion:
+
+- Prove local denied paths from lab nodes toward PC1/PC2 host admin ports.
+- Apply Tailscale `tag:hosts` / `tag:lab` ACLs before cloud nodes are added.
+- Wire denied-path logs into Wazuh or the chosen SIEM/log collector.
+
+## 5. Required validation
 
 Before the cloud ring is considered production-like:
 
@@ -155,6 +170,7 @@ Before the cloud ring is considered production-like:
 7. Legacy SSH options apply only to explicitly marked legacy devices.
 8. Denied node-to-host attempts produce logs visible to Wazuh or the chosen SIEM/log collector.
 
-## 5. Revision history
+## 6. Revision history
 
+- **v1.1 (2026-06-15)** - implementation update. MEL-P/MEL-PE1 now use the GNS3 VM TAP management segment and verified per-agent SSH keys for `aurora-codex` and `aurora-claude`.
 - **v1.0 (2026-06-14)** - initial. Records the two-ring model, host-isolation invariant, per-agent automation identities, key-first access, containment rules, and `ops/access/` tooling contract.

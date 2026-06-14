@@ -2,6 +2,33 @@
 
 > **Scope note (ADR-003 v1.2 / ADR-004 v1.0, 2026-06-14).** The commands below are the **W1 containerlab/FRR baseline** (`clab-aurora-*`, `vtysh`). The **built Region A is now a Cisco GNS3 core** mapped to the Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP overlay — for current Region A operations use `region-a-plan.md` §6 (bring-up waves), §7 (per-node smoke tests, IOS/IOS-XR `show` commands), and §8 (ops + MOP shape). For secure SSH/access workflows use `ops/access/` and validate the ADR-004 host-isolation controls. A region-specific runbook split (Region A GNS3 + Region B CML) is a pending follow-up.
 
+## Current Region A access quickstart
+
+The current live management path for the MEL pair is:
+
+```text
+PC1 PowerShell -> Tailscale -> gns3@100.118.0.46 -> tap-aurora-mgmt 10.255.191.1/24 -> MGMT-SW01 -> router e0/1
+```
+
+Verified nodes:
+
+| Alias | Hostname | Management IP | Verified identities |
+| --- | --- | --- | --- |
+| `mel-p1` | `MEL-P-CISCO-IOL-RT01` | `10.255.191.11` | `aurora-codex`, `aurora-claude` |
+| `mel-pe1` | `MEL-PE1-CISCO-IOL-RT01` | `10.255.191.12` | `aurora-codex`, `aurora-claude` |
+
+From PC1:
+
+```powershell
+cd D:\CyberLab\Repos\aurora-comms
+.\ops\access\aurora-ssh.ps1 mel-p1 -UseCodex -IdentityFile $HOME\.ssh\aurora-codex-local-ed25519
+.\ops\access\aurora-ssh.ps1 mel-pe1 -UseCodex -IdentityFile $HOME\.ssh\aurora-codex-local-ed25519
+```
+
+If an SSH host-key warning appears after router key regeneration, verify the target from the GNS3 VM first, then remove only the affected entry from `C:\Users\Elvis\.ssh\aurora_known_hosts` with `ssh-keygen -R <node-ip> -f $HOME\.ssh\aurora_known_hosts`.
+
+Do not paste PowerShell commands into a router prompt. If the prompt is `MEL-...#`, type `exit` until the shell is back at `PS D:\CyberLab\Repos\aurora-comms>`.
+
 ## 1. Quick health check
 
 Run after any deploy or change. All four checks should succeed.

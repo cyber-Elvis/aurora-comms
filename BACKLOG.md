@@ -19,8 +19,10 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 
 - [x] **Record ADR-004** - two rings, host-isolation invariant, per-agent automation identities, and validation model.
 - [x] **Create `ops/access/` skeleton** - PowerShell SSH helper, non-secret inventory, vendor snippets, Tailscale ACL example, and validation runbook.
-- [ ] **Generate per-agent local keys** - `aurora-codex` and `aurora-claude`, separate from future cloud-zone keys; keep private keys off repo and off lab nodes.
-- [ ] **Apply `aurora-codex` / `aurora-claude` to MEL pair** - key-first where supported; `admin` remains Elvis-owned break-glass.
+- [x] **Restore Dell/GNS3 management reachability** - GNS3 VM `tap-aurora-mgmt` (`10.255.191.1/24`) is the node-management demarc, reached from PC1 through `gns3@100.118.0.46`.
+- [x] **Generate per-agent local keys** - `aurora-codex` and `aurora-claude` local Ed25519 keys generated under `%USERPROFILE%\.ssh`; private keys remain off repo and off lab nodes.
+- [x] **Apply `aurora-codex` / `aurora-claude` to MEL pair** - key-first access is live on `mel-p1` and `mel-pe1`; `admin` remains Elvis-owned break-glass.
+- [x] **Validate MEL per-agent SSH** - `aurora-codex` and `aurora-claude` both reach `MEL-P-CISCO-IOL-RT01` and `MEL-PE1-CISCO-IOL-RT01` through the GNS3 jump host.
 - [ ] **Prove host containment locally** - lab node cannot reach PC1/PC2 SSH/RDP/SMB/WinRM/admin ports; explicit RPKI-RTR exception still works.
 - [ ] **Draft cloud Tailscale ACL policy** - `tag:hosts` may manage `tag:lab`; no `tag:lab` -> `tag:hosts` access.
 - [ ] **Wire denied-flow logs to Wazuh** - alert on lab-node attempts toward protected host services.
