@@ -199,6 +199,10 @@ else {
         $cmd += @('-i', $IdentityFile)
     }
 
+    if ($node.ContainsKey('proxy_jump') -and -not [string]::IsNullOrWhiteSpace($node.proxy_jump) -and $node.proxy_jump -ne 'TBD') {
+        $cmd += @('-J', $node.proxy_jump)
+    }
+
     if ($effectiveProfile -eq 'sros-legacy') {
         $cmd += @(
             '-o', 'KexAlgorithms=+diffie-hellman-group-exchange-sha1,diffie-hellman-group1-sha1,diffie-hellman-group14-sha1',

@@ -10,6 +10,8 @@ param(
 
     [string]$OutDir = (Join-Path $HOME '.ssh'),
 
+    [string]$Passphrase = '',
+
     [switch]$Force
 )
 
@@ -42,7 +44,8 @@ if ($Force) {
 }
 
 $comment = "aurora-$Agent-$Zone"
-& ssh-keygen.exe -t ed25519 -f $privateKey -C $comment
+$sshPassphrase = if ($Passphrase.Length -eq 0) { '""' } else { $Passphrase }
+& ssh-keygen.exe -t ed25519 -f $privateKey -N $sshPassphrase -C $comment
 
 Write-Host ""
 Write-Host "Private key: $privateKey"
