@@ -1,17 +1,29 @@
 # Aurora Backlog
 
 Active architecture: ADR-003.
+Security architecture: ADR-004.
 
 ```text
 Region A: Cisco core on Dell GNS3
   -> Region B: DevNet CML Cisco + Juniper
   -> Region C: cloud edge
+  -> secure management/data-plane rings
   -> TechOps operations on the built network
 ```
 
 Older ADR-001/ADR-002 Nokia/containerlab items are historical unless explicitly carried forward. Nokia SR OS/SR Linux remains archived, not deleted.
 
 National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart remain the carrier geography. Region A/B/C are deployment domains, not a replacement for the Australia-wide design.
+
+## Sprint A0 - Secure Access Foundation
+
+- [x] **Record ADR-004** - two rings, host-isolation invariant, per-agent automation identities, and validation model.
+- [x] **Create `ops/access/` skeleton** - PowerShell SSH helper, non-secret inventory, vendor snippets, Tailscale ACL example, and validation runbook.
+- [ ] **Generate per-agent local keys** - `aurora-codex` and `aurora-claude`, separate from future cloud-zone keys; keep private keys off repo and off lab nodes.
+- [ ] **Apply `aurora-codex` / `aurora-claude` to MEL pair** - key-first where supported; `admin` remains Elvis-owned break-glass.
+- [ ] **Prove host containment locally** - lab node cannot reach PC1/PC2 SSH/RDP/SMB/WinRM/admin ports; explicit RPKI-RTR exception still works.
+- [ ] **Draft cloud Tailscale ACL policy** - `tag:hosts` may manage `tag:lab`; no `tag:lab` -> `tag:hosts` access.
+- [ ] **Wire denied-flow logs to Wazuh** - alert on lab-node attempts toward protected host services.
 
 ## Sprint A1 — Region A Cisco Core
 
@@ -51,6 +63,7 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 ## Sprint C — Cloud Edge
 
 - [ ] **DigitalOcean containerlab edge** — cRPD + FRR + Routinator / route-server pattern.
+- [ ] **Build PC1-PC2-DO-Oracle lab edge ring** - virtual edge routers, per-edge WireGuard keys, and eBGP/IS-IS reconvergence tests per ADR-004.
 - [ ] **Public-IP route-server demo** — safe lab-only BGP policy; no real route advertisement.
 - [ ] **Teardown discipline** — budget reminders, IaC configs, destroy scripts.
 - [ ] **Oracle Free evaluation** — NOC/monitoring candidate only; not KVM.
@@ -78,6 +91,7 @@ Run these one at a time with Region A stopped:
 
 ## Long-Term
 
+- [ ] **ADR-002 archive cleanup** - keep the file path stable, but move old Nokia operational details into a clear archive appendix so active readers land on ADR-003/ADR-004 first.
 - [ ] EVPN/VXLAN fabric in DevNet CML.
 - [ ] Segment Routing / SR-MPLS iteration after LDP baseline.
 - [ ] BFD and fast-convergence tuning.

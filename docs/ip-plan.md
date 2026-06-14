@@ -18,6 +18,39 @@ Earlier ADR-001 numbering (`AS65100`, `10.1.0.0/16`) is retired for the active l
 | Region B | DevNet CML Cisco + Juniper extension | Planned; reservation-dependent CML addressing to be recorded when built |
 | Region C | Cloud edge with cRPD/FRR/Routinator | Planned; cloud public/private addressing to be recorded when provisioned |
 
+## Secure Ring Addressing Model
+
+ADR-004 splits host management from lab transport:
+
+| Ring | Addressing owner | Notes |
+| --- | --- | --- |
+| Management ring | Tailscale plus existing host LANs | PC1, PC2/Dell, DigitalOcean host, and Oracle host. Hosts can manage lab nodes; lab nodes must not initiate host-admin sessions. |
+| Lab data-plane ring | Virtual edge-router interfaces and WireGuard tunnel /31s or /127s | `pc1-edge`, `pc2-edge`, `do-edge`, and `oci-edge`. Runs eBGP or IS-IS for reconvergence practice. |
+
+The PC1/PC2/cloud host OS addresses are protected endpoints, not routed lab loopbacks. Cloud host addresses must be recorded separately from the virtual edge-router addresses when Region C is built.
+
+### Lab data-plane ring — edge reservations
+
+Allocated for the virtual site-edge routers (`ops/ring/`). Deliberately **separate** from the carrier POP loopbacks (`10.0.0.1–10.0.0.9`) and CE loopbacks (`10.0.1.x`), so a ring-edge can never be confused with a carrier PE.
+
+| Edge node | ASN | Loopback | Ring neighbours |
+| --- | --- | --- | --- |
+| `pc1-edge` | `64503` | `10.0.2.1/32` | pc2-edge, oci-edge |
+| `pc2-edge` | `64504` | `10.0.2.2/32` | pc1-edge, do-edge |
+| `do-edge` | `64505` | `10.0.2.3/32` | pc2-edge, oci-edge |
+| `oci-edge` | `64506` | `10.0.2.4/32` | do-edge, pc1-edge |
+
+Ring transport `/31`s (separate from the carrier backbone `10.255.0.0/24`):
+
+| Ring leg | Transport | Carrier |
+| --- | --- | --- |
+| `pc1-edge` ↔ `pc2-edge` | ethernet `192.168.200.x` (no tunnel) | existing local link |
+| `pc2-edge` ↔ `do-edge` | `10.255.255.0/31` (WireGuard) | per-edge WG keypair |
+| `do-edge` ↔ `oci-edge` | `10.255.255.4/31` (WireGuard, cloud-to-cloud) | per-edge WG keypair |
+| `oci-edge` ↔ `pc1-edge` | `10.255.255.2/31` (WireGuard) | per-edge WG keypair |
+
+ASNs `64503–64506` are unused entries in the RFC 5398 documentation range (`64496–64511`). The ring runs eBGP between these edge ASNs for reconvergence practice; **no host/management subnet is ever advertised into the ring** (`NO-HOST-SUBNETS` egress guard, `ops/ring/ring-ebgp.example.conf`). Concrete loopback/transport values are placeholders until Region C is provisioned.
+
 ## National POP Overlay
 
 Region A/B/C are deployment domains. POP names are the national carrier topology.

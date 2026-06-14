@@ -1,6 +1,6 @@
 # Aurora Communications — Network Design Document
 
-> **Current scope note (ADR-003 v1.2, 2026-06-14):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.2, with Region B in DevNet CML and Region C in cloud. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**; older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
+> **Current scope note (ADR-003 v1.2 / ADR-004 v1.0, 2026-06-14):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.2, with Region B in DevNet CML and Region C in cloud. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**. ADR-004 adds the secure management/data-plane ring model: host OSes are protected management anchors, while virtual edge routers carry lab transport. Older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
 
 | Field | Value |
 | --- | --- |
@@ -86,6 +86,8 @@ Geographic scope: eight POPs in Melbourne (HQ + core), Sydney, Brisbane, Geelong
 ## 4. Topology
 
 Eight national POPs, modelled as a tiered carrier backbone rather than an 8-node full mesh. The first active lab slice is MEL/SYD/BNE with GEL as a placeholder; ADL/PER/DRW/HBA are reserved expansion POPs. In a real carrier, this avoids the operational mess of every POP connecting to every other POP and makes maintenance/failure domains clearer.
+
+ADR-004 adds a separate secure inter-site ring for the lab execution domains: PC1, PC2/Dell, DigitalOcean, and Oracle are connected by a management ring, while virtual edge routers (`pc1-edge`, `pc2-edge`, `do-edge`, `oci-edge`) form the lab data-plane ring. Do not treat PC1, PC2, or cloud host OSes as routed lab nodes.
 
 ```text
                          DRW

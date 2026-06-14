@@ -1,0 +1,12 @@
+# Palo Alto PAN-OS placeholder template.
+# Prefer an admin role profile during ops; superuser is acceptable only during build.
+
+set deviceconfig system hostname <HOSTNAME>
+set mgt-config users admin permissions role-based superuser yes
+set mgt-config users aurora-codex permissions role-based superuser yes
+set mgt-config users aurora-codex public-key "<AURORA_CODEX_PUBLIC_KEY>"
+set mgt-config users aurora-claude permissions role-based superuser yes
+set mgt-config users aurora-claude public-key "<AURORA_CLAUDE_PUBLIC_KEY>"
+
+# Restrict management access with permitted IP addresses / interface management profile.
+# Deny lab-node initiated access to host OS management services at the site demarcation.

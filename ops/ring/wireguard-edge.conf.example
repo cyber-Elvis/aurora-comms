@@ -1,0 +1,28 @@
+# WireGuard ring-edge tunnel — PLACEHOLDER (ADR-004 §2.5). Do NOT commit real keys.
+# One keypair PER EDGE LINK. Generate on the operator host:  wg genkey | tee priv | wg pubkey
+# Private keys live outside this repo (e.g. %USERPROFILE%\.ssh\ or a password manager); only
+# public keys are exchanged between the two edge ends.
+#
+# Example shown: do-edge end of the do-edge <-> oci-edge cloud-to-cloud leg.
+
+[Interface]
+# Private key for THIS edge end — never in the repo:
+PrivateKey = <THIS_EDGE_PRIVATE_KEY_NOT_IN_REPO>
+Address    = 10.255.255.4/31        # ring-transport /31 for this leg (do-edge side)
+ListenPort = 51820
+
+[Peer]
+# The adjacent ring edge (oci-edge):
+PublicKey  = <PEER_EDGE_PUBLIC_KEY>
+Endpoint   = <PEER_PUBLIC_IP>:51820
+# TIGHT AllowedIPs = ring transport + peer edge loopback ONLY.
+# Deliberately excludes 192.168.200.0/24 and any host/management subnet, so the
+# tunnel cannot carry a lab-node -> host-OS flow (containment at the transport layer).
+AllowedIPs = 10.255.255.5/32, 10.0.2.4/32   # peer transport + oci-edge loopback (10.0.2.x block)
+PersistentKeepalive = 25
+
+# Per-leg /31 plan (ring transport, separate from the carrier core 10.255.0.0/24):
+#   pc2-edge <-> do-edge   : 10.255.255.0/31
+#   do-edge  <-> oci-edge  : 10.255.255.4/31
+#   oci-edge <-> pc1-edge  : 10.255.255.2/31
+#   pc1-edge <-> pc2-edge  : ethernet (192.168.200.x) — no WireGuard

@@ -6,7 +6,7 @@
 | Version | 1.2 |
 | Date | 2026-06-14 |
 | Supersedes (in part) | ADR-002 §3.1 — the Region A *vendor stack* (Nokia SR Linux + SR OS core). The two-region *structure*, VPN boundary, tenant model, and Dell capability envelope in ADR-002 still stand. |
-| Relates | ADR-001 (lab-architecture.md), ADR-002 (two-region), `region-a-plan.md` v2.2, `telstra-ops-practice-plan.md` |
+| Relates | ADR-001 (lab-architecture.md), ADR-002 (two-region), ADR-004 (secure rings and host isolation), `region-a-plan.md` v2.2, `telstra-ops-practice-plan.md` |
 | Driver | Telstra TechOps contract (Protect & Secure towers) — see `memory/telstra-techops-role.md` |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 
@@ -73,7 +73,7 @@ SR OS 13.0R4 licensed qcow2 + the RTC/UUID recipe are **cold-stored in three pla
 | **B** | DevNet CML | **Cisco + Juniper** (vSRX/vJunos via BYOI) | Reservation-gated; ephemeral, export YAML |
 | **C** | Cloud (DigitalOcean) | containerlab: **cRPD + FRR + Routinator + public-IP route-server** | Time-boxed (credit), configs-as-code |
 
-Region C is the public-facing RPKI/BGP edge the Dell can't truly simulate, and a second home for Juniper-via-cRPD.
+Region C is the public-facing RPKI/BGP edge the Dell can't truly simulate, and a second home for Juniper-via-cRPD. ADR-004 constrains how Region C connects back: cloud host OSes join the management ring, while virtual cloud edge routers join the lab data-plane ring. The cloud host OS is not a routed lab node.
 
 ### 2.5 Build-then-operate sequencing
 Build the full network (Region A Cisco core → Region B → Region C) **first**; then run the Telstra ops practice (MOP-driven changes, software patching/upgrades, monitoring, incident response, evidence capture) **on top of it**. The build is the practice network — not a separate exercise. See `telstra-ops-practice-plan.md`.
@@ -104,6 +104,7 @@ Discipline: everything cloud is **built as code** (containerlab YAML / cloud-ini
 - `adr-002-two-region.md` → §3.1 marked superseded-in-part by this ADR.
 - `aurora-deployment-status.md`, `telstra-ops-practice-plan.md`, `devnet-resource-strategy.md`, `design.md`, `lab-architecture.md` → re-vendor/placement corrections + cross-refs.
 - `docs/region-a-topology.drawio` → refreshed to the Cisco Region A core. PNG export is deferred until a drawio renderer is available.
+- `docs/adr-004-secure-rings-host-isolation.md` + `ops/access/` → secure access, per-agent automation, management/data-plane rings, and host-isolation validation.
 
 ## 4. Operating model (how we build/change)
 Claude **drives** the device console (types commands); the user **coaches** — sets up devices, provides command sequences + the MOP/operational-evidence template, checks the work, and verifies via the GNS3 REST API (staying off the console to avoid single-client collisions). Changes are **MOP-driven** with operational evidence captured (Change ID, risk/impact, backout, pre-check, implementation log, post-check, rollback, closure). See `memory/lab-coaching-workflow.md` and `telstra-ops-practice-plan.md`.

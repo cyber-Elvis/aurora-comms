@@ -1,0 +1,30 @@
+! Cisco IOS-XR placeholder template.
+! Use local full privilege during build; move to TACACS+ command authorization later.
+
+hostname <HOSTNAME>
+domain name lab.aurora
+ssh server v2
+ssh server rate-limit 60
+
+username admin
+ group root-system
+ secret <YOU_SET_THIS_ON_BOX>
+!
+username aurora-codex
+ group root-system
+ sshkey <AURORA_CODEX_PUBLIC_KEY>
+!
+username aurora-claude
+ group root-system
+ sshkey <AURORA_CLAUDE_PUBLIC_KEY>
+!
+
+! Restrict management sources with an ingress ACL on the management interface/VRF.
+ipv4 access-list MGMT-SOURCES
+ 10 permit ipv4 host 192.168.200.1 any
+ 20 permit ipv4 host 192.168.200.2 any
+ 30 permit ipv4 host <PC2_GNS3_VM_OR_TAILSCALE_SOURCE> any
+ 40 permit ipv4 host <DO_HOST_OR_MGMT_SOURCE> any
+ 50 permit ipv4 host <OCI_HOST_OR_MGMT_SOURCE> any
+ 999 deny ipv4 any any log
+!

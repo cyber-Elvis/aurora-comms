@@ -1,15 +1,17 @@
 # ADR-002 — Two-region Aurora carrier (Nokia local + Cisco-dominant DevNet CML)
 
+> **Historical ADR.** This file path stays stable for traceability and existing references, but the active build is superseded by **ADR-003** (Cisco Region A, Juniper/Cisco Region B, cloud Region C) and **ADR-004** (secure rings, per-agent access, and host isolation). Treat the Nokia/containerlab operational details below as archived historical context unless a later document explicitly carries them forward.
+
 | Field | Value |
 | --- | --- |
-| Status | Accepted (§3.1 vendor stack superseded-in-part by ADR-003) |
+| Status | Historical / superseded-in-part by ADR-003 and ADR-004 |
 | Version | 1.6 |
 | Date | June 2026 |
 | Supersedes | ADR-001 v1.6 single-region MSP carrier decision |
 | Triggered by | Empirical DevNet integration validation per ADR-001 §17.6 (May 31 2026) |
 | Decision | Aurora carrier deployed across two regions — Nokia region locally on home lab, Cisco-dominant region in Cisco DevNet CML — interconnected at the region boundary via openconnect-in-WSL2 + Docker MASQUERADE + eBGP |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
-| Related | `docs/lab-architecture.md` (ADR-001 v1.6), `docs/design.md`, `docs/ip-plan.md`, `BACKLOG.md` |
+| Related | `docs/lab-architecture.md` (ADR-001 v1.6), `docs/adr-003-revendor-cisco-region-a.md`, `docs/adr-004-secure-rings-host-isolation.md`, `docs/design.md`, `docs/ip-plan.md`, `BACKLOG.md` |
 
 ## Revision history
 

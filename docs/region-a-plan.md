@@ -8,9 +8,9 @@
 | Scope | Steady-state Region A fabric on Dell GNS3 — four tiers: **P/core + PE + Customer Edge + Internet Edge** (simulated upstream transit + IXP peering + **lab RPKI/ROV** + **IPv4/IPv6 dual-stack**) + tenant workloads. Core is **MPLS L3VPN-capable** (VRF + VPNv4). Region A/B/C are deployment domains; the represented national POPs are **Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart**. |
 | Excludes | Singleton heavyweights (FTDv, Cat9kv, FMC, XRv9000, PA-VM 11), Region B (DevNet CML), Region C (cloud edge), inter-region BGP confederation, routing-protocol authentication (TCP-AO/MD5). **NOT excluded but explicitly lab-only:** ASNs are RFC 5398 *documentation* ASNs (not registered), prefixes are RFC 5737/3849 *documentation* space, RPKI uses local SLURM VRPs (not real RIR ROAs) — nothing is ever advertised to the real Internet. |
 | Revision | **v2.2 expands the national POP overlay** to include Adelaide, Perth, Darwin, and Tasmania/Hobart as planned POPs. v2.1 restored the Australia-wide POP overlay on top of the Cisco re-vendor: Melbourne, Sydney, Brisbane, and Geelong remain the initial carrier geography; Region A/B/C describe where the lab runs. v2.0 re-vendored the backbone from Nokia to Cisco per ADR-003 (Aurora-P + PE-1 + PE-2 = IOL-AdvEnterprise-L3; PE-3 = IOS-XRv 6.1.3 unchanged). The entire Internet-edge / IXP / RPKI-ROV / IP-AS / policy design is preserved — only the P/PE platform and its CLI changed. Nokia SR OS/SR Linux are **archived** (recipe + license cold-stored, recoverable via git history). VPRN → VRF terminology; SR OS `show router …` → IOS `show …`. Added the explicit **L3VPN validation (VRF CUST-A)** path. |
-| Source of truth for design | **ADR-003** (Region A vendor stack — Cisco), ADR-002 §3.2–§3.9 (two-region structure, Dell capability envelope, operational rules) |
+| Source of truth for design | **ADR-003** (Region A vendor stack — Cisco), **ADR-004** (secure rings and host isolation), ADR-002 §3.2–§3.9 (two-region structure, Dell capability envelope, operational rules) |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
-| Related | `docs/adr-003-revendor-cisco-region-a.md`, `docs/adr-002-two-region.md`, `docs/design.md`, `docs/ip-plan.md`, `docs/runbook.md`, `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/lab-coaching-workflow.md` |
+| Related | `docs/adr-003-revendor-cisco-region-a.md`, `docs/adr-004-secure-rings-host-isolation.md`, `docs/adr-002-two-region.md`, `docs/design.md`, `docs/ip-plan.md`, `docs/runbook.md`, `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/lab-coaching-workflow.md` |
 
 ## 1. What this doc is
 
@@ -271,6 +271,9 @@ The Internet Edge sits **north of Aurora AS 64496** and is entirely simulated �
 - **All Region A nodes run on `compute_id: "vm"`** (the GNS3 VM compute). Tenant docker containers and the three FRR IXP containers run on the GNS3 VM's docker daemon.
 - **Console-driven config**: the `iolcfg.py` socket helper on the GNS3 VM drives IOL/IOS-XR consoles (raw socket + telnet IAC; the VM's Python 3.14 has no `telnetlib`). Claude drives; the user verifies via the REST API (`memory/lab-coaching-workflow.md`).
 - **Management plane** (Wazuh, MISP, Cowork, openconnect to DevNet) stays on **PC1** per ADR-002 §6.
+- **Secure access model** follows ADR-004: `admin` is Elvis-owned break-glass; `aurora-codex` and `aurora-claude` are per-agent lab-node-only automation identities; PC1, PC2/Dell, DO, and Oracle host OSes are not routed lab nodes.
+- **Ring model** is split: Tailscale carries the management ring between hosts, while virtual edge routers carry the lab data-plane ring over WireGuard and eBGP/IS-IS. Host OSes never become transit routers for lab traffic.
+- **Containment rule**: lab nodes may reach documented services such as PC1 Routinator `192.168.200.1:3323`, but must not initiate SSH/RDP/SMB/WinRM/hypervisor/admin sessions to PC1, PC2, DO host, or Oracle host.
 
 ## 4. IP and AS plan (Region A slice)
 
@@ -581,6 +584,7 @@ Forward-wave order per §6. Do not skip the convergence gates.
 ## 11. References
 
 - `docs/adr-003-revendor-cisco-region-a.md` — Region A vendor stack (Cisco), Juniper→B, three-region model, build-then-operate.
+- `docs/adr-004-secure-rings-host-isolation.md` — management/data-plane rings, per-agent automation access, and host-isolation validation.
 - `docs/adr-002-two-region.md` — §3.2 Region B, §3.9 Dell capability envelope + operational rules, §6 VPN endpoint (PC1).
 - `docs/design.md` — protocol-level Aurora design (IS-IS, LDP, BGP VPNv4 conventions).
 - `docs/ip-plan.md` — cross-region IP/AS/RD-RT index; Region A summary mirrors §4.

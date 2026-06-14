@@ -6,6 +6,7 @@ Aurora Communications is a fictional Australian Tier 1 / managed-carrier lab. Th
 Cisco Region A (Dell GNS3, building now)
   -> Juniper/Cisco Region B (DevNet CML)
   -> Cloud Region C (DigitalOcean / containerlab edge)
+  -> Secure management + data-plane rings (ADR-004)
   -> Build the network first, then operate it with TechOps discipline
 ```
 
@@ -36,14 +37,18 @@ Nokia SR OS/SR Linux is archived, not deleted. The licensed SR OS recipe remains
 
 ## Source Of Truth
 
+Read these in order. ADR-003 and ADR-004 are the current architectural decisions; ADR-002 remains only as a stable historical reference for earlier two-region/Nokia/containerlab reasoning and empirical Dell/DevNet findings.
+
 | Document | Purpose |
 | --- | --- |
 | `docs/adr-003-revendor-cisco-region-a.md` | Current decision: Cisco Region A, Juniper/Cisco Region B, cloud Region C |
+| `docs/adr-004-secure-rings-host-isolation.md` | Secure management/data-plane rings, per-agent access, and host-isolation model |
 | `docs/region-a-plan.md` | Executable Region A build and operations plan, including the national POP overlay |
 | `docs/telstra-ops-practice-plan.md` | Two-week TechOps practice plan layered on top of the built network |
 | `docs/aurora-deployment-status.md` | Current environment and validation state |
 | `docs/devnet-resource-strategy.md` | Region B / DevNet / cloud resource strategy |
 | `docs/runbook.md` | Operational runbook notes and pending split |
+| `ops/access/` | Non-secret SSH helper, inventory, vendor snippets, Tailscale ACL example, and validation runbook |
 
 ## Region A Build Shape
 
@@ -67,6 +72,17 @@ The lab is intentionally build-then-operate:
 
 That order matters. Patching and upgrade drills only become meaningful once there is real routing, security policy, monitoring, and customer impact to preserve.
 
+## Secure Access Model
+
+ADR-004 adds the privileged-access and containment layer:
+
+- `admin` is Elvis's break-glass account.
+- `aurora-codex` and `aurora-claude` are per-agent automation accounts for lab nodes only.
+- Automation uses SSH public keys first; private keys stay on PC1 or another approved operator host.
+- PC1, PC2/Dell, DigitalOcean, and Oracle host OSes are never routed lab nodes.
+- The management ring is Tailscale-based; the lab data-plane ring is built from virtual edge routers and WireGuard links.
+- Lab nodes must not initiate SSH/RDP/SMB/WinRM/hypervisor/admin sessions to PC1, PC2, or cloud host OSes.
+
 ## Diagrams
 
 - `docs/region-a-topology.drawio` is refreshed for the Cisco Region A core.
@@ -74,4 +90,4 @@ That order matters. Patching and upgrade drills only become meaningful once ther
 
 ## Historical Context
 
-Earlier Aurora plans were Nokia-led and containerlab-first. Those records remain in ADR-002 and the older architecture docs for traceability, but ADR-003 supersedes the active Region A vendor stack.
+Earlier Aurora plans were Nokia-led and containerlab-first. Those records remain at the stable `docs/adr-002-two-region.md` path for traceability, but ADR-003 and ADR-004 supersede the active build and security model. Old Nokia operational detail will be moved into an archive appendix when the historical docs get their cleanup pass.
