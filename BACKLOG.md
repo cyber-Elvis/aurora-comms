@@ -11,7 +11,7 @@ Region A: Cisco core on Dell GNS3
 
 Older ADR-001/ADR-002 Nokia/containerlab items are historical unless explicitly carried forward. Nokia SR OS/SR Linux remains archived, not deleted.
 
-National POP overlay: Melbourne, Sydney, Brisbane, and Geelong remain the carrier geography. Region A/B/C are deployment domains, not a replacement for the Australia-wide design.
+National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart remain the carrier geography. Region A/B/C are deployment domains, not a replacement for the Australia-wide design.
 
 ## Sprint A1 — Region A Cisco Core
 
@@ -27,6 +27,7 @@ National POP overlay: Melbourne, Sydney, Brisbane, and Geelong remain the carrie
 - [ ] **Northwind FortiGate CE** — eBGP to PE-1, private AS 64512 default model, NAT/security policy, logging.
 - [ ] **Helix Aruba CX LAN** — VLAN 100/200, local VRF trunk to PE-2, management reachability.
 - [ ] **Geelong access placeholder** — keep `region-a-ce-spare` as GEL access now; promote to light `Aurora-PE-4` / GEL-PE1 after the base Cisco core is stable if the fourth PE is needed.
+- [ ] **National POP expansion placeholders** — add ADL-PE1, PER-PE1, DRW-PE1, and HBA/TAS-PE1 to IPAM/NetBox and topology diagrams before instantiating them in GNS3/CML/cloud.
 - [ ] **Transit-A / Transit-B** — CSR1000v primary transit AS 64497 and IOL backup transit AS 64498.
 - [ ] **IXP route-server fabric** — GNS3 switch + FRR RS/content/eyeball peers; enforce peer-over-transit preference.
 - [ ] **IPv6 dual-stack** — use valid RFC 3849 `2001:db8::/32` slices from `docs/region-a-plan.md` / `docs/ip-plan.md`.

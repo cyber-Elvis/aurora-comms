@@ -8,7 +8,7 @@
 | Cadence | ~5+ hrs/day, 10 working days |
 | Weighting | Balanced: Cisco R&S · Juniper · firewalls (Forti/PA/FTD/ASA) · process/tooling |
 | Upgrade images | DevNet CML (multi-version Cisco) + vendor trial portals (FortiOS/PAN-OS) |
-| Context | `memory/telstra-techops-role.md` · `docs/adr-003-revendor-cisco-region-a.md` (build-then-operate) · lab from `region-a-plan.md` v2.1 / `gns3-vm-ram-budget.md` |
+| Context | `memory/telstra-techops-role.md` · `docs/adr-003-revendor-cisco-region-a.md` (build-then-operate) · lab from `region-a-plan.md` v2.2 / `gns3-vm-ram-budget.md` |
 
 ## 0. How to use this · what "ready" means
 
@@ -32,7 +32,7 @@ A Check Point, Netskope, Citrix ADC, or Arbor you've never seen behaves like the
 
 ## 1. Foundation (Day 0 — do this first)
 
-> **Build-then-operate (ADR-003).** This practice layers on the **Region A Cisco core** (`region-a-plan.md` v2.1) — IOL-L3 P + PEs + IOS-XRv, IS-IS/LDP/iBGP-VPNv4 + MPLS L3VPN, mapped to the Melbourne/Sydney/Brisbane/Geelong POP overlay. That backbone *is* the network you run/patch/troubleshoot below: build it first (underway in `ops-lab`), then operate it. Juniper practice = **vSRX standalone-local** now (+ Region B later); firewalls (Forti/PA/FTD) are singleton heavyweights brought up solo.
+> **Build-then-operate (ADR-003).** This practice layers on the **Region A Cisco core** (`region-a-plan.md` v2.2) — IOL-L3 P + PEs + IOS-XRv, IS-IS/LDP/iBGP-VPNv4 + MPLS L3VPN, mapped to the Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP overlay. That backbone *is* the network you run/patch/troubleshoot below: build it first (underway in `ops-lab`), then operate it. Juniper practice = **vSRX standalone-local** now (+ Region B later); firewalls (Forti/PA/FTD) are singleton heavyweights brought up solo.
 
 | Task | What | Where |
 | --- | --- | --- |

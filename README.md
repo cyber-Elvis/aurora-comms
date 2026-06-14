@@ -27,6 +27,10 @@ Region labels are **deployment domains**, not the carrier's geography. The natio
 | Sydney | Major interconnect and Region B/C handoff: `Aurora-PE-3`, Transit-B, first ROV enforcer |
 | Brisbane | Regional enterprise edge: `Aurora-PE-2`, Helix access/LAN services |
 | Geelong | Regional access POP placeholder now; target light `Aurora-PE-4` / GEL edge once the Cisco core is stable |
+| Adelaide | South-central aggregation POP; target `ADL-PE1` |
+| Perth | Western Australia POP; target `PER-PE1`, cloud/interstate latency practice |
+| Darwin | Northern Australia remote POP; target `DRW-PE1`, constrained/remote operations practice |
+| Tasmania / Hobart | Island POP; target `HBA-PE1` / `TAS-PE1`, submarine/backhaul-failure scenarios |
 
 Nokia SR OS/SR Linux is archived, not deleted. The licensed SR OS recipe remains preserved because it is valuable and hard to recreate, but it is no longer the active Region A core.
 

@@ -1,10 +1,10 @@
 <mxfile host="app.diagrams.net" modified="2026-06-10T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
-  <diagram id="region-a-v21" name="Region A v2.1">
+  <diagram id="region-a-v22" name="Region A v2.2">
     <mxGraphModel dx="2200" dy="1300" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1280" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" value="Aurora Communications - Region A v2.1: Cisco Dell GNS3 SP Fabric with National POP Overlay, IXP, Dual-stack, and Lab RPKI/ROV" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+        <mxCell id="title" value="Aurora Communications - Region A v2.2: Cisco Dell GNS3 SP Fabric with 8-POP National Overlay, IXP, Dual-stack, and Lab RPKI/ROV" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
           <mxGeometry x="40" y="20" width="2100" height="40" as="geometry" />
         </mxCell>
         <mxCell id="inet-bg" value="Simulated Internet Edge - RFC 5398 documentation ASNs, RFC 5737 IPv4 and RFC 3849 IPv6 documentation prefixes; never advertised to real Internet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#7e22ce;fontColor=#581c87;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
@@ -93,7 +93,7 @@
         <mxCell id="policy-note" value="Route policy intent&lt;br&gt;&lt;b&gt;IXP LP300 &amp;gt; Transit-A LP200 &amp;gt; Transit-B LP100&lt;/b&gt;&lt;br&gt;Advertise outward only Aurora PI 203.0.113.0/25, 2001:db8:aaaa::/48, and approved customer aggregates.&lt;br&gt;Drop RPKI Invalid at edge; NotFound accepted. No transit routes to IXP; no IXP routes to transit except labelled leak demo." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#047857;fontColor=#064e3b;fontSize=12;align=left;spacing=8;" vertex="1" parent="1">
           <mxGeometry x="1405" y="795" width="700" height="125" as="geometry" />
         </mxCell>
-        <mxCell id="vprn-note" value="National POP overlay&lt;br&gt;MEL = core + primary transit + IXP&lt;br&gt;SYD = interconnect + ROV + Transit-B&lt;br&gt;BNE = Helix/customer edge&lt;br&gt;GEL = access placeholder now, PE later&lt;br&gt;&lt;br&gt;VRF/L3VPN: RD/RT = 64496:&amp;lt;customer_id&amp;gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;fontColor=#1e3a8a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
+        <mxCell id="vprn-note" value="8-POP national overlay&lt;br&gt;Active: MEL core/IXP, SYD interconnect/ROV, BNE customer edge, GEL access placeholder&lt;br&gt;Planned: ADL-PE1, PER-PE1, DRW-PE1, HBA/TAS-PE1&lt;br&gt;&lt;br&gt;VRF/L3VPN: RD/RT = 64496:&amp;lt;customer_id&amp;gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;fontColor=#1e3a8a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
           <mxGeometry x="1405" y="935" width="340" height="130" as="geometry" />
         </mxCell>
         <mxCell id="legend" value="Legend&lt;br&gt;&lt;font color=&quot;#0f172a&quot;&gt;Solid line: physical/L3 adjacency&lt;br&gt;Dashed line: overlay/control-plane session&lt;br&gt;Dotted line: optional/future path&lt;br&gt;Blue: Cisco core | Purple: transit | Teal: IXP/FRR | Grey: mgmt/RPKI&lt;br&gt;Red: Fortinet | Orange: Aruba | Yellow: workloads&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;fontColor=#0f172a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">

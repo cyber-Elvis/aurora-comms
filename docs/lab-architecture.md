@@ -1,6 +1,6 @@
 # Aurora & Sentinel Ridge — Lab Architecture (ADR-001)
 
-> **Current scope note (ADR-003 v1.1, 2026-06-14):** this ADR-001 document is the historical workload-placement record. The active lab is now Cisco Region A on Dell GNS3, Juniper/Cisco Region B in DevNet CML, and Region C cloud edge, followed by TechOps operations practice. The national POP geography remains Melbourne, Sydney, Brisbane, and Geelong; Region A/B/C are deployment domains. Use `docs/adr-003-revendor-cisco-region-a.md`, `docs/region-a-plan.md`, `docs/devnet-resource-strategy.md`, and `docs/telstra-ops-practice-plan.md` for current execution.
+> **Current scope note (ADR-003 v1.2, 2026-06-14):** this ADR-001 document is the historical workload-placement record. The active lab is now Cisco Region A on Dell GNS3, Juniper/Cisco Region B in DevNet CML, and Region C cloud edge, followed by TechOps operations practice. The national POP geography remains Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart; Region A/B/C are deployment domains. Use `docs/adr-003-revendor-cisco-region-a.md`, `docs/region-a-plan.md`, `docs/devnet-resource-strategy.md`, and `docs/telstra-ops-practice-plan.md` for current execution.
 
 | Field | Value |
 | --- | --- |

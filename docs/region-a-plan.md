@@ -1,13 +1,13 @@
-# Region A — Build and Operations Plan (v2.1)
+# Region A — Build and Operations Plan (v2.2)
 
 | Field | Value |
 | --- | --- |
 | Status | Active (build in progress) |
-| Version | 2.1 |
+| Version | 2.2 |
 | Date | June 2026 |
-| Scope | Steady-state Region A fabric on Dell GNS3 — four tiers: **P/core + PE + Customer Edge + Internet Edge** (simulated upstream transit + IXP peering + **lab RPKI/ROV** + **IPv4/IPv6 dual-stack**) + tenant workloads. Core is **MPLS L3VPN-capable** (VRF + VPNv4). Region A/B/C are deployment domains; the represented national POPs are **Melbourne, Sydney, Brisbane, and Geelong**. |
+| Scope | Steady-state Region A fabric on Dell GNS3 — four tiers: **P/core + PE + Customer Edge + Internet Edge** (simulated upstream transit + IXP peering + **lab RPKI/ROV** + **IPv4/IPv6 dual-stack**) + tenant workloads. Core is **MPLS L3VPN-capable** (VRF + VPNv4). Region A/B/C are deployment domains; the represented national POPs are **Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart**. |
 | Excludes | Singleton heavyweights (FTDv, Cat9kv, FMC, XRv9000, PA-VM 11), Region B (DevNet CML), Region C (cloud edge), inter-region BGP confederation, routing-protocol authentication (TCP-AO/MD5). **NOT excluded but explicitly lab-only:** ASNs are RFC 5398 *documentation* ASNs (not registered), prefixes are RFC 5737/3849 *documentation* space, RPKI uses local SLURM VRPs (not real RIR ROAs) — nothing is ever advertised to the real Internet. |
-| Revision | **v2.1 restores the Australia-wide POP overlay** on top of the Cisco re-vendor: Melbourne, Sydney, Brisbane, and Geelong remain the carrier geography; Region A/B/C describe where the lab runs. v2.0 re-vendored the backbone from Nokia to Cisco per ADR-003 (Aurora-P + PE-1 + PE-2 = IOL-AdvEnterprise-L3; PE-3 = IOS-XRv 6.1.3 unchanged). The entire Internet-edge / IXP / RPKI-ROV / IP-AS / policy design is preserved — only the P/PE platform and its CLI changed. Nokia SR OS/SR Linux are **archived** (recipe + license cold-stored, recoverable via git history). VPRN → VRF terminology; SR OS `show router …` → IOS `show …`. Added the explicit **L3VPN validation (VRF CUST-A)** path. |
+| Revision | **v2.2 expands the national POP overlay** to include Adelaide, Perth, Darwin, and Tasmania/Hobart as planned POPs. v2.1 restored the Australia-wide POP overlay on top of the Cisco re-vendor: Melbourne, Sydney, Brisbane, and Geelong remain the initial carrier geography; Region A/B/C describe where the lab runs. v2.0 re-vendored the backbone from Nokia to Cisco per ADR-003 (Aurora-P + PE-1 + PE-2 = IOL-AdvEnterprise-L3; PE-3 = IOS-XRv 6.1.3 unchanged). The entire Internet-edge / IXP / RPKI-ROV / IP-AS / policy design is preserved — only the P/PE platform and its CLI changed. Nokia SR OS/SR Linux are **archived** (recipe + license cold-stored, recoverable via git history). VPRN → VRF terminology; SR OS `show router …` → IOS `show …`. Added the explicit **L3VPN validation (VRF CUST-A)** path. |
 | Source of truth for design | **ADR-003** (Region A vendor stack — Cisco), ADR-002 §3.2–§3.9 (two-region structure, Dell capability envelope, operational rules) |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 | Related | `docs/adr-003-revendor-cisco-region-a.md`, `docs/adr-002-two-region.md`, `docs/design.md`, `docs/ip-plan.md`, `docs/runbook.md`, `memory/gns3-nos-boot-quirks.md`, `memory/gns3-vm-ram-budget.md`, `memory/lab-coaching-workflow.md` |
@@ -22,7 +22,7 @@ Region A's empirical capacity envelope (ADR-002 §3.9) is the constraint this pl
 
 ### 1.1 National POP overlay
 
-The old Melbourne/Sydney/Brisbane/Geelong concept is still the design. What changed is the vendor/platform underneath it. Treat **Region A/B/C as execution domains** and **MEL/SYD/BNE/GEL as carrier POPs**.
+The old Melbourne/Sydney/Brisbane/Geelong concept is still the first active slice of the design, and the national model now extends to Adelaide, Perth, Darwin, and Tasmania/Hobart. What changed is the vendor/platform underneath it. Treat **Region A/B/C as execution domains** and **MEL/SYD/BNE/GEL/ADL/PER/DRW/HBA as carrier POPs**.
 
 | POP | Active lab node(s) | Role in the carrier story |
 | --- | --- | --- |
@@ -30,8 +30,12 @@ The old Melbourne/Sydney/Brisbane/Geelong concept is still the design. What chan
 | Sydney | `Aurora-PE-3` (`SYD-PE1`) | Major interconnect, Region B/C handoff, Transit-B, first ROV enforcer |
 | Brisbane | `Aurora-PE-2` (`BNE-PE1`) | Regional enterprise edge and Helix local services |
 | Geelong | `region-a-ce-spare` now; target `Aurora-PE-4` (`GEL-PE1`) after the base core is stable | Regional access POP / smaller-enterprise edge / branch-failover scenarios |
+| Adelaide | planned `ADL-PE1` | South-central aggregation POP; useful for east-west path policy and maintenance-window drills |
+| Perth | planned `PER-PE1` | Western Australia POP; useful for long-haul latency, cloud-edge, and route-policy drills |
+| Darwin | planned `DRW-PE1` | Northern remote POP; useful for constrained remote operations and degraded-backhaul scenarios |
+| Tasmania / Hobart | planned `HBA-PE1` / `TAS-PE1` | Island POP; useful for submarine/backhaul-failure and regulated-services continuity drills |
 
-Do **not** read Region A as "Melbourne only." Region A is the local Dell-hosted slice of the national carrier. The POP aliases are the topology story operators should use in tickets, diagrams, MOPs, and incident notes.
+Do **not** read Region A as "Melbourne only." Region A is the local Dell-hosted slice of the national carrier. The POP aliases are the topology story operators should use in tickets, diagrams, MOPs, monitoring labels, and incident notes. The planned POPs do not all need to run simultaneously on the Dell; they can be simulated later by light IOL nodes, DevNet CML, or cloud/containerlab edges.
 
 ## 2. Inventory — four tiers plus tenant containers
 
@@ -119,6 +123,7 @@ graph TB
     classDef transit fill:#6a1b9a,color:#fff,stroke:#4a148c
     classDef ixp fill:#00897b,color:#fff,stroke:#00695c
     classDef mgmt fill:#455a64,color:#fff,stroke:#263238
+    classDef planned fill:#ffffff,color:#334155,stroke:#94a3b8,stroke-dasharray: 5 5
 
     subgraph INet["🌐 Internet Edge (simulated, doc ASNs/prefixes)"]
         TA["transit-a-csr<br/>CSR1000v · AS 64497<br/>(primary transit)"]
@@ -141,6 +146,13 @@ graph TB
         NW["Northwind CE<br/>FortiGate 7.0.14<br/>(CE + FortiSD-WAN + NGFW)"]
         HLAN["Helix LAN switch<br/>Aruba CX 10.16.1040"]
         SPARE["region-a-ce-spare / GEL access<br/>IOSv 15.7<br/>(optional, on-demand)"]
+    end
+
+    subgraph PlannedPOPs["Planned national POP expansion"]
+        ADL["ADL-PE1<br/>Adelaide aggregation<br/>(reserved)"]
+        PER["PER-PE1<br/>Perth / WA POP<br/>(reserved)"]
+        DRW["DRW-PE1<br/>Darwin remote POP<br/>(reserved)"]
+        HBA["HBA-PE1 / TAS-PE1<br/>Tasmania / Hobart POP<br/>(reserved)"]
     end
 
     subgraph WL["Tenant workloads"]
@@ -177,6 +189,10 @@ graph TB
     PE1 -.->|iBGP VPNv4| PE2
     PE2 -.->|iBGP VPNv4| PE3
     PE1 -.->|iBGP VPNv4| PE3
+    PE1 -.->|planned transport| ADL
+    ADL -.->|planned west path| PER
+    PE2 -.->|planned north path| DRW
+    PE3 -.->|planned island path| HBA
 
     %% PE-CE
     NW -->|eBGP CE-PE<br/>+ FortiSD-WAN| PE1
@@ -203,6 +219,7 @@ graph TB
     class TA,TB transit
     class RS,CON,EYE,IXF ixp
     class RPKI mgmt
+    class ADL,PER,DRW,HBA planned
 ```
 
 ### 3.2 Internet Edge (simulated external Internet)
@@ -313,7 +330,7 @@ Aurora mock public/PI block: `203.0.113.0/25` (TEST-NET-3). Customer block `203.
 | PE-CE | **eBGP** (Northwind, spare CE); **local VRF VLAN trunk** (Helix LAN) | eBGP keepalive 30 / holdtime 90 (default). |
 | Internet edge | **eBGP** to transits (global table) + **eBGP** to IXP route server | Default route from transits; IXP for specific peer prefixes. Policy §5.1; RPKI/ROV §5.2. |
 | L3VPN | **VRF + MP-BGP VPNv4** | Validation VRF `CUST-A` (§5.3); tenant VRFs Northwind (PE-1) / Helix (PE-2). |
-| Authentication | **None in v2.1** | TCP-AO / MD5 deferred per ADR-002 §9.6. |
+| Authentication | **None in v2.2** | TCP-AO / MD5 deferred per ADR-002 §9.6. |
 | Address family | **IPv4 + IPv6 dual-stack** | Both AFI/SAFI on backbone, PE-CE, Internet edge. Build Phase B layers v6 after v4. |
 | RPKI / ROV | **Routinator (RP) + SLURM lab VRPs + RPKI-RTR; ROV-enforce at the edge** | First enforcer `Aurora-PE-3`; design §5.2. Build Phase C. |
 | Tenant services | **VRF per tenant** on each PE that hosts the tenant | Northwind VRF on PE-1; Helix VRF on PE-2. |
@@ -537,7 +554,7 @@ Forward-wave order per §6. Do not skip the convergence gates.
 - IOL nodes persist startup-config in their NVRAM file; QEMU disks persist across stop/start.
 - **Backup target**: rsync `/opt/gns3/projects/<ops-lab>/` to Dell `E:\aurora-backups\` after major changes; per-node config files (§10) are the source of truth.
 
-## 9. What's NOT in v2.1 (deferred / out of scope)
+## 9. What's NOT in v2.2 (deferred / out of scope)
 
 - **Singleton heavyweights** (FTDv, Cat9kv, FMC, XRv9000, PA-VM 11). On-demand per §8.6; never in the running fabric.
 - **Region B (DevNet CML)** — Cisco **+ Juniper** (vSRX/vJunos via BYOI). ADR-002 §3.2 + ADR-003 §2.3–2.4.
@@ -559,7 +576,7 @@ Forward-wave order per §6. Do not skip the convergence gates.
 - ✅ **IOL (IOU) on the Dell GNS3 VM — resolved** (`memory/gns3-nos-boot-quirks.md`); console via `iolcfg.py` socket helper.
 - ✅ **FRR-in-GNS3-docker + rpki module — DONE** (`librtr.so` in `frrouting/frr:latest`); still TODO: wire one as a GNS3 docker node + an eBGP session.
 - **RPKI/ROV build (Phase C)** — Routinator + SLURM on PC1; GNS3 Cloud node to `192.168.200.x`; RTR `192.168.200.1:3323`; C1 (PE-3) → C3 (all ingress).
-- ✅ **`ip-plan.md` v2.1 refresh — DONE** (cross-region index; Region A summary mirrors this §4 and retains the national POP overlay).
+- ✅ **`ip-plan.md` v2.2 refresh — DONE** (cross-region index; Region A summary mirrors this §4 and retains the eight-POP national overlay).
 
 ## 11. References
 

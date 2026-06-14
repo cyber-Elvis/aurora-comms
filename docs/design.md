@@ -1,10 +1,10 @@
 # Aurora Communications — Network Design Document
 
-> **Current scope note (ADR-003 v1.1, 2026-06-14):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.1, with Region B in DevNet CML and Region C in cloud. The **Melbourne/Sydney/Brisbane/Geelong POP geography remains current**; older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
+> **Current scope note (ADR-003 v1.2, 2026-06-14):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.2, with Region B in DevNet CML and Region C in cloud. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**; older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
 
 | Field | Value |
 | --- | --- |
-| Document version | 1.1 |
+| Document version | 1.2 |
 | Status | Reference / protocol design; executable Region A build superseded by ADR-003 |
 | Owner | Network Architecture (Elvis Ifeanyi Nwosu) |
 | Last updated | 2026-06-14 |
@@ -12,7 +12,7 @@
 
 ## 1. Purpose and scope
 
-Aurora Communications is a fictional Australian regional IP carrier operated as the network tier of the Sentinel Ridge MSP teaching/portfolio environment. This document describes the national POP model — Melbourne, Sydney, Brisbane, and Geelong — plus the reference protocol shape: single AS, IS-IS + MPLS-LDP + iBGP. `region-a-plan.md` is canonical for the current Cisco implementation details; this file is canonical for why the carrier geography and protocol choices exist.
+Aurora Communications is a fictional Australian regional IP carrier operated as the network tier of the Sentinel Ridge MSP teaching/portfolio environment. This document describes the national POP model — Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart — plus the reference protocol shape: single AS, IS-IS + MPLS-LDP + iBGP. `region-a-plan.md` is canonical for the current Cisco implementation details; this file is canonical for why the carrier geography and protocol choices exist.
 
 Out of scope for this revision: customer L3VPN service definitions, eBGP peering policy with upstream transit, edge access (PE-CE) configuration. These will be documented separately as they are added.
 
@@ -20,7 +20,7 @@ Out of scope for this revision: customer L3VPN service definitions, eBGP peering
 
 Aurora serves three enterprise tenants in the Sentinel Ridge MSP topology: Maple Ridge Logistics (VPRN L3VPN, three sites), Helix Health Analytics (DIA + DDoS scrubbing), and Northwind Robotics (DIA + SD-WAN headend). The carrier must support IP transit, MPLS L3VPN, Carrier Ethernet (E-Line / E-LAN), and DDoS scrubbing — all layered on the same physical backbone.
 
-Geographic scope: four POPs in Melbourne (HQ + core), Sydney, Brisbane, and Geelong (regional access).
+Geographic scope: eight POPs in Melbourne (HQ + core), Sydney, Brisbane, Geelong (regional access), Adelaide, Perth, Darwin, and Tasmania/Hobart.
 
 ## 3. The five design decisions
 
@@ -73,7 +73,7 @@ Geographic scope: four POPs in Melbourne (HQ + core), Sydney, Brisbane, and Geel
 
 ### 3.5 Platform — FRR for the lab, Nokia SR OS / Cisco IOS-XR for production reference
 
-> **Superseded for the executable build (ADR-003 v1.1, 2026-06-14).** This W1 baseline used FRR containers for rapid protocol validation. The built **Region A is now a Cisco GNS3 core** — IOL-AdvEnterprise-L3 (P + PE-1/PE-2) + IOS-XRv 6.1.3 (PE-3) per `region-a-plan.md` v2.1. FRR is retained for the **IXP route-server / RPKI** role (its real-world niche), not as the PE platform; Nokia SR OS is archived. The protocol design below (IS-IS / LDP / BGP-VPNv4) is vendor-agnostic and still applies.
+> **Superseded for the executable build (ADR-003 v1.2, 2026-06-14).** This W1 baseline used FRR containers for rapid protocol validation. The built **Region A is now a Cisco GNS3 core** — IOL-AdvEnterprise-L3 (P + PE-1/PE-2) + IOS-XRv 6.1.3 (PE-3) per `region-a-plan.md` v2.2. FRR is retained for the **IXP route-server / RPKI** role (its real-world niche), not as the PE platform; Nokia SR OS is archived. The protocol design below (IS-IS / LDP / BGP-VPNv4) is vendor-agnostic and still applies.
 
 **Decision:** All four PEs run FRRouting (FRR) latest in Docker containers via Containerlab. Multi-vendor reference configurations (Nokia SR OS, Cisco IOS-XR) are maintained in `lab/manual/` for the same intent.
 
@@ -85,29 +85,32 @@ Geographic scope: four POPs in Melbourne (HQ + core), Sydney, Brisbane, and Geel
 
 ## 4. Topology
 
-Four POPs, fully meshed. Each PE has three P2P interfaces connecting to the other three PEs. Square + two diagonals = K4 (complete graph on four nodes). Six links total.
+Eight national POPs, modelled as a tiered carrier backbone rather than an 8-node full mesh. The first active lab slice is MEL/SYD/BNE with GEL as a placeholder; ADL/PER/DRW/HBA are reserved expansion POPs. In a real carrier, this avoids the operational mess of every POP connecting to every other POP and makes maintenance/failure domains clearer.
 
+```text
+                         DRW
+                          |
+                         BNE
+                          |
+       PER ---- ADL ---- MEL ==== SYD
+                         |        |
+                        GEL      HBA/TAS
 ```
-       Melbourne ──── 10.1.12.0/31 ──── Sydney
-          │  \                        /   │
-          │   \ 10.1.13.0/31  10.1.24.0/31
-          │    \                    /     │
-      10.1.14.0/31 \              /       │
-          │         Brisbane ── 10.1.23.0/31
-          │          /     \
-          │         /   10.1.34.0/31
-          │        /         \
-       Geelong ─────────────╯
-```
+
+Legend: `====` = high-capacity east-coast core/interconnect path; `----` / `|` = regional transport/backhaul. The lab can instantiate this progressively with light IOL PEs or by moving selected POPs to DevNet CML/cloud.
 
 | POP | Role | Loopback | NET |
 | --- | --- | --- | --- |
-| Melbourne | Core / RR site (W2) | 10.0.0.1 | 49.0001.0010.0000.0001.00 |
-| Sydney | PE | 10.0.0.2 | 49.0001.0010.0000.0002.00 |
-| Brisbane | PE | 10.0.0.3 | 49.0001.0010.0000.0003.00 |
-| Geelong | PE (regional access) | 10.0.0.4 | 49.0001.0010.0000.0004.00 |
+| Melbourne | Core / RR site (W2), primary transit and IXP | 10.0.0.1 | 49.0001.0010.0000.0001.00 |
+| Sydney | Interconnect PE, Region B/C handoff | 10.0.0.4 | 49.0001.0010.0000.0004.00 |
+| Brisbane | Regional enterprise PE | 10.0.0.3 | 49.0001.0010.0000.0003.00 |
+| Geelong | Regional access PE / placeholder | 10.0.0.5 | 49.0001.0010.0000.0005.00 |
+| Adelaide | South-central aggregation PE | 10.0.0.6 | 49.0001.0010.0000.0006.00 |
+| Perth | Western Australia PE | 10.0.0.7 | 49.0001.0010.0000.0007.00 |
+| Darwin | Northern remote PE | 10.0.0.8 | 49.0001.0010.0000.0008.00 |
+| Tasmania / Hobart | Island PE | 10.0.0.9 | 49.0001.0010.0000.0009.00 |
 
-**Why fully meshed at four POPs:** Maximum redundancy (three independent paths between any pair of PEs) and trivial ECMP. At sixteen POPs we would migrate to a partial mesh with dedicated P-only core routers and aggregation/access tiers.
+**Why tiered at eight POPs:** the four-POP K4 was a good first lab shape, but the national model should look like a carrier backbone. MEL/SYD carry the east-coast core, ADL/PER extend west, BNE/DRW extend north, HBA/TAS captures island/backhaul failure scenarios, and GEL remains the regional access story.
 
 ## 5. Protocol matrix
 

@@ -2,13 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| Document version | 2.1 |
+| Document version | 2.2 |
 | Status | Active index; Region A summary mirrors `region-a-plan.md` §4 |
 | Last updated | 2026-06-14 |
 
 This file is the cross-region addressing index. The **canonical executable source for Region A** remains `docs/region-a-plan.md` §4. If this summary and Region A disagree, fix this summary or follow `region-a-plan.md`.
 
-Earlier ADR-001 numbering (`AS65100`, `10.1.0.0/16`) is retired for the active lab. The **Australia-wide POP names are not retired**: Melbourne, Sydney, Brisbane, and Geelong remain the carrier geography that the lab represents.
+Earlier ADR-001 numbering (`AS65100`, `10.1.0.0/16`) is retired for the active lab. The **Australia-wide POP names are not retired**: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart remain the carrier geography that the lab represents.
 
 ## Region Map
 
@@ -28,6 +28,10 @@ Region A/B/C are deployment domains. POP names are the national carrier topology
 | Sydney | `Aurora-PE-3` (`SYD-PE1`) | Major interconnect, backup transit, Region B/C handoff, first ROV enforcer |
 | Brisbane | `Aurora-PE-2` (`BNE-PE1`) | Regional enterprise edge and Helix local services |
 | Geelong | `region-a-ce-spare` now; target `Aurora-PE-4` (`GEL-PE1`) later | Regional access POP / branch-services edge once the base core is stable |
+| Adelaide | planned `ADL-PE1` | South-central aggregation POP |
+| Perth | planned `PER-PE1` | Western Australia POP |
+| Darwin | planned `DRW-PE1` | Northern remote POP |
+| Tasmania / Hobart | planned `HBA-PE1` / `TAS-PE1` | Island POP |
 
 ## Region A — Loopbacks And Management
 
@@ -40,6 +44,18 @@ Region A/B/C are deployment domains. POP names are the national carrier topology
 | `northwind-ce` | `10.0.1.1/32` | PE-CE link / DHCP | FortiGate CE, default private AS model |
 | `region-a-ce-spare` (`GEL access`) | `10.0.1.2/32` | PE-CE link / DHCP | Geelong access placeholder / optional IOSv CE |
 | `helix-lan-sw` | n/a | `192.168.200.16/24` | Aruba CX L2/L3 access switch |
+
+## Reserved POP Loopbacks
+
+These are reserved for future expansion and should be added to configs only when the POP is instantiated.
+
+| Planned POP node | Loopback | Management reservation | Role |
+| --- | --- | --- | --- |
+| `Aurora-PE-4` (`GEL-PE1`) | `10.0.0.5/32` | `192.168.200.15/24` | Geelong full PE, replacing the current access placeholder |
+| `ADL-PE1` | `10.0.0.6/32` | `192.168.200.17/24` | Adelaide aggregation PE |
+| `PER-PE1` | `10.0.0.7/32` | `192.168.200.18/24` | Perth / WA PE |
+| `DRW-PE1` | `10.0.0.8/32` | `192.168.200.19/24` | Darwin / northern remote PE |
+| `HBA-PE1` (`TAS-PE1`) | `10.0.0.9/32` | `192.168.200.20/24` | Hobart / Tasmania PE |
 
 Management reachability is via the PC1/Dell direct Ethernet segment:
 

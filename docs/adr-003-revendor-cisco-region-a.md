@@ -3,10 +3,10 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.1 |
+| Version | 1.2 |
 | Date | 2026-06-14 |
 | Supersedes (in part) | ADR-002 §3.1 — the Region A *vendor stack* (Nokia SR Linux + SR OS core). The two-region *structure*, VPN boundary, tenant model, and Dell capability envelope in ADR-002 still stand. |
-| Relates | ADR-001 (lab-architecture.md), ADR-002 (two-region), `region-a-plan.md` v2.1, `telstra-ops-practice-plan.md` |
+| Relates | ADR-001 (lab-architecture.md), ADR-002 (two-region), `region-a-plan.md` v2.2, `telstra-ops-practice-plan.md` |
 | Driver | Telstra TechOps contract (Protect & Secure towers) — see `memory/telstra-techops-role.md` |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
 
@@ -27,8 +27,8 @@ The user also reframed the sequencing explicitly: **build the network first, the
 
 ## 2. Decision
 
-### 2.0 National POP model retained
-The Cisco re-vendor does **not** remove the Australian carrier geography. **Region A/B/C are deployment domains** (where the lab runs); **Melbourne, Sydney, Brisbane, and Geelong are the POP topology** (what the carrier represents).
+### 2.0 National POP model retained and expanded
+The Cisco re-vendor does **not** remove the Australian carrier geography. **Region A/B/C are deployment domains** (where the lab runs); **Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart are the POP topology** (what the carrier represents).
 
 The active build maps the lightweight Cisco core onto the national POP model:
 
@@ -38,6 +38,10 @@ The active build maps the lightweight Cisco core onto the national POP model:
 | Sydney | `Aurora-PE-3` (`SYD-PE1`), Region B/C interconnect, Transit-B, first RPKI/ROV enforcer |
 | Brisbane | `Aurora-PE-2` (`BNE-PE1`), Helix/customer regional edge |
 | Geelong | placeholder access edge now; target light `Aurora-PE-4` (`GEL-PE1`) after the base core is stable |
+| Adelaide | planned south-central aggregation POP; target `ADL-PE1` |
+| Perth | planned Western Australia POP; target `PER-PE1` |
+| Darwin | planned northern remote POP; target `DRW-PE1` |
+| Tasmania / Hobart | planned island POP; target `HBA-PE1` / `TAS-PE1` |
 
 ### 2.1 Region A core re-vendored to Cisco
 Region A's P/PE backbone moves from Nokia to Cisco:
@@ -96,7 +100,7 @@ Discipline: everything cloud is **built as code** (containerlab YAML / cloud-ini
 - Region B/C depend on external services (DevNet reservation, cloud accounts) — Region A is deliberately self-contained so nothing local blocks on them.
 
 **Documents affected (cascade)**
-- `region-a-plan.md` → **v2.1** (Cisco core; national POP overlay preserved; Nokia archive note).
+- `region-a-plan.md` → **v2.2** (Cisco core; eight-POP national overlay preserved; Nokia archive note).
 - `adr-002-two-region.md` → §3.1 marked superseded-in-part by this ADR.
 - `aurora-deployment-status.md`, `telstra-ops-practice-plan.md`, `devnet-resource-strategy.md`, `design.md`, `lab-architecture.md` → re-vendor/placement corrections + cross-refs.
 - `docs/region-a-topology.drawio` → refreshed to the Cisco Region A core. PNG export is deferred until a drawio renderer is available.
@@ -105,5 +109,6 @@ Discipline: everything cloud is **built as code** (containerlab YAML / cloud-ini
 Claude **drives** the device console (types commands); the user **coaches** — sets up devices, provides command sequences + the MOP/operational-evidence template, checks the work, and verifies via the GNS3 REST API (staying off the console to avoid single-client collisions). Changes are **MOP-driven** with operational evidence captured (Change ID, risk/impact, backout, pre-check, implementation log, post-check, rollback, closure). See `memory/lab-coaching-workflow.md` and `telstra-ops-practice-plan.md`.
 
 ## 5. Revision history
+- **v1.2 (2026-06-14)** - expands the national POP overlay beyond the first four POPs to include Adelaide, Perth, Darwin, and Tasmania/Hobart as planned POPs.
 - **v1.1 (2026-06-14)** - restores the national POP overlay explicitly: Melbourne, Sydney, Brisbane, and Geelong are retained as the carrier geography, while Region A/B/C remain deployment domains.
 - **v1.0 (2026-06-14)** — initial. Records the Cisco re-vendor of Region A, Juniper→Region B + cloud cRPD + local vSRX, the vJunos-can't-run-locally finding, the three-region model with a cloud edge, build-then-operate sequencing, and the cloud-credit lifecycle.

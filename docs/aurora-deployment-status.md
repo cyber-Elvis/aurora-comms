@@ -4,7 +4,7 @@
 
 ## Current state — 2026-06-14: Region A re-vendored to Cisco (ADR-003)
 
-**Region A backbone is now Cisco**, not Nokia (decision recorded in `adr-003-revendor-cisco-region-a.md`; executable plan in `region-a-plan.md` v2.1):
+**Region A backbone is now Cisco**, not Nokia (decision recorded in `adr-003-revendor-cisco-region-a.md`; executable plan in `region-a-plan.md` v2.2):
 
 | Role / POP alias | Now | Was |
 | --- | --- | --- |
@@ -13,6 +13,10 @@
 | Aurora-PE-2 / BNE-PE1 | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Helix/Brisbane edge) | SR OS 13.0R4 |
 | Aurora-PE-3 / SYD-PE1 | IOS-XRv 6.1.3 (Region B/C edge + first ROV enforcer) | IOS-XRv 6.1.3 |
 | Geelong / GEL access | `region-a-ce-spare` placeholder now; target light `Aurora-PE-4` later | historical Geelong POP concept |
+| Adelaide / ADL-PE1 | planned POP, not instantiated yet | n/a |
+| Perth / PER-PE1 | planned POP, not instantiated yet | n/a |
+| Darwin / DRW-PE1 | planned POP, not instantiated yet | n/a |
+| Tasmania-Hobart / HBA-PE1 | planned POP, not instantiated yet | n/a |
 
 - **Build in progress (GNS3 project `ops-lab`, `d8119db0-…`):** Aurora-P + Aurora-PE-1 **created, linked (e0/0↔e0/0), booted** (IOL-L3, at enable prompt), being configured per `region-a-plan.md` §6 Wave 1 (IS-IS L2 + LDP → iBGP VPNv4 → L3VPN VRF CUST-A). Console-driven via the `iolcfg.py` socket helper on the GNS3 VM (Python 3.14 → no `telnetlib`, raw-socket telnet instead).
 - **Nokia archived, not deleted.** SR OS 13.0R4 licensed qcow2 + RTC recipe cold-stored (md5 recorded, `memory/sros-gns3-license-recipe.md`); SR Linux stopped. Recoverable via git history + cold storage. PC1 vrnetlab SR OS stays as offline failover.
