@@ -58,16 +58,44 @@ Targets:
 
 | Host | Services that must be denied |
 | --- | --- |
-| PC1 `192.168.200.1` | SSH 22, SMB 445, RDP 3389, WinRM 5985/5986, hypervisor/admin ports |
-| PC2/Dell `192.168.200.2` | SSH 22/2222, SMB 445, RDP 3389, WinRM 5985/5986, GNS3 host/admin ports except approved controller/API path |
+| PC1 `192.168.200.1` | SSH 22, RPC 135, NetBIOS 139, SMB 445, RDP 3389, WinRM 5985/5986, hypervisor/admin ports |
+| PC2/Dell `192.168.200.2` | SSH 22/2222, RPC 135, NetBIOS 139, SMB 445, RDP 3389, WinRM 5985/5986, GNS3 host/admin ports such as 3080 unless explicitly approved for the test |
 | DO host | SSH 22 and host admin ports from lab-node tags |
 | Oracle host | SSH 22 and host admin ports from lab-node tags |
+
+Local GNS3 guard:
+
+```bash
+# On the GNS3 VM, before testing from lab nodes.
+sudo sh ./ops/access/host-guard/gns3-vm-host-guard.sh apply
+sudo sh ./ops/access/host-guard/gns3-vm-host-guard.sh status
+```
+
+IOS/IOL test shape:
+
+```ios
+terminal length 0
+telnet 192.168.200.1 22
+telnet 192.168.200.1 445
+telnet 192.168.200.1 3389
+telnet 192.168.200.1 5985
+telnet 192.168.200.1 5986
+telnet 192.168.200.2 22
+telnet 192.168.200.2 2222
+telnet 192.168.200.2 3080
+telnet 192.168.200.2 445
+telnet 192.168.200.2 3389
+telnet 192.168.200.2 5985
+telnet 192.168.200.2 5986
+telnet 192.168.200.1 3323
+```
 
 Pass criteria:
 
 - Lab nodes cannot initiate admin sessions to host OSes.
 - The explicit RPKI exception to PC1 `192.168.200.1:3323` works only where required.
-- Denied attempts are logged at the site demarcation, host firewall, Tailscale ACL logs, or Wazuh/SIEM.
+- Denied attempts increment the GNS3 guard, site-demarcation ACL, host firewall, or equivalent deny counter.
+- Denied attempts are visible in Wazuh/SIEM as `Aurora: lab node attempted a protected host service`.
 
 ## 5. Tailscale ACL checks
 
@@ -81,9 +109,30 @@ Pass criteria:
 
 - A host can SSH to a lab node.
 - A lab-tagged endpoint cannot SSH to PC1/PC2/DO/Oracle host tags.
+- A lab-tagged endpoint can reach only the explicit `tag:rpki-rtr:3323` exception on the RPKI host.
 - No broad `*:*` rule bypasses the host-isolation model.
+- The `tests` block in `tailscale-acl.example.hujson` passes before the policy is applied.
 
-## 6. Data-plane ring reconvergence
+Note: Tailscale ACLs do not govern ordinary local-LAN traffic from a lab node
+to `192.168.200.0/24`; keep the GNS3 guard, site firewall, and host firewall
+controls in place for the local Ethernet path.
+
+## 6. Wazuh denied-flow checks
+
+Install and test the local rule file:
+
+```text
+ops/access/wazuh/aurora-host-containment-rules.xml
+```
+
+Pass criteria:
+
+- A denied GNS3 guard log with prefix `AURORA_HOST_GUARD denied` matches rule `100103`.
+- A normalized JSON denied-flow event matches rule `100101`.
+- A normalized JSON RPKI allow event to `192.168.200.1:3323` matches rule `100102` at low severity.
+- No alert fires for ordinary host-to-lab management traffic.
+
+## 7. Data-plane ring reconvergence
 
 When the PC1-PC2-DO-Oracle lab edge ring is built:
 
@@ -98,7 +147,7 @@ Pass criteria:
 - One ring-link failure does not partition the lab edge ring.
 - Reconvergence does not create reachability from lab nodes into host OS management services.
 
-## 7. Repo secret scan
+## 8. Repo secret scan
 
 Before each commit involving access tooling:
 

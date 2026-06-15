@@ -1,42 +1,107 @@
 {
-  // Example only. Apply in the Tailscale admin console after replacing tags/users
-  // with the actual tailnet policy model.
+  // Aurora management-ring policy draft.
+  //
+  // Apply in the Tailscale admin console after replacing groups/users/hosts with
+  // the real tailnet names. ACLs are deny-by-default and directional: no rule
+  // below grants tag:lab -> tag:hosts management access.
   "tagOwners": {
+    // Host OSes: PC1, PC2/Dell, DigitalOcean host OS, Oracle host OS.
     "tag:hosts": ["autogroup:admin"],
+
+    // Lab nodes and virtual edge routers can only be tagged by approved hosts.
     "tag:lab": ["tag:hosts"],
-    "tag:cloud-edge": ["tag:hosts"]
+    "tag:lab-edge": ["tag:hosts"],
+
+    // Add this tag only to the host running Routinator/RPKI-RTR.
+    "tag:rpki-rtr": ["tag:hosts"]
   },
 
   "acls": [
     {
       "action": "accept",
+      "proto": "tcp",
       "src": ["tag:hosts"],
       "dst": [
-        "tag:lab:22",
-        "tag:lab:23",
-        "tag:lab:3080",
-        "tag:cloud-edge:22"
+        // Device management from trusted hosts only.
+        "tag:lab:22,23,830",
+
+        // Lab API/controller access from hosts only.
+        "tag:lab:3080,8443",
+
+        // Virtual edge routers are managed as lab devices, not host OSes.
+        "tag:lab-edge:22"
       ]
     },
     {
       "action": "accept",
+      "proto": "tcp",
       "src": ["tag:hosts"],
-      "dst": ["tag:hosts:22", "tag:hosts:3389", "tag:hosts:5985", "tag:hosts:5986"]
+      "dst": [
+        // Host-to-host administration stays inside the host ring.
+        "tag:hosts:22,3389,5985,5986"
+      ]
     },
     {
       "action": "accept",
-      "src": ["tag:cloud-edge"],
-      "dst": ["tag:cloud-edge:51820"]
+      "proto": "tcp",
+      "src": ["tag:lab"],
+      "dst": [
+        // The only lab -> host service exception: RPKI-RTR to the tagged cache.
+        "tag:rpki-rtr:3323"
+      ]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:lab-edge"],
+      "dst": [
+        // WireGuard ring peers only; host OSes are not routed lab nodes.
+        "tag:lab-edge:51820"
+      ]
     }
   ],
 
-  // No rule grants tag:lab -> tag:hosts. Default deny enforces host isolation.
+  // No rule grants tag:lab -> tag:hosts SSH/RDP/SMB/WinRM/admin ports.
+  // Default deny enforces the host-isolation model.
   "ssh": [
     {
       "action": "accept",
       "src": ["tag:hosts"],
       "dst": ["tag:hosts"],
       "users": ["autogroup:nonroot"]
+    }
+  ],
+
+  "tests": [
+    {
+      "src": "tag:hosts",
+      "proto": "tcp",
+      "accept": [
+        "tag:lab:22",
+        "tag:lab:23",
+        "tag:lab:3080",
+        "tag:lab-edge:22",
+        "tag:hosts:22"
+      ]
+    },
+    {
+      "src": "tag:lab",
+      "proto": "tcp",
+      "accept": ["tag:rpki-rtr:3323"],
+      "deny": [
+        "tag:hosts:22",
+        "tag:hosts:135",
+        "tag:hosts:139",
+        "tag:hosts:445",
+        "tag:hosts:2222",
+        "tag:hosts:3080",
+        "tag:hosts:3389",
+        "tag:hosts:5985",
+        "tag:hosts:5986",
+        "tag:hosts:8000",
+        "tag:hosts:8443",
+        "tag:hosts:9090",
+        "tag:hosts:10000"
+      ]
     }
   ]
 }

@@ -33,6 +33,24 @@ Aliases may include `proxy_jump`, for example `gns3@100.118.0.46`, so PC1 can re
 | `sros-legacy` | Old SR OS/OpenSSH compatibility profile; weak algorithms are scoped to explicit legacy aliases only |
 | `network-console` | Telnet-style console access for GNS3 console ports |
 
+## Host containment
+
+Local host containment is enforced at the GNS3 management demarcation and, where
+available, on node/site ACLs and host firewalls.
+
+Key artifacts:
+
+| Path | Purpose |
+| --- | --- |
+| `host-guard/gns3-vm-host-guard.sh` | GNS3 VM iptables guard for `tap-aurora-mgmt`; permits only the PC1 RPKI-RTR exception and logs/rejects protected host-admin ports |
+| `host-guard/README.md` | Local proof matrix and 2026-06-15 live observations |
+| `wazuh/aurora-host-containment-rules.xml` | Wazuh custom rules for denied lab-node attempts toward protected host services |
+| `wazuh/README.md` | Wazuh install and `wazuh-logtest` samples |
+
+Protected local host services are SSH, RPC/NetBIOS/SMB, RDP, WinRM, GNS3/admin
+ports, and common hypervisor/web-admin ports on PC1/PC2. The only local
+lab-node-to-host exception is RPKI-RTR to PC1 `192.168.200.1:3323`.
+
 ## Identity model
 
 Use one key per agent per zone.

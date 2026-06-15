@@ -23,9 +23,9 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 - [x] **Generate per-agent local keys** - `aurora-codex` and `aurora-claude` local Ed25519 keys generated under `%USERPROFILE%\.ssh`; private keys remain off repo and off lab nodes.
 - [x] **Apply `aurora-codex` / `aurora-claude` to MEL pair** - key-first access is live on `mel-p1` and `mel-pe1`; `admin` remains Elvis-owned break-glass.
 - [x] **Validate MEL per-agent SSH** - `aurora-codex` and `aurora-claude` both reach `MEL-P-CISCO-IOL-RT01` and `MEL-PE1-CISCO-IOL-RT01` through the GNS3 jump host.
-- [ ] **Prove host containment locally** - lab node cannot reach PC1/PC2 SSH/RDP/SMB/WinRM/admin ports; explicit RPKI-RTR exception still works.
-- [ ] **Draft cloud Tailscale ACL policy** - `tag:hosts` may manage `tag:lab`; no `tag:lab` -> `tag:hosts` access.
-- [ ] **Wire denied-flow logs to Wazuh** - alert on lab-node attempts toward protected host services.
+- [ ] **Prove host containment locally** - lab node cannot reach PC1/PC2 SSH/RDP/SMB/WinRM/admin ports; explicit RPKI-RTR exception still works. GNS3 VM guard applied on `tap-aurora-mgmt`; live lab-node denial matrix still pending.
+- [x] **Draft cloud Tailscale ACL policy** - `tag:hosts` may manage `tag:lab`; no `tag:lab` -> `tag:hosts` access.
+- [ ] **Wire denied-flow logs to Wazuh** - alert on lab-node attempts toward protected host services. Wazuh rules and `wazuh-logtest` samples staged in `ops/access/wazuh/`; manager install/log source wiring still pending.
 
 ## Sprint A1 — Region A Cisco Core
 
