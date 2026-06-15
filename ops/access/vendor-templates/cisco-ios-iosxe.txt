@@ -51,3 +51,6 @@ ip access-list extended NODE-TO-HOSTS
  deny ip any host <DO_HOST_PRIVATE_OR_TAILSCALE_IP> log
  deny ip any host <OCI_HOST_PRIVATE_OR_TAILSCALE_IP> log
  permit ip any any
+
+interface <SITE_DEMARC_OR_MGMT_INTERFACE>
+ ip access-group NODE-TO-HOSTS out

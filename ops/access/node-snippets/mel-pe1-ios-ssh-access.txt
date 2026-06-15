@@ -11,9 +11,15 @@ conf t
  ip ssh authentication-retries 3
  service password-encryption
  login block-for 60 attempts 3 within 30
+ ip access-list extended NODE-TO-HOSTS
+  permit tcp any host 192.168.200.1 eq 3323
+  deny ip any host 192.168.200.1 log
+  deny ip any host 192.168.200.2 log
+  permit ip any any
  interface Ethernet0/1
   description OOB_MGMT_TO_MGMT-SW01
   ip address 10.255.191.12 255.255.255.0
+  ip access-group NODE-TO-HOSTS out
   no shutdown
  exit
  username admin privilege 15 secret <YOU_SET_ADMIN_SECRET_ON_BOX>

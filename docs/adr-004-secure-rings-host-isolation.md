@@ -153,9 +153,16 @@ As of 2026-06-15, the first local management slice is live:
 
 Still pending for ADR-004 completion:
 
-- Prove local denied paths from lab nodes toward PC1/PC2 host admin ports.
-- Apply Tailscale `tag:hosts` / `tag:lab` ACLs before cloud nodes are added.
-- Wire denied-path logs into Wazuh or the chosen SIEM/log collector.
+- Prove local denied paths from lab nodes toward PC1/PC2 host admin ports. The
+  GNS3 VM guard is applied on `tap-aurora-mgmt`; MEL node ACL snippets and the
+  proof matrix are staged under `ops/access/host-guard/` and
+  `ops/access/mops/2026-06-15-host-containment.md`.
+- Apply the drafted Tailscale `tag:hosts` / `tag:lab` ACLs before cloud nodes
+  are added; the policy draft now includes the RPKI-RTR exception and policy
+  tests in `ops/access/tailscale-acl.example.hujson`.
+- Install the staged Wazuh rules and connect an actual denied-flow source
+  (`AURORA_HOST_GUARD`, node ACL syslog, or normalized firewall JSON) from
+  `ops/access/wazuh/`.
 
 ## 5. Required validation
 

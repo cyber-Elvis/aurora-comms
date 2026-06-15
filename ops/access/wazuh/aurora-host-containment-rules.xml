@@ -1,0 +1,60 @@
+<!--
+  Install on the Wazuh manager as:
+    /var/ossec/etc/rules/aurora-host-containment-rules.xml
+
+  Rule IDs 100100-100199 are reserved for Aurora local lab rules.
+-->
+<group name="aurora,host_containment,">
+  <rule id="100100" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="aurora.control">^host-containment$</field>
+    <description>Aurora host containment event.</description>
+  </rule>
+
+  <rule id="100101" level="10">
+    <if_sid>100100</if_sid>
+    <field name="aurora.action">^deny$</field>
+    <field name="aurora.src_zone">^lab$</field>
+    <field name="aurora.dst_zone">^host$</field>
+    <field name="destination.port">^(22|135|139|445|2222|3080|3389|5985|5986|8000|8443|9090|10000)$</field>
+    <description>Aurora: lab node attempted a protected host service.</description>
+    <mitre>
+      <id>T1021</id>
+      <id>T1046</id>
+    </mitre>
+    <group>network,access_denied,lateral_movement,</group>
+  </rule>
+
+  <rule id="100102" level="3">
+    <if_sid>100100</if_sid>
+    <field name="aurora.action">^allow$</field>
+    <field name="aurora.src_zone">^lab$</field>
+    <field name="aurora.dst_zone">^host$</field>
+    <field name="destination.ip">^192\.168\.200\.1$</field>
+    <field name="destination.port">^3323$</field>
+    <description>Aurora: permitted RPKI-RTR exception from lab node to PC1.</description>
+    <group>network,allowlisted,</group>
+  </rule>
+
+  <rule id="100103" level="10">
+    <match>AURORA_HOST_GUARD denied</match>
+    <regex>DST=192\.168\.200\.(1|2).*PROTO=TCP.*DPT=(22|135|139|445|2222|3080|3389|5985|5986|8000|8443|9090|10000)</regex>
+    <description>Aurora: GNS3 VM guard denied lab-node access to protected host service.</description>
+    <mitre>
+      <id>T1021</id>
+      <id>T1046</id>
+    </mitre>
+    <group>network,access_denied,lateral_movement,</group>
+  </rule>
+
+  <rule id="100104" level="10">
+    <match>NODE-TO-HOSTS</match>
+    <regex>denied.*192\.168\.200\.(1|2)\((22|135|139|445|2222|3080|3389|5985|5986|8000|8443|9090|10000)\)</regex>
+    <description>Aurora: network-node ACL denied access to protected host service.</description>
+    <mitre>
+      <id>T1021</id>
+      <id>T1046</id>
+    </mitre>
+    <group>network,access_denied,lateral_movement,</group>
+  </rule>
+</group>
