@@ -1,5 +1,12 @@
 # Aurora network automation (`ops/automation/`)
 
+> **LEGACY / ROLLBACK ONLY (since 2026-06-21).** Region A was re-platformed from Cisco IOL to
+> **IOS-XRv 6.1.3** (MOP `CHG-AURORA-REG-A-XRV-001`). This `cisco.ios` project now targets the
+> **retained IOL rollback nodes** only — do **not** run it against the live `10.255.191.x` mgmt
+> IPs (those are IOS-XRv now; `cisco.ios` over those will misconfigure). The active automation is
+> **[`ops/automation-iosxrv/`](../automation-iosxrv/README.md)** (`cisco.iosxr`). Kept here for the
+> IOL rollback window (~2026-06-28) and as the IGP config-as-code reference.
+
 Ansible (`cisco.ios`) config-as-code for the Region A Cisco core. First exercise: **automate the IGP** (IS-IS L2) across the `ADL-GEL-MEL-PE1-MEL-P` line instead of typing it per-node.
 
 ## Layout

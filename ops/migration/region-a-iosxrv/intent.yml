@@ -1,0 +1,86 @@
+# Non-secret migration intent. Actual deployed state is authoritative for this
+# platform migration; planned additions are intentionally excluded.
+
+change_id: CHG-AURORA-REG-A-XRV-001
+source_platform: cisco_iol_17_15
+target_platform: cisco_iosxrv_6_1_3
+project_id: d8119db0-dd43-4d20-870d-9d62fd6345f1
+controller: http://192.168.137.1:3080/v2
+
+nodes:
+  adl-pe1:
+    source_name: ADL-PE1-CISCO-IOL-RT01
+    source_node_id: 219d6471-1304-45b0-8a5c-71fc0f683458
+    target_name: ADL-PE1-CISCO-IOSXR-RT01
+    target_node_id: e84abeaa-c318-4d1f-9ba6-7f0b684f2481
+    management_ipv4: 10.255.191.17/24
+    loopback0: null
+    core:
+      east:
+        peer: GEL-PE1
+        ipv4: null
+        source_interface: Ethernet0/0
+        target_interface: <XR_CORE_EAST_IF>
+        shutdown: true
+
+  gel-pe1:
+    source_name: GEL-PE1-CISCO-IOL-RT01
+    source_node_id: dd2be2b6-85d5-427e-a4a3-16e349482739
+    target_name: GEL-PE1-CISCO-IOSXR-RT01
+    target_node_id: 778cb6a1-7b54-4879-9119-c1fb17f54ed2
+    management_ipv4: 10.255.191.15/24
+    loopback0: 10.0.0.3/32
+    core:
+      east:
+        peer: MEL-PE1
+        ipv4: null
+        source_interface: Ethernet0/0
+        target_interface: <XR_CORE_EAST_IF>
+        shutdown: true
+      west:
+        peer: ADL-PE1
+        ipv4: null
+        source_interface: Ethernet0/2
+        target_interface: <XR_CORE_WEST_IF>
+        shutdown: true
+
+  mel-pe1:
+    source_name: MEL-PE1-CISCO-IOL-RT01
+    source_node_id: 30597fe7-1c78-4e7e-a413-fd37d79b8efd
+    target_name: MEL-PE1-CISCO-IOSXR-RT01
+    target_node_id: 17bf20ab-df44-4acd-82a3-af36842b41f8
+    management_ipv4: 10.255.191.12/24
+    loopback0: 10.0.0.2/32
+    isis_net: 49.0001.0000.0000.0002.00
+    ldp_router_id: 10.0.0.2
+    core:
+      east:
+        peer: MEL-P
+        ipv4: 10.255.0.1/31
+        source_interface: Ethernet0/0
+        target_interface: <XR_CORE_EAST_IF>
+        shutdown: false
+      west:
+        peer: GEL-PE1
+        ipv4: null
+        source_interface: Ethernet0/2
+        target_interface: <XR_CORE_WEST_IF>
+        shutdown: true
+
+  mel-p:
+    source_name: MEL-P-CISCO-IOL-RT01
+    source_node_id: 774ff084-bd75-42d5-93ed-58d8c2cf3b53
+    target_name: MEL-P-CISCO-IOSXR-RT01
+    target_node_id: b29809e2-ced9-4b33-9ca8-0cf3803e613d
+    management_ipv4: 10.255.191.11/24
+    loopback0: 10.0.0.1/32
+    isis_net: 49.0001.0000.0000.0001.00
+    ldp_router_id: 10.0.0.1
+    core:
+      west:
+        peer: MEL-PE1
+        ipv4: 10.255.0.0/31
+        source_interface: Ethernet0/0
+        target_interface: <XR_CORE_WEST_IF>
+        shutdown: false
+

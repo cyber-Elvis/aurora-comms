@@ -1,0 +1,54 @@
+! GEL-PE1 IOS-XRv 6.1.3 parity configuration
+! Interfaces (same XRv image as ADL canary; mapping confirmed 2026-06-21):
+!   management         = MgmtEth0/0/CPU0/0       (GNS3 adapter 0; was IOL Et0/1 -> MGMT-SW01 p4)
+!   core EAST to MEL-PE1 = GigabitEthernet0/0/0/0 (GNS3 adapter 1; was IOL Et0/0)
+!   core WEST to ADL-PE1 = GigabitEthernet0/0/0/1 (GNS3 adapter 2; was IOL Et0/2)
+!
+! Preserve deployed Loopback0 10.0.0.3/32 (NO renumber to .5 this MOP).
+! Break-glass user 'labadmin' (group root-system) is created at FIRST BOOT with its
+! secret set interactively. Do NOT re-add 'admin' (reserved/locked on XR); no secret in file.
+! Automation users (aurora-codex/aurora-claude RSA-3072) deferred to the post-migration
+! access-hardening change (XRv 6.1.3 has no Ed25519).
+!
+! GEL parity = management + Loopback0 only; cores shut/unaddressed (no IS-IS/LDP).
+
+! ===== Apply at the XR console (config mode) =====
+configure
+ hostname GEL-PE1-CISCO-IOSXR-RT01
+ domain name lab.aurora
+ !
+ ipv4 access-list MGMT-SOURCES
+  10 permit ipv4 host 10.255.191.1 any
+  20 deny ipv4 any any log
+ !
+ interface Loopback0
+  ipv4 address 10.0.0.3 255.255.255.255
+ !
+ interface MgmtEth0/0/CPU0/0
+  description OOB_MGMT_TO_MGMT-SW01
+  ipv4 address 10.255.191.15 255.255.255.0
+  ipv4 access-group MGMT-SOURCES ingress
+  no shutdown
+ !
+ interface GigabitEthernet0/0/0/0
+  description CORE-to-MEL-PE1
+  shutdown
+ !
+ interface GigabitEthernet0/0/0/1
+  description CORE-to-ADL-PE1
+  shutdown
+ !
+ ssh server v2
+ ssh server vrf default
+ ssh server rate-limit 60
+ commit label CHG-AURORA-REG-A-XRV-001
+ end
+
+! ===== EXEC mode (after commit) — SSH host key (modulus 2048 when prompted) =====
+crypto key generate rsa
+
+! ===== Offline pre-check (still UNLINKED — interfaces expected down/down) =====
+show configuration commit list
+show running-config
+show interfaces brief
+show configuration failed

@@ -1,0 +1,5 @@
+expected_hostname: ADL-PE1-CISCO-IOSXR-RT01
+expected_management_ipv4: 10.255.191.17
+expected_loopback0: null
+platform_role: regional_pe
+

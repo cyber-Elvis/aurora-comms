@@ -1,6 +1,28 @@
 # Aurora Deployment Status
 
-> **Latest state: 2026-06-16** (top). The 2026-06-07 migration snapshot is kept below as the historical record.
+> **Latest state: 2026-06-21** (top). Earlier snapshots are kept below as the historical record.
+
+## Current state - 2026-06-21: Region A migrated to IOS-XRv 6.1.3 (COMPLETE)
+
+Change `CHG-AURORA-REG-A-XRV-001` is **done** — all four Region A routers re-platformed
+**Cisco IOL 17.15 → IOS-XRv 6.1.3** via a rolling one-for-one migration, deployed-state
+parity preserved (addresses, loopbacks, IS-IS L2 + LDP).
+
+| Node | Platform now | Mgmt | Loopback0 | Core |
+| --- | --- | --- | --- | --- |
+| `ADL-PE1-CISCO-IOSXR-RT01` | IOS-XRv 6.1.3 | 10.255.191.17 | — | shut |
+| `GEL-PE1-CISCO-IOSXR-RT01` | IOS-XRv 6.1.3 | 10.255.191.15 | 10.0.0.3 | shut |
+| `MEL-PE1-CISCO-IOSXR-RT01` | IOS-XRv 6.1.3 | 10.255.191.12 | 10.0.0.2 | IS-IS L2 + LDP |
+| `MEL-P-CISCO-IOSXR-RT01` | IOS-XRv 6.1.3 | 10.255.191.11 | 10.0.0.1 | IS-IS L2 + LDP |
+
+- **MEL pair IS-IS L2 (area 49.0001, metric-style wide) + LDP validated XR↔XR:** adjacency Up, LDP Oper, loopbacks `10.0.0.1`/`10.0.0.2` exchanged. GEL/ADL cores shut (parity). No VPNv4/VRF/renumber (separate future MOP).
+- **Access:** break-glass user `labadmin` (`admin` is reserved/locked on XR); per-node **RSA-2048** SSH host key (XRv 6.1.3 has no Ed25519). Reach via PC3 Termius → GNS3 jump → `ssh labadmin@10.255.191.x`. XR two-stage commit (durable, no `write memory`).
+- **GNS3 interface mapping** (adapter→XR, offset because XRv inserts MgmtEth as NIC0): adapter0 = `MgmtEth0/0/CPU0/0`, adapter1 = `Gi0/0/0/0`, adapter2 = `Gi0/0/0/1`. Link labels relabeled to real XR names.
+- **Rollback retained:** IOL nodes (`*-CISCO-IOL-RT01`) stopped + unlinked + saved (≈1 MB each on disk, 0 RAM) until ~2026-06-28 or two clean sessions.
+- **Artifacts:** MOP + per-node evidence `ops/access/mops/2026-06-21-region-a-iol-to-iosxrv-migration.md`; parity configs `ops/migration/region-a-iosxrv/`; **active automation `ops/automation-iosxrv/` (`cisco.iosxr`)** — supersedes `ops/automation/` (`cisco.ios`, IOL/legacy).
+- **Pending:** 60-min soak + MEL link-flap reconvergence test; access hardening (dedicated RSA-3072 `aurora-codex`/`aurora-claude` on the XR zone, remove personal `id_ed25519` from GEL); separate MPLS L3VPN / VPNv4 MOP.
+
+---
 
 ## Current state - 2026-06-16: Cisco Region A + secure access foundation (ADR-003 / ADR-004)
 
@@ -20,6 +42,7 @@
 
 - **Build in progress (GNS3 project `ops-lab`, `d8119db0-â€¦`):** Aurora-P + Aurora-PE-1 **created, linked (e0/0â†”e0/0), booted** (IOL-L3, at enable prompt), being configured per `region-a-plan.md` Â§6 Wave 1 (IS-IS L2 + LDP â†’ iBGP VPNv4 â†’ L3VPN VRF CUST-A). Console-driven via the `iolcfg.py` socket helper on the GNS3 VM (Python 3.14 â†’ no `telnetlib`, raw-socket telnet instead).
 - **Placement update (2026-06-21):** the Dell/PC2 regional line remains aligned geographically as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. All four backbone routers are started and OOB-reachable through the GNS3 VM jump host. `MEL-P` sits on the right as the local core and logical handoff toward PC1 / Region B `SYD-PE1`.
+- **IOS-XRv migration staged (2026-06-21):** change `CHG-AURORA-REG-A-XRV-001` is prepared to replace the four Region A IOL routers with IOS-XRv 6.1.3 through a rolling one-for-one migration. Four unlinked XR targets now exist above the live line; only the ADL canary is started. The IOL nodes and all eight production links remain unchanged as rollback. MOP: `ops/access/mops/2026-06-21-region-a-iol-to-iosxrv-migration.md`; translated parity configs: `ops/migration/region-a-iosxrv/`; target automation: `ops/automation-iosxrv/`.
 - **Region B placement update (2026-06-15):** `BNE-PE1-CISCO-IOL-RT01` / Aurora-PE-2 and `SYD-PE1-CISCO-IOSXR-RT01` / Aurora-PE-3 were removed from local Region A staging. They remain planned Region B CML nodes; SYD keeps the IOS-XRv VPNv4/ROV/Region B-C edge role.
 - **Live GNS3 link update (2026-06-15):** local Region A links now include MEL-P e0/0 -> MEL-PE1 e0/0, MEL-PE1 e0/2 -> GEL-PE1 e0/0, GEL-PE1 e0/2 -> ADL-PE1 e0/0, GEL-PE1 e0/1 -> MGMT-SW01 e4, and ADL-PE1 e0/1 -> MGMT-SW01 e5.
 - **Internet-edge placement correction (2026-06-15):** keep both simulated upstream transits in Region A: Transit-A on MEL-PE1 and Transit-B on ADL-PE1. Move Docker-dependent FRR IXP peers and tenant workloads toward Region B/PC1 offload instead of making Transit-B depend on SYD/Region B.

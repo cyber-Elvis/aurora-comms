@@ -1,5 +1,7 @@
 # Region A — Build and Operations Plan (v2.5)
 
+> **Platform update (2026-06-21):** the live Region A core has been **re-platformed from Cisco IOL to IOS-XRv 6.1.3** (MOP `CHG-AURORA-REG-A-XRV-001`; all 4 nodes cut over with deployed parity, MEL pair IS-IS L2 + LDP validated XR↔XR). The platform names and node IDs in the body below (`*-CISCO-IOL-RT01`, "IOL-AdvEnterprise-L3") describe the **pre-migration design**; the *deployed* state is now IOS-XRv (break-glass user `labadmin`, RSA-only, `Gi0/0/0/x` interface naming). Some addressing here (e.g. GEL `10.0.0.5`, ADL `10.0.0.6`) is the **planned** target — the migration deliberately preserved the deployed loopbacks (GEL `10.0.0.3`, ADL none) with no VPNv4/renumber. Authoritative current state: [`docs/aurora-deployment-status.md`](aurora-deployment-status.md), the MOP above, and `memory/region-a-iosxrv-platform.md`.
+
 | Field | Value |
 | --- | --- |
 | Status | Active (build in progress) |

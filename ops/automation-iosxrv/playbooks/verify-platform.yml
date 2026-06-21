@@ -1,0 +1,29 @@
+---
+- name: Capture IOS-XRv platform migration evidence
+  hosts: region_a_iosxr
+  gather_facts: false
+
+  tasks:
+    - name: Collect IOS-XRv platform state
+      cisco.iosxr.iosxr_command:
+        commands:
+          - show running-config hostname
+          - show version
+          - show platform
+          - show interfaces brief
+          - show configuration commit list
+      register: platform_evidence
+
+    - name: Assert expected hostname
+      ansible.builtin.assert:
+        that:
+          - expected_hostname in platform_evidence.stdout[0]
+        success_msg: "{{ inventory_hostname }} is the expected IOS-XRv target."
+        fail_msg: >-
+          {{ inventory_hostname }} does not report {{ expected_hostname }}.
+          Stop: the management IP may still belong to the IOL rollback node.
+
+    - name: Display platform evidence
+      ansible.builtin.debug:
+        var: platform_evidence.stdout_lines
+
