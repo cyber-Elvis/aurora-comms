@@ -1,4 +1,4 @@
-! SYD-PE1 / Aurora-PE-3 / Cisco IOS-XRv
+! SYD-PE1 / Aurora-PE-3 / Cisco IOS-XRv / Region B planned template
 ! Purpose: initial SSH + local break-glass + per-agent key accounts.
 ! Replace placeholders on the console. Do not commit real secrets or public keys.
 
@@ -20,8 +20,8 @@ configure terminal
   sshkey <AURORA_CLAUDE_LOCAL_PUBLIC_KEY>
  !
  ipv4 access-list MGMT-SOURCES
-  10 permit ipv4 host 192.168.200.1 any
-  20 permit ipv4 host 192.168.200.2 any
+  10 permit ipv4 host 192.168.137.1 any
+  20 permit ipv4 host 192.168.137.2 any
   30 permit ipv4 host 100.118.0.46 any
   999 deny ipv4 any any log
  !

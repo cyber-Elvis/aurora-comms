@@ -8,6 +8,12 @@
     // Host OSes: PC1, PC2/Dell, DigitalOcean host OS, Oracle host OS.
     "tag:hosts": ["autogroup:admin"],
 
+    // Dedicated human-operated terminal, currently PC3.
+    "tag:operator-terminal": ["autogroup:admin"],
+
+    // Linux jump hosts that terminate operator SSH before reaching lab nodes.
+    "tag:jump-host": ["autogroup:admin"],
+
     // Lab nodes and virtual edge routers can only be tagged by approved hosts.
     "tag:lab": ["tag:hosts"],
     "tag:lab-edge": ["tag:hosts"],
@@ -15,6 +21,30 @@
     // Add this tag only to the host running Routinator/RPKI-RTR.
     "tag:rpki-rtr": ["tag:hosts"]
   },
+
+  "hosts": {
+    "pc1-windows": "100.88.225.123",
+    "pc2-windows": "100.109.74.61",
+    "pc3-terminal": "100.110.254.10",
+    "pc1-wsl-jump": "100.116.32.29",
+    "pc2-gns3-jump": "100.118.0.46"
+  },
+
+  // Tailscale recommends grants for new access-control rules. These grants let
+  // PC3 act as a least-privilege Termius terminal without making it a general
+  // host-administration endpoint.
+  "grants": [
+    {
+      "src": ["tag:operator-terminal"],
+      "dst": ["tag:jump-host"],
+      "ip": ["tcp:22"]
+    },
+    {
+      "src": ["tag:operator-terminal"],
+      "dst": ["tag:lab", "tag:lab-edge"],
+      "ip": ["tcp:22", "tcp:23", "tcp:830"]
+    }
+  ],
 
   "acls": [
     {
@@ -81,6 +111,26 @@
         "tag:lab:3080",
         "tag:lab-edge:22",
         "tag:hosts:22"
+      ]
+    },
+    {
+      "src": "tag:operator-terminal",
+      "proto": "tcp",
+      "accept": [
+        "pc2-gns3-jump:22",
+        "pc1-wsl-jump:22",
+        "tag:lab:22",
+        "tag:lab:23",
+        "tag:lab:830",
+        "tag:lab-edge:22"
+      ],
+      "deny": [
+        "pc1-windows:22",
+        "pc1-windows:3389",
+        "pc1-windows:5985",
+        "pc2-windows:22",
+        "pc2-windows:3389",
+        "pc2-windows:5985"
       ]
     },
     {

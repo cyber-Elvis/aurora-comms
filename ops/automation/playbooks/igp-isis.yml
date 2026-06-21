@@ -1,0 +1,46 @@
+---
+# Region A IGP — IS-IS L2 backbone across ADL-GEL-MEL-PE1-MEL-P.
+# Idempotent: re-running only pushes drift. Dry-run first with:  --check --diff
+- name: Region A IGP (IS-IS L2 + LDP-ready interfaces)
+  hosts: region_a_core
+  gather_facts: false
+  tasks:
+
+    - name: Base hygiene
+      cisco.ios.ios_config:
+        lines:
+          - no ip domain-lookup
+          - ip cef
+
+    - name: Loopback0 (router-id / IS-IS source)
+      cisco.ios.ios_config:
+        parents: interface Loopback0
+        lines:
+          - "ip address {{ loopback0 }} 255.255.255.255"
+          - ip router isis
+
+    - name: Core interfaces (per host_vars core_links)
+      cisco.ios.ios_config:
+        parents: "interface {{ item.intf }}"
+        lines:
+          - "description {{ item.desc }}"
+          - "ip address {{ item.ip }} {{ item.mask }}"
+          - ip router isis
+          - isis network point-to-point
+          - no shutdown
+      loop: "{{ core_links }}"
+      loop_control:
+        label: "{{ item.intf }} -> {{ item.desc }}"
+
+    - name: IS-IS process (L2-only, wide metrics)
+      cisco.ios.ios_config:
+        parents: router isis
+        lines:
+          - "net {{ isis_net }}"
+          - "is-type {{ isis_is_type }}"
+          - "metric-style {{ isis_metric_style }}"
+          - passive-interface Loopback0
+
+    - name: Save running-config to startup when changed
+      cisco.ios.ios_config:
+        save_when: modified

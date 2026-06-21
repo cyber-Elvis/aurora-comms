@@ -25,6 +25,44 @@ Use the PowerShell helper from PC1 or another approved operator host:
 The helper prompts through normal SSH. It never accepts a password parameter.
 Aliases may include `proxy_jump`, for example `gns3@100.118.0.46`, so PC1 can reach private lab management addresses through the GNS3 VM without routing host OSes through the lab.
 
+## PC3 dedicated Termius terminal
+
+`forty3s-PC3` (`100.110.254.10`) is the dedicated human-operated Termius
+terminal. It reaches Region A through the GNS3 VM jump host and will reach
+Region B through a dedicated PC1 Linux jump host:
+
+```text
+PC3 -> gns3@100.118.0.46 -> 10.255.191.0/24 Region A nodes
+PC3 -> PC1 Linux jump    -> Region B / DevNet / PC1 lab nodes
+```
+
+Use `setup-pc3-operator-terminal.ps1` on PC3 to generate separate
+passphrase-protected jump-host and node-admin keys. Full setup, Termius host
+definitions, validation, and revocation steps are in
+`mops/2026-06-19-pc3-termius-operator-terminal.md`.
+
+PC3 is not a routed lab node and should not run inbound SSH, WinRM, SMB, or RDP
+for normal operations.
+
+If Mouse Without Borders on PC3 disconnects intermittently, use
+`diagnose-pc3-mouse-without-borders.ps1`. It reports MWB processes/listeners,
+firewall scope, Wi-Fi state, power management, Tailscale path, and name
+resolution. `-ApplySafeFixes` creates a source-restricted TCP 15100-15101 rule
+for PC1/PC2 and sets Wi-Fi to Maximum Performance while connected to AC power.
+
+## PC2 Termius opacity
+
+On the Dell PC2 interactive desktop, use the opacity helper to make Termius
+less visually dominant while lab nodes are being deployed:
+
+```powershell
+.\set-termius-opacity.ps1 -OpacityPercent 25 -InstallAtLogon
+```
+
+The helper uses the Windows layered-window API, so it must run inside the
+logged-in PC2 desktop session. `-InstallAtLogon` registers a per-user scheduled
+task that keeps Termius at the chosen opacity when the user logs in.
+
 ## Profiles
 
 | Profile | Purpose |
@@ -49,7 +87,7 @@ Key artifacts:
 
 Protected local host services are SSH, RPC/NetBIOS/SMB, RDP, WinRM, GNS3/admin
 ports, and common hypervisor/web-admin ports on PC1/PC2. The only local
-lab-node-to-host exception is RPKI-RTR to PC1 `192.168.200.1:3323`.
+lab-node-to-host exception is RPKI-RTR to PC1 `192.168.137.1:3323`.
 
 ## Identity model
 

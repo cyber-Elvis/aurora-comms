@@ -11,13 +11,13 @@ set system login user aurora-codex authentication ssh-ed25519 "<AURORA_CODEX_PUB
 set system login user aurora-claude class super-user
 set system login user aurora-claude authentication ssh-ed25519 "<AURORA_CLAUDE_PUBLIC_KEY>"
 
-set firewall family inet filter PROTECT-HOSTS term ALLOW-RPKI from destination-address 192.168.200.1/32
+set firewall family inet filter PROTECT-HOSTS term ALLOW-RPKI from destination-address 192.168.137.1/32
 set firewall family inet filter PROTECT-HOSTS term ALLOW-RPKI from destination-port 3323
 set firewall family inet filter PROTECT-HOSTS term ALLOW-RPKI then accept
-set firewall family inet filter PROTECT-HOSTS term DENY-PC1 from destination-address 192.168.200.1/32
+set firewall family inet filter PROTECT-HOSTS term DENY-PC1 from destination-address 192.168.137.1/32
 set firewall family inet filter PROTECT-HOSTS term DENY-PC1 then log
 set firewall family inet filter PROTECT-HOSTS term DENY-PC1 then discard
-set firewall family inet filter PROTECT-HOSTS term DENY-PC2 from destination-address 192.168.200.2/32
+set firewall family inet filter PROTECT-HOSTS term DENY-PC2 from destination-address 192.168.137.2/32
 set firewall family inet filter PROTECT-HOSTS term DENY-PC2 then log
 set firewall family inet filter PROTECT-HOSTS term DENY-PC2 then discard
 set firewall family inet filter PROTECT-HOSTS term ACCEPT-REST then accept

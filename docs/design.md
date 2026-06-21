@@ -1,13 +1,13 @@
 # Aurora Communications — Network Design Document
 
-> **Current scope note (ADR-003 v1.2 / ADR-004 v1.0, 2026-06-14):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.2, with Region B in DevNet CML and Region C in cloud. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**. ADR-004 adds the secure management/data-plane ring model: host OSes are protected management anchors, while virtual edge routers carry lab transport. Older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
+> **Current scope note (ADR-003 v1.4 / ADR-004 v1.0, 2026-06-15):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.5: Dell/PC2 hosts the `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P` line, with `MEL-P` as the logical handoff toward PC1 / Region B `SYD-PE1`. Brisbane and Sydney are Region B CML nodes. Transit-A and Transit-B remain local Region A Internet-edge nodes on `MEL-PE1` and `ADL-PE1`; FRR IXP peers and tenant workload containers are Region B/PC1 Docker offload candidates. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**. ADR-004 adds the secure management/data-plane ring model: host OSes are protected management anchors, while virtual edge routers carry lab transport. Older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
 
 | Field | Value |
 | --- | --- |
-| Document version | 1.2 |
+| Document version | 1.3 |
 | Status | Reference / protocol design; executable Region A build superseded by ADR-003 |
 | Owner | Network Architecture (Elvis Ifeanyi Nwosu) |
-| Last updated | 2026-06-14 |
+| Last updated | 2026-06-15 |
 | Supersedes | n/a (initial document) |
 
 ## 1. Purpose and scope
@@ -49,43 +49,43 @@ Geographic scope: eight POPs in Melbourne (HQ + core), Sydney, Brisbane, Geelong
 
 **Why not RSVP-TE:** RSVP-TE is heavyweight and operationally noisy; it has been superseded by SR-MPLS in most modern deployments. We will not deploy RSVP-TE.
 
-### 3.3 iBGP structure — Route Reflectors from W2
+### 3.3 iBGP structure — full mesh now, route reflectors later
 
-**Decision:** Two route reflectors at Melbourne core. All other PEs are RR clients. iBGP is currently full-mesh (W1 baseline) but migrates to RR-based in Sprint W2.
+**Decision:** The local Region A PEs use a full-mesh VPNv4 iBGP overlay. Route reflectors are deferred until the POP count and Region B/C attachment make them operationally useful.
 
 **Rationale:**
-- Real carriers deploy RRs from day one regardless of POP count, because retrofitting RRs into an established full-mesh network is more disruptive than building with them in place.
-- Two RRs at the same physical site (Melbourne) provide control-plane redundancy without requiring complex multi-RR consistency logic.
-- The W1 full-mesh is acceptable as a transitional state — we have four PEs and six iBGP sessions today, manageable, and the migration to RR is a documented change.
+- Real carriers often deploy RRs early, but the current Dell/PC2 slice has only three BGP-speaking PEs and is easier to reason about as a full mesh while the fabric is still being built.
+- When RRs are introduced, place redundant reflectors at major interconnect POPs rather than on the P-only `MEL-P` transport node.
+- The current local full-mesh is acceptable as a transitional state — Region A has three local PEs (`MEL-PE1`, `GEL-PE1`, `ADL-PE1`) and three iBGP VPNv4 sessions, manageable, with `SYD-PE1` joining later from Region B.
 
 **Why not full-mesh long-term:** At the inflection point of ~6 PEs, full-mesh becomes operationally painful (each new PE requires touching every existing PE's config). RRs eliminate that pain.
 
 ### 3.4 IP plan — hierarchical RFC 1918, /31 P2P
 
-**Summary:** Loopbacks in `10.0.0.0/24` (one /32 per router), P2P links in `10.1.0.0/16` (each /31 per RFC 3021), customer space reserved at `10.2.0.0/16`, management at `10.3.0.0/16`. Full plan in `ip-plan.md`.
+**Summary:** Carrier loopbacks live in `10.0.0.0/24`, local Region A P2P links use `10.255.0.0/24` carved into /31s, PE-CE links use `10.255.1.0/24`, Internet-edge links use `10.255.2.0/24`, and node management uses `10.255.191.0/24`. Full plan in `ip-plan.md`.
 
 **Rationale:**
 - /31 P2P per RFC 3021 conserves address space (50% utilisation improvement vs /30) and is the carrier-grade standard.
 - Hierarchical /16 allocations make summarisation possible at future area boundaries.
 - RFC 1918 space is acceptable for the lab; production would use the carrier's PI block.
 
-**Future:** IPv6 dual-stack lands in W3 — `2001:db8:aurora::/48` allocated, `/128` per loopback, `/127` per P2P link per RFC 6164.
+**Future:** IPv6 dual-stack lands after the IPv4 fabric is stable, using RFC 3849 documentation space from `2001:db8::/32` with /127s on P2P links per RFC 6164.
 
-### 3.5 Platform — FRR for the lab, Nokia SR OS / Cisco IOS-XR for production reference
+### 3.5 Platform — Cisco IOL-L3 for the local core, FRR for IXP roles
 
-> **Superseded for the executable build (ADR-003 v1.2, 2026-06-14).** This W1 baseline used FRR containers for rapid protocol validation. The built **Region A is now a Cisco GNS3 core** — IOL-AdvEnterprise-L3 (P + PE-1/PE-2) + IOS-XRv 6.1.3 (PE-3) per `region-a-plan.md` v2.2. FRR is retained for the **IXP route-server / RPKI** role (its real-world niche), not as the PE platform; Nokia SR OS is archived. The protocol design below (IS-IS / LDP / BGP-VPNv4) is vendor-agnostic and still applies.
+> **Superseded for the executable build (ADR-003 v1.4, 2026-06-15).** The W1 baseline used FRR containers for rapid protocol validation. The built **Region A is now a Cisco GNS3 core** — IOL-AdvEnterprise-L3 for `MEL-P`, `MEL-PE1`, `GEL-PE1`, and `ADL-PE1` per `region-a-plan.md` v2.5. IOS-XRv moves to Region B as `SYD-PE1` / `Aurora-PE-3`. FRR is retained for the **IXP route-server / RPKI reference** role, not as the PE platform, and Docker-dependent FRR peers should run from Region B/PC1 when practical; Nokia SR OS is archived. The protocol design below (IS-IS / LDP / BGP-VPNv4) is vendor-agnostic and still applies.
 
-**Decision:** All four PEs run FRRouting (FRR) latest in Docker containers via Containerlab. Multi-vendor reference configurations (Nokia SR OS, Cisco IOS-XR) are maintained in `lab/manual/` for the same intent.
+**Decision:** The executable local core runs Cisco IOL-L3 in GNS3. Local Region A keeps both simulated upstream transits; FRR remains in the lab as route-server/content/eyeball peers and as a lightweight reference stack, preferably hosted from Region B/PC1 Docker. Multi-vendor reference configurations (Nokia SR OS, Cisco IOS-XR, FRR) remain in `lab/manual/` for comparison and historical rationale.
 
 **Rationale:**
-- FRR is production-grade — Facebook, LinkedIn, Equinix run it at scale. Same protocols, same routing decisions, lower lab footprint.
-- Nokia SR OS reference configs match the operator's production background.
-- Cisco IOS-XR reference configs serve the multi-vendor learning narrative.
+- Cisco IOL-L3 gives the Dell/PC2 slice a light, working MPLS L3VPN platform with IOS-style operations.
+- FRR is production-grade for route-server and peering roles — Facebook, LinkedIn, Equinix run it at scale.
+- Nokia SR OS and Cisco IOS-XR reference configs preserve the multi-vendor learning narrative while the executable Region A build stays Cisco-light.
 - Each new feature lands in all three vendor flavours, with `compare.md` as the side-by-side artifact.
 
 ## 4. Topology
 
-Eight national POPs, modelled as a tiered carrier backbone rather than an 8-node full mesh. The first active lab slice is MEL/SYD/BNE with GEL as a placeholder; ADL/PER/DRW/HBA are reserved expansion POPs. In a real carrier, this avoids the operational mess of every POP connecting to every other POP and makes maintenance/failure domains clearer.
+Eight national POPs are modelled as a tiered carrier backbone rather than an 8-node full mesh. The active local lab slice is the Dell/PC2 regional line `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`; Sydney and Brisbane are Region B CML targets, while PER/DRW/HBA remain reserved expansion POPs. In a real carrier, this avoids the operational mess of every POP connecting to every other POP and makes maintenance/failure domains clearer.
 
 ADR-004 adds a separate secure inter-site ring for the lab execution domains: PC1, PC2/Dell, DigitalOcean, and Oracle are connected by a management ring, while virtual edge routers (`pc1-edge`, `pc2-edge`, `do-edge`, `oci-edge`) form the lab data-plane ring. Do not treat PC1, PC2, or cloud host OSes as routed lab nodes.
 
@@ -103,11 +103,11 @@ Legend: `====` = high-capacity east-coast core/interconnect path; `----` / `|` =
 
 | POP | Role | Loopback | NET |
 | --- | --- | --- | --- |
-| Melbourne | Core / RR site (W2), primary transit and IXP | 10.0.0.1 | 49.0001.0010.0000.0001.00 |
-| Sydney | Interconnect PE, Region B/C handoff | 10.0.0.4 | 49.0001.0010.0000.0004.00 |
-| Brisbane | Regional enterprise PE | 10.0.0.3 | 49.0001.0010.0000.0003.00 |
-| Geelong | Regional access PE / placeholder | 10.0.0.5 | 49.0001.0010.0000.0005.00 |
-| Adelaide | South-central aggregation PE | 10.0.0.6 | 49.0001.0010.0000.0006.00 |
+| Melbourne | Local core / PE site: `MEL-P` and `MEL-PE1`, Transit-A and logical IXP attachment | 10.0.0.1 / 10.0.0.2 | 49.0001.0010.0000.0001.00 / 49.0001.0010.0000.0002.00 |
+| Sydney | Region B interconnect PE, Region B/C handoff, first ROV enforcer | TBD in CML | TBD |
+| Brisbane | Region B regional enterprise PE / Helix service attachment | TBD in CML | TBD |
+| Geelong | Local regional-line PE | 10.0.0.5 | 49.0001.0010.0000.0005.00 |
+| Adelaide | Local south-central regional-line endpoint and Transit-B backup edge | 10.0.0.6 | 49.0001.0010.0000.0006.00 |
 | Perth | Western Australia PE | 10.0.0.7 | 49.0001.0010.0000.0007.00 |
 | Darwin | Northern remote PE | 10.0.0.8 | 49.0001.0010.0000.0008.00 |
 | Tasmania / Hobart | Island PE | 10.0.0.9 | 49.0001.0010.0000.0009.00 |

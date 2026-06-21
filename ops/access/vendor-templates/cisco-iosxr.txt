@@ -21,8 +21,8 @@ username aurora-claude
 
 ! Restrict management sources with an ingress ACL on the management interface/VRF.
 ipv4 access-list MGMT-SOURCES
- 10 permit ipv4 host 192.168.200.1 any
- 20 permit ipv4 host 192.168.200.2 any
+ 10 permit ipv4 host 192.168.137.1 any
+ 20 permit ipv4 host 192.168.137.2 any
  30 permit ipv4 host <PC2_GNS3_VM_OR_TAILSCALE_SOURCE> any
  40 permit ipv4 host <DO_HOST_OR_MGMT_SOURCE> any
  50 permit ipv4 host <OCI_HOST_OR_MGMT_SOURCE> any

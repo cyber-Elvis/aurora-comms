@@ -1,0 +1,13 @@
+# Common connection + IGP settings for every Region A core node.
+# ---- Connection (network_cli over SSH, via the GNS3 VM as a jump host) ----
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.ios.ios
+ansible_user: aurora-claude
+ansible_ssh_private_key_file: "~/.ssh/aurora-claude-local-ed25519"
+# PC1 reaches the node mgmt IPs (10.255.191.x) THROUGH the GNS3 VM (ADR-004 jump-host model).
+ansible_ssh_common_args: "-o ProxyJump=gns3@100.118.0.46 -o StrictHostKeyChecking=no"
+
+# ---- IGP (IS-IS L2) common parameters ----
+isis_is_type: level-2-only
+isis_metric_style: wide
+# Unnamed IS-IS process (matches the Wave-1 MEL-P/MEL-PE1 config).

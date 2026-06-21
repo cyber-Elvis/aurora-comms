@@ -1,24 +1,29 @@
-﻿# Aurora Deployment Status
+# Aurora Deployment Status
 
-> **Latest state: 2026-06-15** (top). The 2026-06-07 migration snapshot is kept below as the historical record.
+> **Latest state: 2026-06-16** (top). The 2026-06-07 migration snapshot is kept below as the historical record.
 
-## Current state - 2026-06-15: Cisco Region A + secure access foundation (ADR-003 / ADR-004)
+## Current state - 2026-06-16: Cisco Region A + secure access foundation (ADR-003 / ADR-004)
 
-**Region A backbone is now Cisco**, not Nokia (decision recorded in `adr-003-revendor-cisco-region-a.md`; executable plan in `region-a-plan.md` v2.2):
+**Region A backbone is now Cisco**, not Nokia (decision recorded in `adr-003-revendor-cisco-region-a.md`; executable plan in `region-a-plan.md` v2.5):
 
 | Role / POP alias | Now | Was |
 | --- | --- | --- |
 | Aurora-P / MEL-P | **IOL-AdvEnterprise-L3** (IS-IS L2 + LDP) | SR Linux 24.10 |
-| Aurora-PE-1 / MEL-PE1 | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Transit-A + Melbourne IXP) | SR OS 13.0R4 |
-| Aurora-PE-2 / BNE-PE1 | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Helix/Brisbane edge) | SR OS 13.0R4 |
-| Aurora-PE-3 / SYD-PE1 | IOS-XRv 6.1.3 (Region B/C edge + first ROV enforcer) | IOS-XRv 6.1.3 |
-| Geelong / GEL access | `region-a-ce-spare` placeholder now; target light `Aurora-PE-4` later | historical Geelong POP concept |
-| Adelaide / ADL-PE1 | planned POP, not instantiated yet | n/a |
+| Aurora-PE-1 / MEL-PE1 | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Transit-A + logical Melbourne IXP attachment) | SR OS 13.0R4 |
+| GEL-PE1 / Geelong | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Dell/PC2 regional-line midpoint) | historical Geelong POP concept |
+| ADL-PE1 / Adelaide | **IOL-AdvEnterprise-L3** (MPLS L3VPN; Dell/PC2 regional-line endpoint; local Transit-B backup edge) | n/a |
+| BNE-PE1 / Brisbane | Region B planned node (DevNet CML; Helix/Brisbane edge) | SR OS 13.0R4 / prior PE-2 concept |
+| SYD-PE1 / Sydney | Region B planned IOS-XRv node (Region B/C edge + first ROV enforcer) | IOS-XRv 6.1.3 |
 | Perth / PER-PE1 | planned POP, not instantiated yet | n/a |
 | Darwin / DRW-PE1 | planned POP, not instantiated yet | n/a |
 | Tasmania-Hobart / HBA-PE1 | planned POP, not instantiated yet | n/a |
 
 - **Build in progress (GNS3 project `ops-lab`, `d8119db0-â€¦`):** Aurora-P + Aurora-PE-1 **created, linked (e0/0â†”e0/0), booted** (IOL-L3, at enable prompt), being configured per `region-a-plan.md` Â§6 Wave 1 (IS-IS L2 + LDP â†’ iBGP VPNv4 â†’ L3VPN VRF CUST-A). Console-driven via the `iolcfg.py` socket helper on the GNS3 VM (Python 3.14 â†’ no `telnetlib`, raw-socket telnet instead).
+- **Placement update (2026-06-21):** the Dell/PC2 regional line remains aligned geographically as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. All four backbone routers are started and OOB-reachable through the GNS3 VM jump host. `MEL-P` sits on the right as the local core and logical handoff toward PC1 / Region B `SYD-PE1`.
+- **Region B placement update (2026-06-15):** `BNE-PE1-CISCO-IOL-RT01` / Aurora-PE-2 and `SYD-PE1-CISCO-IOSXR-RT01` / Aurora-PE-3 were removed from local Region A staging. They remain planned Region B CML nodes; SYD keeps the IOS-XRv VPNv4/ROV/Region B-C edge role.
+- **Live GNS3 link update (2026-06-15):** local Region A links now include MEL-P e0/0 -> MEL-PE1 e0/0, MEL-PE1 e0/2 -> GEL-PE1 e0/0, GEL-PE1 e0/2 -> ADL-PE1 e0/0, GEL-PE1 e0/1 -> MGMT-SW01 e4, and ADL-PE1 e0/1 -> MGMT-SW01 e5.
+- **Internet-edge placement correction (2026-06-15):** keep both simulated upstream transits in Region A: Transit-A on MEL-PE1 and Transit-B on ADL-PE1. Move Docker-dependent FRR IXP peers and tenant workloads toward Region B/PC1 offload instead of making Transit-B depend on SYD/Region B.
+- **PC1/PC2 Ethernet update (2026-06-20):** the local internet-carrying segment is `192.168.137.0/24`. PC2/Dell is the ICS gateway at `192.168.137.1`; PC1 currently receives `192.168.137.81` by DHCP and prefers Ethernet over Wi-Fi.
 - **Nokia archived, not deleted.** SR OS 13.0R4 licensed qcow2 + RTC recipe cold-stored (md5 recorded, `memory/sros-gns3-license-recipe.md`); SR Linux stopped. Recoverable via git history + cold storage. PC1 vrnetlab SR OS stays as offline failover.
 - **vJunos-router does NOT run on the Dell** â€” boots its Wind River host, the inner Junos VM won't start (triple-nested wall), clean poweroff (`memory/gns3-nos-boot-quirks.md`). **Juniper â†’ Region B** (vSRX/vJunos via CML BYOI) + **cloud cRPD**; **vSRX runs standalone-local** for Junos/firewall practice.
 - **Three-region model (ADR-003):** A = local Dell GNS3 Cisco (permanent); B = DevNet CML Cisco **+ Juniper**; C = cloud edge (DigitalOcean containerlab: cRPD + FRR + Routinator + public-IP route-server).
@@ -37,7 +42,7 @@ ADR-004 has moved from design/tooling into the first live device slice for the M
 | `ops/access/aurora-ssh.ps1` | Done / live-tested | Supports `proxy_jump`; `mel-p1` and `mel-pe1` connect through `gns3@100.118.0.46` to `10.255.191.11/12` |
 | `ops/access/inventory.yml` | Done | Non-secret aliases now use `10.255.191.0/24` management addresses plus `proxy_jump: gns3@100.118.0.46` |
 | `ops/access/new-agent-key.ps1` | Done / executed | Generates per-agent Ed25519 keys under `%USERPROFILE%\.ssh` non-interactively by default; supports optional `-Passphrase` |
-| `ops/access/node-snippets/` | Done / MEL applied | MEL-P and MEL-PE1 snippets include non-secret public key bodies; BNE/SYD remain templates for next waves |
+| `ops/access/node-snippets/` | Done / MEL applied | MEL-P and MEL-PE1 snippets include non-secret public key bodies; GEL/ADL local snippets are available; BNE/SYD remain Region B templates |
 | `aurora-codex` / `aurora-claude` accounts | Done on MEL pair | Both accounts exist on `MEL-P-CISCO-IOL-RT01` and `MEL-PE1-CISCO-IOL-RT01`; they remain lab-node-only identities |
 | Live SSH to MEL-P / MEL-PE nodes | Verified | `aurora-codex` and `aurora-claude` both returned the expected hostnames over SSH through the GNS3 jump host |
 | Secrets / private keys in repo | Clean | Private keys stay in `%USERPROFILE%\.ssh`; repo contains only public key bodies, placeholders, inventory, and helper logic |
@@ -62,9 +67,9 @@ Observed hostnames:
 Immediate next operator action:
 
 1. Use the helper for MEL-P/MEL-PE1 configuration work; avoid mixing PowerShell commands into router SSH sessions.
-2. Apply the same SSH pattern to BNE-PE1 when Wave 2 is created.
+2. Start and configure GEL-PE1 first to extend Wave 1, then boot ADL-PE1 in Wave 2 for the Dell/PC2 regional-line endpoint.
 3. Run the ADR-004 containment validation: lab-node attempts toward PC1/PC2 SSH/RDP/SMB/WinRM/admin ports should fail and be logged.
-4. Continue Region A Wave 1 routing bring-up: IS-IS L2, LDP, loopbacks, then iBGP VPNv4 and `CUST-A`.
+4. Continue Region A Wave 1 routing bring-up: IS-IS L2, LDP, loopbacks, then iBGP VPNv4 and `CUST-A`; keep Brisbane/Sydney work in the Region B CML plan.
 
 ### Documentation hygiene â€” 2026-06-14
 

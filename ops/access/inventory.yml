@@ -11,6 +11,9 @@ nodes:
     default_user: admin
     zone: local
     credential_scope: lab-node
+    placement: dell-pc2
+    topology_line: mel-gel-adl
+    deployment_domain: region-a-dell-gns3
     status: active
 
   - alias: mel-pe1
@@ -22,28 +25,31 @@ nodes:
     default_user: admin
     zone: local
     credential_scope: lab-node
+    placement: dell-pc2
+    topology_line: mel-gel-adl
+    deployment_domain: region-a-dell-gns3
     status: active
 
   - alias: bne-pe1
     hostname: BNE-PE1-CISCO-IOL-RT01
-    host: 10.255.191.13
+    host: TBD
     port: 22
     profile: modern
-    proxy_jump: gns3@100.118.0.46
     default_user: admin
-    zone: local
+    zone: region-b
     credential_scope: lab-node
+    deployment_domain: region-b-devnet-cml
     status: planned
 
   - alias: syd-pe1
     hostname: SYD-PE1-CISCO-IOSXR-RT01
-    host: 10.255.191.14
+    host: TBD
     port: 22
     profile: modern
-    proxy_jump: gns3@100.118.0.46
     default_user: admin
-    zone: local
+    zone: region-b
     credential_scope: lab-node
+    deployment_domain: region-b-devnet-cml
     status: planned
 
   - alias: gel-pe1
@@ -55,10 +61,13 @@ nodes:
     default_user: admin
     zone: local
     credential_scope: lab-node
-    status: reserved
+    placement: dell-pc2
+    topology_line: mel-gel-adl
+    deployment_domain: region-a-dell-gns3
+    status: active
 
   - alias: helix-sw
-    hostname: BNE-ACC1-ARUBA-CX-SW01
+    hostname: HELIX-LAN-ARUBA-CX-SW01
     host: 10.255.191.16
     port: 22
     profile: modern
@@ -66,6 +75,34 @@ nodes:
     default_user: admin
     zone: local
     credential_scope: lab-node
+    placement: dell-pc2
+    deployment_domain: region-a-dell-gns3
+    status: planned
+
+  - alias: transit-a
+    hostname: TRANSIT-A-CISCO-CSR1000V-RT01
+    host: TBD
+    port: 22
+    profile: modern
+    proxy_jump: gns3@100.118.0.46
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    placement: dell-pc2
+    deployment_domain: region-a-dell-gns3
+    status: planned
+
+  - alias: transit-b
+    hostname: TRANSIT-B-CISCO-IOL-XE-RT01
+    host: TBD
+    port: 22
+    profile: modern
+    proxy_jump: gns3@100.118.0.46
+    default_user: admin
+    zone: local
+    credential_scope: lab-node
+    placement: dell-pc2
+    deployment_domain: region-a-dell-gns3
     status: planned
 
   - alias: adl-pe1
@@ -77,7 +114,10 @@ nodes:
     default_user: admin
     zone: local
     credential_scope: lab-node
-    status: reserved
+    placement: dell-pc2
+    topology_line: mel-gel-adl
+    deployment_domain: region-a-dell-gns3
+    status: active
 
   - alias: per-pe1
     hostname: PER-PE1-CISCO-IOL-RT01

@@ -4,20 +4,20 @@
 config system admin
     edit "admin"
         set accprofile "super_admin"
-        set trusthost1 192.168.200.1 255.255.255.255
-        set trusthost2 192.168.200.2 255.255.255.255
+        set trusthost1 192.168.137.1 255.255.255.255
+        set trusthost2 192.168.137.2 255.255.255.255
     next
     edit "aurora-codex"
         set accprofile "super_admin"
         set ssh-public-key1 "<AURORA_CODEX_PUBLIC_KEY>"
-        set trusthost1 192.168.200.1 255.255.255.255
-        set trusthost2 192.168.200.2 255.255.255.255
+        set trusthost1 192.168.137.1 255.255.255.255
+        set trusthost2 192.168.137.2 255.255.255.255
     next
     edit "aurora-claude"
         set accprofile "super_admin"
         set ssh-public-key1 "<AURORA_CLAUDE_PUBLIC_KEY>"
-        set trusthost1 192.168.200.1 255.255.255.255
-        set trusthost2 192.168.200.2 255.255.255.255
+        set trusthost1 192.168.137.1 255.255.255.255
+        set trusthost2 192.168.137.2 255.255.255.255
     next
 end
 

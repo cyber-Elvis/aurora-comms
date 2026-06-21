@@ -1,0 +1,5 @@
+loopback0: 10.0.0.2
+isis_net: 49.0001.0000.0000.0002.00
+core_links:
+  - { intf: Ethernet0/0, ip: 10.255.0.1, mask: 255.255.255.254, desc: CORE-to-MEL-P }
+  - { intf: Ethernet0/2, ip: 10.255.0.6, mask: 255.255.255.254, desc: CORE-to-GEL-PE1 }
