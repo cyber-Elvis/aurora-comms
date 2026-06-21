@@ -12,7 +12,7 @@ Protected services:
 Allowed exception:
 
 ```text
-192.168.200.1:3323/tcp  RPKI-RTR
+192.168.137.1:3323/tcp  RPKI-RTR
 ```
 
 ## Manager install
@@ -61,7 +61,7 @@ When a firewall or log forwarder can normalize events, use this shape:
     "ip": "10.255.191.11"
   },
   "destination": {
-    "ip": "192.168.200.1",
+    "ip": "192.168.137.1",
     "port": 22
   }
 }
@@ -81,7 +81,7 @@ The permitted RPKI exception can be sent at a low level:
     "ip": "10.255.191.14"
   },
   "destination": {
-    "ip": "192.168.200.1",
+    "ip": "192.168.137.1",
     "port": 3323
   }
 }
@@ -98,7 +98,7 @@ sudo /var/ossec/bin/wazuh-logtest
 Paste this denied-flow sample:
 
 ```text
-Jun 15 09:55:01 gns3 kernel: AURORA_HOST_GUARD denied IN=tap-aurora-mgmt OUT=eth1 SRC=10.255.191.11 DST=192.168.200.1 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=12345 PROTO=TCP SPT=49152 DPT=22 WINDOW=64240 SYN
+Jun 15 09:55:01 gns3 kernel: AURORA_HOST_GUARD denied IN=tap-aurora-mgmt OUT=eth1 SRC=10.255.191.11 DST=192.168.137.1 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=12345 PROTO=TCP SPT=49152 DPT=22 WINDOW=64240 SYN
 ```
 
 Expected rule:
@@ -110,7 +110,7 @@ Expected rule:
 Paste this normalized sample:
 
 ```json
-{"aurora":{"control":"host-containment","action":"deny","src_zone":"lab","dst_zone":"host"},"source":{"ip":"10.255.191.11"},"destination":{"ip":"192.168.200.1","port":445}}
+{"aurora":{"control":"host-containment","action":"deny","src_zone":"lab","dst_zone":"host"},"source":{"ip":"10.255.191.11"},"destination":{"ip":"192.168.137.1","port":445}}
 ```
 
 Expected rule:
@@ -122,7 +122,7 @@ Expected rule:
 Paste this RPKI exception sample:
 
 ```json
-{"aurora":{"control":"host-containment","action":"allow","src_zone":"lab","dst_zone":"host"},"source":{"ip":"10.255.191.14"},"destination":{"ip":"192.168.200.1","port":3323}}
+{"aurora":{"control":"host-containment","action":"allow","src_zone":"lab","dst_zone":"host"},"source":{"ip":"10.255.191.14"},"destination":{"ip":"192.168.137.1","port":3323}}
 ```
 
 Expected rule:

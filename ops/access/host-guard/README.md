@@ -11,7 +11,7 @@ lab node e0/1 -> MGMT-SW01 -> tap-aurora-mgmt 10.255.191.1/24 -> GNS3 VM -> host
 
 ADR-004 requires lab nodes to be unable to initiate SSH/RDP/SMB/WinRM or host
 admin sessions to PC1/PC2. The only local lab-node-to-host exception is
-RPKI-RTR to PC1 `192.168.200.1:3323`.
+RPKI-RTR to PC1 `192.168.137.1:3323`.
 
 ## Apply on the GNS3 VM
 
@@ -32,8 +32,8 @@ Override variables only when the lab addressing changes:
 
 ```bash
 sudo LAB_IF=tap-aurora-mgmt \
-  PC1_IP=192.168.200.1 \
-  PC2_IP=192.168.200.2 \
+  PC1_IP=192.168.137.1 \
+  PC2_IP=192.168.137.2 \
   RPKI_RTR_PORT=3323 \
   sh ./gns3-vm-host-guard.sh apply
 ```
@@ -52,27 +52,27 @@ an SSH session and escape from any successful telnet attempt with
 
 ```ios
 terminal length 0
-telnet 192.168.200.1 22
-telnet 192.168.200.1 135
-telnet 192.168.200.1 139
-telnet 192.168.200.1 445
-telnet 192.168.200.1 3389
-telnet 192.168.200.1 5985
-telnet 192.168.200.1 5986
-telnet 192.168.200.2 22
-telnet 192.168.200.2 2222
-telnet 192.168.200.2 3080
-telnet 192.168.200.2 445
-telnet 192.168.200.2 3389
-telnet 192.168.200.2 5985
-telnet 192.168.200.2 5986
-telnet 192.168.200.1 3323
+telnet 192.168.137.1 22
+telnet 192.168.137.1 135
+telnet 192.168.137.1 139
+telnet 192.168.137.1 445
+telnet 192.168.137.1 3389
+telnet 192.168.137.1 5985
+telnet 192.168.137.1 5986
+telnet 192.168.137.2 22
+telnet 192.168.137.2 2222
+telnet 192.168.137.2 3080
+telnet 192.168.137.2 445
+telnet 192.168.137.2 3389
+telnet 192.168.137.2 5985
+telnet 192.168.137.2 5986
+telnet 192.168.137.1 3323
 ```
 
 Pass criteria:
 
 - Protected host-admin ports refuse, reset, or time out from the lab node.
-- `192.168.200.1:3323` opens when the PC1 RPKI-RTR service is running.
+- `192.168.137.1:3323` opens when the PC1 RPKI-RTR service is running.
 - The guard counters increase for denied protected ports.
 - Kernel logs contain `AURORA_HOST_GUARD denied` for denied attempts.
 
@@ -95,7 +95,7 @@ Read-only checks from Codex confirmed:
   `FORWARD` policy was `ACCEPT`, with Tailscale/Docker/libvirt chains but no
   Aurora host-containment chain.
 - The guard was then applied successfully to `FORWARD` for `tap-aurora-mgmt`,
-  with an explicit accept for `192.168.200.1:3323` and log/reject rules for
+  with an explicit accept for `192.168.137.1:3323` and log/reject rules for
   protected PC1/PC2 ports.
 
 The local containment proof is not complete until the lab-node proof matrix

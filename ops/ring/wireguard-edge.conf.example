@@ -16,7 +16,7 @@ ListenPort = 51820
 PublicKey  = <PEER_EDGE_PUBLIC_KEY>
 Endpoint   = <PEER_PUBLIC_IP>:51820
 # TIGHT AllowedIPs = ring transport + peer edge loopback ONLY.
-# Deliberately excludes 192.168.200.0/24 and any host/management subnet, so the
+# Deliberately excludes 192.168.137.0/24 and any host/management subnet, so the
 # tunnel cannot carry a lab-node -> host-OS flow (containment at the transport layer).
 AllowedIPs = 10.255.255.5/32, 10.0.2.4/32   # peer transport + oci-edge loopback (10.0.2.x block)
 PersistentKeepalive = 25
@@ -25,4 +25,4 @@ PersistentKeepalive = 25
 #   pc2-edge <-> do-edge   : 10.255.255.0/31
 #   do-edge  <-> oci-edge  : 10.255.255.4/31
 #   oci-edge <-> pc1-edge  : 10.255.255.2/31
-#   pc1-edge <-> pc2-edge  : ethernet (192.168.200.x) — no WireGuard
+#   pc1-edge <-> pc2-edge  : ethernet (192.168.137.x) — no WireGuard

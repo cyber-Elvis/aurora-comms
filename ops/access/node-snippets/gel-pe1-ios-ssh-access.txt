@@ -1,0 +1,58 @@
+! GEL-PE1 / Geelong regional PE / Cisco IOL-L3
+! Purpose: initial SSH + local break-glass + per-agent key accounts.
+! Replace secret placeholders on the console. Public key bodies are non-secret.
+
+conf t
+ hostname GEL-PE1-CISCO-IOL-RT01
+ ip domain name lab.aurora
+ crypto key generate rsa modulus 2048
+ ip ssh version 2
+ ip ssh time-out 60
+ ip ssh authentication-retries 3
+ service password-encryption
+ login block-for 60 attempts 3 within 30
+ ip access-list extended NODE-TO-HOSTS
+  permit tcp any host 192.168.137.1 eq 3323
+  deny ip any host 192.168.137.1 log
+  deny ip any host 192.168.137.2 log
+  permit ip any any
+ interface Ethernet0/1
+  description OOB_MGMT_TO_MGMT-SW01
+  ip address 10.255.191.15 255.255.255.0
+  ip access-group NODE-TO-HOSTS out
+  no shutdown
+ exit
+ username admin privilege 15 algorithm-type scrypt secret <YOU_SET_ADMIN_SECRET_ON_BOX>
+ enable algorithm-type scrypt secret <YOU_SET_ENABLE_SECRET_ON_BOX>
+ username aurora-codex privilege 15
+ username aurora-claude privilege 15
+ ip ssh pubkey-chain
+  username aurora-codex
+   key-string
+    <AURORA_CODEX_LOCAL_PUBLIC_KEY_BODY>
+   exit
+  exit
+  username aurora-claude
+   key-string
+    <AURORA_CLAUDE_LOCAL_PUBLIC_KEY_BODY>
+   exit
+  exit
+  username admin
+   key-string
+    AAAAC3NzaC1lZDI1NTE5AAAAID7O3FAUgegskGDyKkImQcXbDSeipsKIJaeKFHysPiCu
+   exit
+  exit
+ ip access-list standard MGMT-SOURCES
+  permit 10.255.191.1
+  deny any log
+ line vty 0 4
+  transport input ssh
+  login local
+  access-class MGMT-SOURCES in
+  exec-timeout 10 0
+ end
+write memory
+
+! Expected access helper:
+! .\ops\access\aurora-ssh.ps1 gel-pe1
+! .\ops\access\aurora-ssh.ps1 gel-pe1 -UseCodex -IdentityFile $HOME\.ssh\aurora-codex-local-ed25519

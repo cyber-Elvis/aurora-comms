@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.1 |
-| Date | 2026-06-15 |
+| Version | 1.2 |
+| Date | 2026-06-19 |
 | Relates | ADR-002, ADR-003, `docs/region-a-plan.md`, `docs/ip-plan.md`, `ops/access/` |
 | Driver | Telstra Protect/Secure practice requires privileged access management, segmentation, blast-radius containment, and auditability |
 | Owner | Lab architecture (Elvis Ifeanyi Nwosu) |
@@ -81,7 +81,7 @@ Default posture is deny from lab nodes to hosts.
 | Host/automation -> lab node SSH/API/console | Allow from approved sources |
 | Lab node -> ring-neighbor lab edge | Allow for routing/control-plane protocols |
 | Lab node -> PC1/PC2/cloud host SSH/RDP/SMB/WinRM/hypervisor/admin ports | Deny and log |
-| Lab node -> RPKI-RTR on PC1 `192.168.200.1:3323` | Allow as an explicit service exception |
+| Lab node -> RPKI-RTR on PC1 `192.168.137.1:3323` | Allow as an explicit service exception |
 | Lab node -> monitoring/logging collectors | Allow only when documented |
 | Lab node -> arbitrary host OS service | Deny |
 
@@ -126,6 +126,28 @@ The **data-plane ring** (§2.5) tooling lives under `ops/ring/`:
 
 No password, private key, `secret 9` hash, API token, or cloud credential belongs in the repo.
 
+### 2.7 Dedicated operator terminal
+
+`forty3s-PC3` is the dedicated human-operated Termius terminal.
+
+PC3 is part of the management ring but is not a routed lab node and is not a
+general host-administration workstation. Its normal access is:
+
+```text
+PC3 -> PC2 GNS3 Linux jump -> Region A node management
+PC3 -> PC1 Linux jump      -> Region B/DevNet and PC1-hosted lab nodes
+```
+
+PC3 uses separate passphrase-protected personal keys for jump-host and
+lab-node authentication. PC1 automation private keys are never copied to PC3.
+Tailscale policy identifies PC3 as `tag:operator-terminal` and permits only the
+required SSH management paths to `tag:jump-host`, `tag:lab`, and
+`tag:lab-edge`. Direct PC3 access to PC1/PC2 Windows RDP, WinRM, SMB, and SSH
+is denied by default.
+
+The implementation MOP is
+`ops/access/mops/2026-06-19-pc3-termius-operator-terminal.md`.
+
 ## 3. Consequences
 
 **Positive**
@@ -150,6 +172,9 @@ As of 2026-06-15, the first local management slice is live:
 - `mel-p1` (`10.255.191.11`) and `mel-pe1` (`10.255.191.12`) are reached from PC1 through `gns3@100.118.0.46`.
 - `aurora-codex` and `aurora-claude` local Ed25519 keys exist on PC1 only; public key bodies are installed on the MEL pair.
 - Both per-agent accounts have been verified by SSH hostname checks against `MEL-P-CISCO-IOL-RT01` and `MEL-PE1-CISCO-IOL-RT01`.
+- As of 2026-06-19, PC3 is designated as the dedicated Termius operator
+  terminal. Region A uses the GNS3 VM jump; the PC1 Linux jump for Region B is
+  still pending because `forty3s-pc1-wsl` is currently offline.
 
 Still pending for ADR-004 completion:
 
@@ -179,5 +204,6 @@ Before the cloud ring is considered production-like:
 
 ## 6. Revision history
 
+- **v1.2 (2026-06-19)** - designates PC3 as the dedicated Termius operator terminal, introduces least-privilege `operator-terminal` / `jump-host` roles, and keeps PC1/PC2 Windows out of the device jump path.
 - **v1.1 (2026-06-15)** - implementation update. MEL-P/MEL-PE1 now use the GNS3 VM TAP management segment and verified per-agent SSH keys for `aurora-codex` and `aurora-claude`.
 - **v1.0 (2026-06-14)** - initial. Records the two-ring model, host-isolation invariant, per-agent automation identities, key-first access, containment rules, and `ops/access/` tooling contract.

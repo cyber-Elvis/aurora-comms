@@ -1,0 +1,14 @@
+# Region A inventory — the ADL-GEL-MEL-PE1-MEL-P IOL-L3 line (ops-lab on Dell GNS3).
+# ansible_host = node management IP (10.255.191.x), reached via the GNS3 VM jump host.
+all:
+  children:
+    region_a_core:
+      hosts:
+        mel-p:
+          ansible_host: 10.255.191.11
+        mel-pe1:
+          ansible_host: 10.255.191.12
+        gel-pe1:
+          ansible_host: 10.255.191.15
+        adl-pe1:
+          ansible_host: 10.255.191.17

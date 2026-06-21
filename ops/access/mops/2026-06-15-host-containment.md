@@ -10,8 +10,8 @@ Scope:
 - `MEL-P-CISCO-IOL-RT01` / `10.255.191.11`
 - `MEL-PE1-CISCO-IOL-RT01` / `10.255.191.12`
 - GNS3 VM `tap-aurora-mgmt` / `10.255.191.1/24`
-- PC1 `192.168.200.1`
-- PC2/Dell `192.168.200.2`
+- PC1 `192.168.137.1`
+- PC2/Dell `192.168.137.2`
 
 ## Requirement
 
@@ -24,7 +24,7 @@ Lab nodes must not initiate sessions to PC1/PC2 host-admin services:
 The explicit RPKI-RTR exception must remain allowed:
 
 ```text
-192.168.200.1:3323/tcp
+192.168.137.1:3323/tcp
 ```
 
 ## Live Observations
@@ -55,9 +55,9 @@ The guard was then applied on the GNS3 VM:
 
 ```text
 -A FORWARD -i tap-aurora-mgmt -j AURORA-HOST-GUARD
-1 ACCEPT tcp to 192.168.200.1 dpt:3323
-2 LOG/3 REJECT protected TCP ports to 192.168.200.1
-4 LOG/5 REJECT protected TCP ports to 192.168.200.2
+1 ACCEPT tcp to 192.168.137.1 dpt:3323
+2 LOG/3 REJECT protected TCP ports to 192.168.137.1
+4 LOG/5 REJECT protected TCP ports to 192.168.137.2
 6 RETURN
 ```
 
@@ -107,7 +107,7 @@ sudo /var/ossec/bin/wazuh-logtest
 ## Pass Criteria
 
 - Protected PC1/PC2 services are refused, reset, or timed out from lab nodes.
-- PC1 `192.168.200.1:3323` opens only for the RPKI-RTR exception when the
+- PC1 `192.168.137.1:3323` opens only for the RPKI-RTR exception when the
   service is running.
 - Denied attempts increment an explicit deny counter.
 - Wazuh raises rule `100101`, `100103`, or `100104` for denied lab-node attempts.

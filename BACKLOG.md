@@ -29,9 +29,11 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 
 ## Sprint A1 — Region A Cisco Core
 
-- [ ] **Finish Wave 1 core bring-up** — `Aurora-P`, `Aurora-PE-1`, `Aurora-PE-2` as IOL-L3 with IS-IS L2 + LDP.
-- [ ] **Add `Aurora-PE-3` IOS-XRv** — IOS-XR PE for VPNv4, ROV, and future Region B edge.
-- [ ] **Apply national POP aliases** — MEL-P/MEL-PE1, SYD-PE1, BNE-PE1 in configs, diagrams, MOPs, and monitoring labels.
+- [ ] **Finish Dell/PC2 Region A line bring-up** — `ADL-PE1`, `GEL-PE1`, `MEL-PE1`, `MEL-P` as IOL-L3 with IS-IS L2 + LDP. GEL/ADL are created/wired in `ops-lab`; boot/config smoke still pending.
+- [x] **Move Brisbane/Sydney to Region B** — `BNE-PE1` and `SYD-PE1` removed from local Region A staging; keep them as DevNet CML Region B planned nodes.
+- [ ] **Apply national POP aliases** — MEL-P/MEL-PE1, GEL-PE1, ADL-PE1 locally; SYD-PE1/BNE-PE1 in Region B configs, diagrams, MOPs, and monitoring labels.
+- [x] **Pin Dell/PC2 regional line** — keep the ADL -> GEL -> MEL-PE1 -> MEL-P line in the local `ops-lab` GNS3 design and instantiate GEL-PE1 / ADL-PE1 staging links.
+- [x] **Align live topology geographically** — canvas order is now `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`; `MEL-P` is the right-side logical handoff toward PC1 / Region B `SYD-PE1`.
 - [ ] **Validate MPLS L3VPN** — build `CUST-A` VRF (`RD/RT 64496:100`) and prove VPNv4 label exchange + cross-PE reachability.
 - [ ] **Create Region A config templates** — `region-a-cisco/configs/` with per-node IOS/IOL/IOS-XR configs.
 - [ ] **Export GNS3 project** — canonical reproducible `ops-lab` export after the core smoke passes.
@@ -39,17 +41,17 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 ## Sprint A2 — Customer And Internet Edge
 
 - [ ] **Northwind FortiGate CE** — eBGP to PE-1, private AS 64512 default model, NAT/security policy, logging.
-- [ ] **Helix Aruba CX LAN** — VLAN 100/200, local VRF trunk to PE-2, management reachability.
-- [ ] **Geelong access placeholder** — keep `region-a-ce-spare` as GEL access now; promote to light `Aurora-PE-4` / GEL-PE1 after the base Cisco core is stable if the fourth PE is needed.
-- [ ] **National POP expansion placeholders** — add ADL-PE1, PER-PE1, DRW-PE1, and HBA/TAS-PE1 to IPAM/NetBox and topology diagrams before instantiating them in GNS3/CML/cloud.
-- [ ] **Transit-A / Transit-B** — CSR1000v primary transit AS 64497 and IOL backup transit AS 64498.
-- [ ] **IXP route-server fabric** — GNS3 switch + FRR RS/content/eyeball peers; enforce peer-over-transit preference.
+- [ ] **Helix Aruba CX LAN** — VLAN 100/200, local access-switching practice and management reachability; Region B `BNE-PE1` owns the Helix PE attachment later.
+- [x] **Geelong regional PE placeholder** — `GEL-PE1` is staged on Dell/PC2 as the midpoint of the local regional line.
+- [ ] **National POP expansion placeholders** — add PER-PE1, DRW-PE1, and HBA/TAS-PE1 to IPAM/NetBox and topology diagrams before instantiating them in GNS3/CML/cloud.
+- [ ] **Transit-A / Transit-B** — Region A local CSR1000v primary transit AS 64497 and IOL-XE backup transit AS 64498; Transit-B hangs off ADL-PE1 for local failover.
+- [ ] **IXP route-server fabric** — move FRR RS/content/eyeball peers to Region B/PC1 Docker where practical; enforce peer-over-transit preference once bridged.
 - [ ] **IPv6 dual-stack** — use valid RFC 3849 `2001:db8::/32` slices from `docs/region-a-plan.md` / `docs/ip-plan.md`.
 
 ## Sprint A3 — Security And RPKI
 
-- [ ] **Routinator + SLURM on PC1** — RTR endpoint `192.168.200.1:3323`.
-- [ ] **RPKI/ROV C1** — first enforcer `Aurora-PE-3`, valid/invalid/not-found matrix.
+- [ ] **Routinator + SLURM on PC1** — RTR endpoint `192.168.137.1:3323`.
+- [ ] **RPKI/ROV C1** — first enforcer Region B `SYD-PE1` / `Aurora-PE-3`, valid/invalid/not-found matrix.
 - [ ] **RPKI/ROV C3** — enforce on all eBGP ingress points: Transit-A, Transit-B, IXP sessions.
 - [ ] **Routing authentication** — BGP TCP-MD5/TCP-AO where supported; IS-IS/LDP authentication later.
 - [ ] **Fault drills** — transit failover, IXP port failure, invalid-origin route rejection.
@@ -57,8 +59,10 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 ## Sprint B — Region B DevNet CML
 
 - [ ] **Reserve and document CML topology** — Cisco IOS-XE / IOS-XR / NX-OS baseline.
+- [ ] **Instantiate Brisbane and Sydney PEs** — move `BNE-PE1` and `SYD-PE1` into the Region B CML topology; SYD remains the IOS-XR ROV / Region B-C edge.
+- [ ] **Docker offload target** — host FRR IXP peers and tenant workload containers from Region B/PC1 instead of consuming Dell/PC2 GNS3 Docker budget.
 - [ ] **Add Juniper presence** — vSRX/vJunos via CML/BYOI where practical; local vSRX remains standalone practice.
-- [ ] **Inter-region edge** — eBGP/confed from Region A PE-3 into Region B.
+- [ ] **Inter-region edge** — eBGP/confed from right-side Region A `MEL-P` into PC1 / Region B `SYD-PE1`.
 - [ ] **Maple Ridge enterprise model** — Cat8000v/Cat9kv/NX-OS style enterprise/campus/DC slice in CML.
 - [ ] **Export Region B topology** — persist CML YAML/configs so reservations are reproducible.
 

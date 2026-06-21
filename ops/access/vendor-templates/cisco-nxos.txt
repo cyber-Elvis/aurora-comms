@@ -24,8 +24,8 @@ username aurora-claude sshkey <AURORA_CLAUDE_PUBLIC_KEY_BODY>
 
 ! Management-source restriction (permit only approved control sources):
 ip access-list MGMT-SOURCES
-  10 permit ip 192.168.200.1/32 any
-  20 permit ip 192.168.200.2/32 any
+  10 permit ip 192.168.137.1/32 any
+  20 permit ip 192.168.137.2/32 any
   30 permit ip <PC2_GNS3_OR_TS_SOURCE>/32 any
   40 permit ip <DO_MGMT_SOURCE>/32 any
   50 permit ip <OCI_MGMT_SOURCE>/32 any
@@ -34,9 +34,9 @@ ip access-list MGMT-SOURCES
 
 ! Node-to-host containment (apply outbound toward the host/control segment):
 ip access-list NODE-TO-HOSTS
-  10 permit tcp any 192.168.200.1/32 eq 3323     ! RPKI-RTR exception (TCP)
-  20 deny ip any 192.168.200.1/32 log            ! PC1
-  30 deny ip any 192.168.200.2/32 log            ! PC2 / GNS3 VM
+  10 permit tcp any 192.168.137.1/32 eq 3323     ! RPKI-RTR exception (TCP)
+  20 deny ip any 192.168.137.1/32 log            ! PC1
+  30 deny ip any 192.168.137.2/32 log            ! PC2 / GNS3 VM
   40 deny ip any <DO_HOST_IP>/32 log
   50 deny ip any <OCI_HOST_IP>/32 log
   60 permit ip any any

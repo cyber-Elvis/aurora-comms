@@ -1,16 +1,16 @@
-<mxfile host="app.diagrams.net" modified="2026-06-10T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
-  <diagram id="region-a-v22" name="Region A v2.2">
+<mxfile host="app.diagrams.net" modified="2026-06-15T00:00:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="region-a-v25" name="Region A v2.5">
     <mxGraphModel dx="2200" dy="1300" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1280" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" value="Aurora Communications - Region A v2.2: Cisco Dell GNS3 SP Fabric with 8-POP National Overlay, IXP, Dual-stack, and Lab RPKI/ROV" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+        <mxCell id="title" value="Aurora Communications - Region A v2.5: ADL-GEL-MEL-PE1-MEL-P Geographic Layout with PC1/SYD Handoff" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
           <mxGeometry x="40" y="20" width="2100" height="40" as="geometry" />
         </mxCell>
         <mxCell id="inet-bg" value="Simulated Internet Edge - RFC 5398 documentation ASNs, RFC 5737 IPv4 and RFC 3849 IPv6 documentation prefixes; never advertised to real Internet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#7e22ce;fontColor=#581c87;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="80" width="1540" height="285" as="geometry" />
         </mxCell>
-        <mxCell id="core-bg" value="Aurora AS 64496 Cisco P/PE Core - IS-IS L2 + LDP transport, iBGP VPNv4 full mesh, no route reflectors yet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#1d4ed8;fontColor=#1e3a8a;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
+        <mxCell id="core-bg" value="Aurora AS 64496 Cisco P/PE Core - Dell/PC2 geographic layout: ADL - GEL - MEL-PE1 - MEL-P - PC1/SYD logical handoff" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#1d4ed8;fontColor=#1e3a8a;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="390" width="1540" height="330" as="geometry" />
         </mxCell>
         <mxCell id="cust-bg" value="Customer Edge and Tenant Workloads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#f97316;fontColor=#9a3412;fontStyle=1;align=left;verticalAlign=top;spacingTop=8;spacingLeft=12;" vertex="1" parent="1">
@@ -26,74 +26,74 @@
         <mxCell id="sim-internet" value="Simulated Internet&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;default + mock Internet prefixes&lt;/font&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e9d5ff;strokeColor=#7e22ce;fontColor=#3b0764;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="610" y="115" width="260" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="transit-a" value="transit-a-csr&lt;br&gt;&lt;b&gt;CSR1000v 16.08&lt;/b&gt;&lt;br&gt;AS 64497 primary transit&lt;br&gt;0.0.0.0/0, ::/0&lt;br&gt;192.0.2.0/24 slices&lt;br&gt;2001:db8:a::/48" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6a1b9a;strokeColor=#4a148c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+        <mxCell id="transit-a" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/transit-a-photo.jpg;" vertex="1" parent="1">
           <mxGeometry x="135" y="190" width="260" height="115" as="geometry" />
         </mxCell>
-        <mxCell id="transit-b" value="transit-b-iol&lt;br&gt;&lt;b&gt;IOL-XE 17.15&lt;/b&gt;&lt;br&gt;AS 64498 backup transit&lt;br&gt;0.0.0.0/0, ::/0&lt;br&gt;same mock Internet prefixes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6a1b9a;strokeColor=#4a148c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+        <mxCell id="transit-b" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/transit-b-photo.jpg;" vertex="1" parent="1">
           <mxGeometry x="1015" y="190" width="260" height="115" as="geometry" />
         </mxCell>
-        <mxCell id="ixp-fabric" value="ixp-fabric&lt;br&gt;&lt;b&gt;Melbourne IXP L2 LAN&lt;/b&gt;&lt;br&gt;10.255.3.0/24&lt;br&gt;2001:db8:ffff:3::/64&lt;br&gt;PE1 .1 | PE3 .3 | RS .10 | CDN .20 | Eye .30" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00897b;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+        <mxCell id="ixp-fabric" value="ixp-fabric&lt;br&gt;&lt;b&gt;Melbourne IXP L2 LAN&lt;/b&gt;&lt;br&gt;10.255.3.0/24&lt;br&gt;2001:db8:ffff:3::/64&lt;br&gt;PE1 .1 | future SYD .3 | RS .10 | CDN .20 | Eye .30" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00897b;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
           <mxGeometry x="560" y="250" width="360" height="95" as="geometry" />
         </mxCell>
-        <mxCell id="ixp-rs" value="ixp-rs1&lt;br&gt;&lt;b&gt;FRR route server&lt;/b&gt;&lt;br&gt;AS 64499&lt;br&gt;next-hop preserving" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00a087;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+        <mxCell id="ixp-rs" value="ixp-rs1&lt;br&gt;&lt;b&gt;FRR route server&lt;/b&gt;&lt;br&gt;AS 64499&lt;br&gt;Region B/PC1 Docker offload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00a087;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
           <mxGeometry x="600" y="100" width="280" height="82" as="geometry" />
         </mxCell>
-        <mxCell id="ixp-content" value="ixp-content1&lt;br&gt;&lt;b&gt;FRR CDN peer&lt;/b&gt;&lt;br&gt;AS 64500&lt;br&gt;198.51.100.0/25&lt;br&gt;2001:db8:c0::/48" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00a087;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+        <mxCell id="ixp-content" value="ixp-content1&lt;br&gt;&lt;b&gt;FRR CDN peer&lt;/b&gt;&lt;br&gt;AS 64500&lt;br&gt;Region B/PC1 Docker offload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00a087;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
           <mxGeometry x="345" y="95" width="220" height="92" as="geometry" />
         </mxCell>
-        <mxCell id="ixp-eyeball" value="ixp-eyeball1&lt;br&gt;&lt;b&gt;FRR eyeball ISP&lt;/b&gt;&lt;br&gt;AS 64501&lt;br&gt;198.51.100.128/25&lt;br&gt;2001:db8:e0::/48" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00a087;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+        <mxCell id="ixp-eyeball" value="ixp-eyeball1&lt;br&gt;&lt;b&gt;FRR eyeball ISP&lt;/b&gt;&lt;br&gt;AS 64501&lt;br&gt;Region B/PC1 Docker offload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00a087;strokeColor=#00695c;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
           <mxGeometry x="910" y="95" width="240" height="92" as="geometry" />
         </mxCell>
 
-        <mxCell id="pe1" value="aurora-pe-1 / MEL-PE1&lt;br&gt;&lt;b&gt;Cisco IOL-AdvEnterprise-L3&lt;/b&gt;&lt;br&gt;AS 64496&lt;br&gt;Lo0 10.0.0.2/32&lt;br&gt;mgmt 192.168.200.12/24&lt;br&gt;L3VPN PE: Transit-A + Melbourne IXP + Northwind" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1ba0d7;strokeColor=#0d6986;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="170" y="455" width="270" height="125" as="geometry" />
+        <mxCell id="pe1" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/mel-pe1-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="730" y="455" width="270" height="125" as="geometry" />
         </mxCell>
-        <mxCell id="pe2" value="aurora-pe-2 / BNE-PE1&lt;br&gt;&lt;b&gt;Cisco IOL-AdvEnterprise-L3&lt;/b&gt;&lt;br&gt;AS 64496&lt;br&gt;Lo0 10.0.0.3/32&lt;br&gt;mgmt 192.168.200.13/24&lt;br&gt;Brisbane edge: Helix VRF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1ba0d7;strokeColor=#0d6986;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="605" y="585" width="270" height="115" as="geometry" />
+        <mxCell id="gel-pe1" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/gel-pe1-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="420" y="455" width="270" height="115" as="geometry" />
         </mxCell>
-        <mxCell id="pe3" value="aurora-pe-3 / SYD-PE1&lt;br&gt;&lt;b&gt;Cisco IOS-XRv 6.1.3&lt;/b&gt;&lt;br&gt;AS 64496&lt;br&gt;Lo0 10.0.0.4/32&lt;br&gt;mgmt 192.168.200.14/24&lt;br&gt;Sydney: Transit-B + IXP&lt;br&gt;ROV C1 enforcer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565c0;strokeColor=#0d47a1;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="1030" y="455" width="270" height="130" as="geometry" />
+        <mxCell id="adl-pe1" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/adl-pe1-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="110" y="455" width="270" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="aurora-p" value="aurora-p / MEL-P&lt;br&gt;&lt;b&gt;Cisco IOL-AdvEnterprise-L3&lt;/b&gt;&lt;br&gt;Lo0 10.0.0.1/32&lt;br&gt;mgmt 192.168.200.11/24&lt;br&gt;Melbourne core&lt;br&gt;IS-IS L2 / LDP only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1ba0d7;strokeColor=#0d6986;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="605" y="430" width="270" height="120" as="geometry" />
+        <mxCell id="aurora-p" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/mel-p-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="455" width="270" height="120" as="geometry" />
         </mxCell>
 
-        <mxCell id="northwind-ce" value="northwind-ce&lt;br&gt;&lt;b&gt;FortiGate 7.0.14&lt;/b&gt;&lt;br&gt;AS 64512 private CE&lt;br&gt;Lo0 10.0.1.1/32&lt;br&gt;eBGP to PE-1&lt;br&gt;remove-private-as outbound" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ee3124;strokeColor=#a61b13;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="165" y="800" width="290" height="120" as="geometry" />
+        <mxCell id="northwind-ce" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/northwind-ce-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="720" y="800" width="290" height="120" as="geometry" />
         </mxCell>
         <mxCell id="northwind-workloads" value="Northwind workloads&lt;br&gt;saas-nginx | redis&lt;br&gt;prometheus | grafana&lt;br&gt;dev-wks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdd835;strokeColor=#f57f17;fontColor=#000000;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="165" y="965" width="290" height="90" as="geometry" />
+          <mxGeometry x="720" y="965" width="290" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="helix-lan" value="helix-lan-sw&lt;br&gt;&lt;b&gt;Aruba CX 10.16.1040&lt;/b&gt;&lt;br&gt;mgmt 192.168.200.16/24&lt;br&gt;VLAN 100 data&lt;br&gt;VLAN 200 mgmt&lt;br&gt;local VRF trunk to PE-2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#e65100;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="595" y="800" width="295" height="120" as="geometry" />
+        <mxCell id="helix-lan" value="helix-lan-sw&lt;br&gt;&lt;b&gt;Aruba CX 10.16.1040&lt;/b&gt;&lt;br&gt;mgmt 10.255.191.16/24&lt;br&gt;VLAN 100 data&lt;br&gt;VLAN 200 mgmt&lt;br&gt;local access practice" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9800;strokeColor=#e65100;fontColor=#ffffff;fontSize=11;spacing=4;" vertex="1" parent="1">
+          <mxGeometry x="410" y="800" width="295" height="120" as="geometry" />
         </mxCell>
         <mxCell id="helix-workloads" value="Helix workloads&lt;br&gt;orthanc DICOM&lt;br&gt;emr-nginx&lt;br&gt;doctor-wks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdd835;strokeColor=#f57f17;fontColor=#000000;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="595" y="965" width="295" height="90" as="geometry" />
+          <mxGeometry x="410" y="965" width="295" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="spare-ce" value="region-a-ce-spare / GEL access&lt;br&gt;&lt;b&gt;IOSv 15.7 optional&lt;/b&gt;&lt;br&gt;Geelong placeholder&lt;br&gt;AS 64513 private CE&lt;br&gt;or AS 64502 BYO-AS&lt;br&gt;target later: GEL-PE1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#dbeafe;strokeColor=#1565c0;fontColor=#0f172a;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="1010" y="800" width="290" height="120" as="geometry" />
+        <mxCell id="spare-ce" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/spare-ce-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="105" y="800" width="290" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="region-b-future" value="Future Region B + C&lt;br&gt;B: DevNet CML Cisco + Juniper&lt;br&gt;C: cloud edge cRPD/FRR/Routinator&lt;br&gt;inter-region eBGP/confed" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#ffffff;strokeColor=#94a3b8;fontColor=#475569;fontSize=11;spacing=4;" vertex="1" parent="1">
-          <mxGeometry x="1010" y="965" width="290" height="90" as="geometry" />
+        <mxCell id="region-b-future" value="" style="shape=image;html=1;imageAspect=0;aspect=fixed;whiteSpace=wrap;rounded=1;strokeColor=#0f172a;strokeWidth=2;fillColor=none;image=assets/topology-photos/generated/syd-pe1-photo.jpg;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="455" width="230" height="120" as="geometry" />
         </mxCell>
 
-        <mxCell id="pc1" value="PC1 services&lt;br&gt;&lt;b&gt;192.168.200.1&lt;/b&gt;&lt;br&gt;Routinator / RPKI RP&lt;br&gt;Management plane&lt;br&gt;openconnect / DevNet bridge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#455a64;strokeColor=#263238;fontColor=#ffffff;fontSize=12;spacing=5;" vertex="1" parent="1">
+        <mxCell id="pc1" value="PC1 services&lt;br&gt;&lt;b&gt;192.168.137.1&lt;/b&gt;&lt;br&gt;Routinator / RPKI RP&lt;br&gt;Management plane&lt;br&gt;openconnect / DevNet bridge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#455a64;strokeColor=#263238;fontColor=#ffffff;fontSize=12;spacing=5;" vertex="1" parent="1">
           <mxGeometry x="1680" y="125" width="380" height="115" as="geometry" />
         </mxCell>
-        <mxCell id="dell-controller" value="Dell GNS3 controller&lt;br&gt;&lt;b&gt;192.168.200.2:3080&lt;/b&gt;&lt;br&gt;Dell-Windows over direct Ethernet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#334155;fontColor=#ffffff;fontSize=12;spacing=5;" vertex="1" parent="1">
+        <mxCell id="dell-controller" value="Dell GNS3 controller&lt;br&gt;&lt;b&gt;192.168.137.2:3080&lt;/b&gt;&lt;br&gt;Dell-Windows over internet Ethernet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#334155;fontColor=#ffffff;fontSize=12;spacing=5;" vertex="1" parent="1">
           <mxGeometry x="1680" y="270" width="380" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="gns3vm" value="GNS3 VM compute&lt;br&gt;&lt;b&gt;compute_id vm&lt;/b&gt;&lt;br&gt;Tailscale 100.118.0.46&lt;br&gt;19 GiB RAM / 2 physical vCPU&lt;br&gt;All Region A nodes run here" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#334155;fontColor=#ffffff;fontSize=12;spacing=5;" vertex="1" parent="1">
+        <mxCell id="gns3vm" value="GNS3 VM compute&lt;br&gt;&lt;b&gt;compute_id vm&lt;/b&gt;&lt;br&gt;Tailscale 100.118.0.46&lt;br&gt;19 GiB RAM / 2 physical vCPU&lt;br&gt;Local canvas: ADL-GEL-MEL-PE1-MEL-P&lt;br&gt;BNE/SYD are PC1 / Region B" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#334155;fontColor=#ffffff;fontSize=12;spacing=5;" vertex="1" parent="1">
           <mxGeometry x="1680" y="390" width="380" height="115" as="geometry" />
         </mxCell>
-        <mxCell id="rpki-vrps" value="RPKI/ROV workflow&lt;br&gt;&lt;b&gt;RTR cache: 192.168.200.1:3323&lt;/b&gt;&lt;br&gt;SLURM lab VRPs; no real RIR ROAs&lt;br&gt;203.0.113.0/25 -&gt; AS 64496 Valid&lt;br&gt;198.51.100.0/25 -&gt; AS 64500 Valid&lt;br&gt;198.51.100.128/25 -&gt; AS 64501 Valid&lt;br&gt;192.0.2.0/28 -&gt; NotFound test" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2e8f0;strokeColor=#475569;fontColor=#0f172a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
+        <mxCell id="rpki-vrps" value="RPKI/ROV workflow&lt;br&gt;&lt;b&gt;RTR cache: 192.168.137.1:3323&lt;/b&gt;&lt;br&gt;First IOS-XR enforcer: Region B SYD-PE1&lt;br&gt;SLURM lab VRPs; no real RIR ROAs&lt;br&gt;203.0.113.0/25 -&gt; AS 64496 Valid&lt;br&gt;198.51.100.0/25 -&gt; AS 64500 Valid&lt;br&gt;192.0.2.0/28 -&gt; NotFound test" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e2e8f0;strokeColor=#475569;fontColor=#0f172a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
           <mxGeometry x="1660" y="540" width="430" height="145" as="geometry" />
         </mxCell>
 
         <mxCell id="policy-note" value="Route policy intent&lt;br&gt;&lt;b&gt;IXP LP300 &amp;gt; Transit-A LP200 &amp;gt; Transit-B LP100&lt;/b&gt;&lt;br&gt;Advertise outward only Aurora PI 203.0.113.0/25, 2001:db8:aaaa::/48, and approved customer aggregates.&lt;br&gt;Drop RPKI Invalid at edge; NotFound accepted. No transit routes to IXP; no IXP routes to transit except labelled leak demo." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#047857;fontColor=#064e3b;fontSize=12;align=left;spacing=8;" vertex="1" parent="1">
           <mxGeometry x="1405" y="795" width="700" height="125" as="geometry" />
         </mxCell>
-        <mxCell id="vprn-note" value="8-POP national overlay&lt;br&gt;Active: MEL core/IXP, SYD interconnect/ROV, BNE customer edge, GEL access placeholder&lt;br&gt;Planned: ADL-PE1, PER-PE1, DRW-PE1, HBA/TAS-PE1&lt;br&gt;&lt;br&gt;VRF/L3VPN: RD/RT = 64496:&amp;lt;customer_id&amp;gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;fontColor=#1e3a8a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
+        <mxCell id="vprn-note" value="8-POP national overlay&lt;br&gt;Geographic canvas: ADL - GEL - MEL-PE1 - MEL-P&lt;br&gt;MEL-P -&amp;gt; PC1/SYD-PE1 is logical Region B handoff&lt;br&gt;Region B: BNE customer edge, SYD interconnect/ROV&lt;br&gt;Planned beyond line: PER-PE1, DRW-PE1, HBA/TAS-PE1&lt;br&gt;&lt;br&gt;VRF/L3VPN: RD/RT = 64496:&amp;lt;customer_id&amp;gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#2563eb;fontColor=#1e3a8a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
           <mxGeometry x="1405" y="935" width="340" height="130" as="geometry" />
         </mxCell>
         <mxCell id="legend" value="Legend&lt;br&gt;&lt;font color=&quot;#0f172a&quot;&gt;Solid line: physical/L3 adjacency&lt;br&gt;Dashed line: overlay/control-plane session&lt;br&gt;Dotted line: optional/future path&lt;br&gt;Blue: Cisco core | Purple: transit | Teal: IXP/FRR | Grey: mgmt/RPKI&lt;br&gt;Red: Fortinet | Orange: Aruba | Yellow: workloads&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#94a3b8;fontColor=#0f172a;fontSize=11;align=left;spacing=8;" vertex="1" parent="1">
@@ -118,55 +118,55 @@
         <mxCell id="e-eye-ixp" value="IX member&lt;br&gt;AS 64501" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-eyeball" target="ixp-fabric">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-rs-pe1" value="RS-reflected&lt;br&gt;peer routes" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-rs" target="pe1">
+        <mxCell id="e-rs-pe1" value="RS-reflected&lt;br&gt;peer routes&lt;br&gt;after B/PC1 offload" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-rs" target="pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-rs-pe3" value="RS-reflected&lt;br&gt;peer routes" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-rs" target="pe3">
+        <mxCell id="e-rs-syd" value="future SYD RS-reflected&lt;br&gt;peer routes" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-rs" target="region-b-future">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <mxCell id="e-ta-pe1" value="eBGP transit&lt;br&gt;AS 64497 to AS 64496&lt;br&gt;10.255.2.0/30&lt;br&gt;2001:db8:ffff:2::/127&lt;br&gt;default LP200" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#6a1b9a;fontSize=10;" edge="1" parent="1" source="transit-a" target="pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-tb-pe3" value="eBGP transit&lt;br&gt;AS 64498 to AS 64496&lt;br&gt;10.255.2.4/30&lt;br&gt;2001:db8:ffff:2::2/127&lt;br&gt;default LP100" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#6a1b9a;fontSize=10;" edge="1" parent="1" source="transit-b" target="pe3">
+        <mxCell id="e-tb-adl" value="Region A backup transit&lt;br&gt;AS 64498 to AS 64496&lt;br&gt;10.255.2.4/30&lt;br&gt;default LP100" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#6a1b9a;fontSize=10;" edge="1" parent="1" source="transit-b" target="adl-pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e-ixp-pe1" value="IXP port&lt;br&gt;PE1 .1" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-fabric" target="pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-ixp-pe3" value="IXP port&lt;br&gt;PE3 .3&lt;br&gt;dual attach" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-fabric" target="pe3">
+        <mxCell id="e-ixp-syd" value="future SYD IXP port&lt;br&gt;.3 dual attach" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#00897b;fontSize=10;" edge="1" parent="1" source="ixp-fabric" target="region-b-future">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <mxCell id="e-p-pe1" value="IS-IS L2 + LDP&lt;br&gt;10.255.0.0/31&lt;br&gt;2001:db8:ffff::/127" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#1d4ed8;fontSize=10;" edge="1" parent="1" source="aurora-p" target="pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-p-pe2" value="IS-IS L2 + LDP&lt;br&gt;10.255.0.2/31" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#1d4ed8;fontSize=10;" edge="1" parent="1" source="aurora-p" target="pe2">
+        <mxCell id="e-melpe1-gel" value="MEL-PE1 to GEL&lt;br&gt;IS-IS L2 + LDP&lt;br&gt;10.255.0.6/31" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#1d4ed8;fontSize=10;" edge="1" parent="1" source="pe1" target="gel-pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-p-pe3" value="IS-IS L2 + LDP&lt;br&gt;10.255.0.4/31" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#1d4ed8;fontSize=10;" edge="1" parent="1" source="aurora-p" target="pe3">
+        <mxCell id="e-gel-adl" value="GEL to ADL&lt;br&gt;IS-IS L2 + LDP&lt;br&gt;10.255.0.8/31" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#1d4ed8;fontSize=10;" edge="1" parent="1" source="gel-pe1" target="adl-pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-ibgp-pe1-pe2" value="iBGP VPNv4&lt;br&gt;full mesh" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#0f172a;fontSize=10;" edge="1" parent="1" source="pe1" target="pe2">
+        <mxCell id="e-ibgp-melpe1-gel" value="iBGP VPNv4&lt;br&gt;full mesh" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#0f172a;fontSize=10;" edge="1" parent="1" source="pe1" target="gel-pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-ibgp-pe2-pe3" value="iBGP VPNv4&lt;br&gt;full mesh" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#0f172a;fontSize=10;" edge="1" parent="1" source="pe2" target="pe3">
+        <mxCell id="e-ibgp-gel-adl" value="iBGP VPNv4&lt;br&gt;full mesh" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#0f172a;fontSize=10;" edge="1" parent="1" source="gel-pe1" target="adl-pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-ibgp-pe1-pe3" value="iBGP VPNv4&lt;br&gt;full mesh" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#0f172a;fontSize=10;" edge="1" parent="1" source="pe1" target="pe3">
+        <mxCell id="e-ibgp-melpe1-adl" value="iBGP VPNv4&lt;br&gt;full mesh" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#0f172a;fontSize=10;" edge="1" parent="1" source="pe1" target="adl-pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <mxCell id="e-pe1-nw" value="eBGP CE-PE&lt;br&gt;AS 64512 to AS 64496&lt;br&gt;PE-CE 10.255.1.0/24 slice&lt;br&gt;Aurora originates 203.0.113.128/25" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#ee3124;fontSize=10;" edge="1" parent="1" source="pe1" target="northwind-ce">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-pe2-helix" value="local VRF trunk&lt;br&gt;VLAN 100 data&lt;br&gt;VLAN 200 mgmt" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#ff9800;fontSize=10;" edge="1" parent="1" source="pe2" target="helix-lan">
+        <mxCell id="e-gel-helix" value="local access lab&lt;br&gt;VLAN 100 data&lt;br&gt;VLAN 200 mgmt" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#ff9800;fontSize=10;" edge="1" parent="1" source="gel-pe1" target="helix-lan">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-pe3-spare" value="optional BYO-AS&lt;br&gt;AS 64502 customer" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#1565c0;fontSize=10;" edge="1" parent="1" source="pe3" target="spare-ce">
+        <mxCell id="e-adl-spare" value="optional BYO-AS&lt;br&gt;AS 64502 customer" style="endArrow=none;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#1565c0;fontSize=10;" edge="1" parent="1" source="adl-pe1" target="spare-ce">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-spare-regionb" value="future B/C edge" style="endArrow=open;html=1;rounded=0;dashed=1;dashPattern=1 4;strokeWidth=2;strokeColor=#64748b;fontSize=10;" edge="1" parent="1" source="pe3" target="region-b-future">
+        <mxCell id="e-spare-regionb" value="logical PC1/SYD handoff" style="endArrow=open;html=1;rounded=0;dashed=1;dashPattern=1 4;strokeWidth=2;strokeColor=#64748b;fontSize=10;" edge="1" parent="1" source="aurora-p" target="region-b-future">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e-nw-workloads" value="tenant LAN" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#f57f17;fontSize=10;" edge="1" parent="1" source="northwind-ce" target="northwind-workloads">
@@ -176,13 +176,13 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e-rpki-pe3" value="RPKI-RTR C1&lt;br&gt;192.168.200.1:3323&lt;br&gt;ROV Valid/Invalid/NotFound" style="endArrow=open;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#455a64;fontSize=10;" edge="1" parent="1" source="pc1" target="pe3">
+        <mxCell id="e-rpki-syd" value="RPKI-RTR C1&lt;br&gt;192.168.137.1:3323&lt;br&gt;ROV Valid/Invalid/NotFound" style="endArrow=open;html=1;rounded=0;dashed=1;strokeWidth=2;strokeColor=#455a64;fontSize=10;" edge="1" parent="1" source="pc1" target="region-b-future">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e-rpki-pe1" value="C3 target: all eBGP ingress" style="endArrow=open;html=1;rounded=0;dashed=1;strokeWidth=1;strokeColor=#94a3b8;fontSize=10;opacity=55;" edge="1" parent="1" source="pc1" target="pe1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-pc1-dell" value="direct Ethernet&lt;br&gt;192.168.200.1 / .2" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#64748b;fontSize=10;" edge="1" parent="1" source="pc1" target="dell-controller">
+        <mxCell id="e-pc1-dell" value="internet Ethernet&lt;br&gt;192.168.137.1 / .2" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#64748b;fontSize=10;" edge="1" parent="1" source="pc1" target="dell-controller">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e-dell-gns3" value="controller to compute" style="endArrow=none;html=1;rounded=0;strokeWidth=2;strokeColor=#64748b;fontSize=10;" edge="1" parent="1" source="dell-controller" target="gns3vm">

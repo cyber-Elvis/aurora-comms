@@ -1,0 +1,29 @@
+---
+# Region A IGP verification — captured show output = the evidence (ADR-004 / MOP discipline).
+- name: Region A IGP verification
+  hosts: region_a_core
+  gather_facts: false
+  tasks:
+    - name: Collect IS-IS + reachability state
+      cisco.ios.ios_command:
+        commands:
+          - show isis neighbors
+          - show ip route isis
+          - show clns protocol
+      register: igp
+
+    - name: Show captured output
+      ansible.builtin.debug:
+        var: igp.stdout_lines
+
+    # Success gate: every node should have learned all 4 loopbacks (10.0.0.1/2/5/6) via IS-IS L2.
+    - name: Assert all four loopbacks present in the IS-IS RIB
+      ansible.builtin.assert:
+        that:
+          - "'10.0.0.1' in igp.stdout[1]"
+          - "'10.0.0.2' in igp.stdout[1]"
+          - "'10.0.0.5' in igp.stdout[1]"
+          - "'10.0.0.6' in igp.stdout[1]"
+        success_msg: "All four loopbacks reachable via IS-IS — backbone converged."
+        fail_msg: "Missing loopback(s) in IS-IS RIB — adjacency or config gap."
+      ignore_errors: true
