@@ -1,0 +1,5 @@
+expected_hostname: MEL-PE1-CISCO-IOSXR-RT01
+expected_management_ipv4: 10.255.191.12
+expected_loopback0: 10.0.0.2
+platform_role: l3vpn_pe
+

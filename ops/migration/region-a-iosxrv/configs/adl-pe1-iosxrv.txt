@@ -1,0 +1,53 @@
+! ADL-PE1 IOS-XRv 6.1.3 parity configuration
+! Interfaces CONFIRMED on canary 2026-06-21 (console 5008):
+!   management        = MgmtEth0/0/CPU0/0   (GNS3 adapter 0; was IOL Et0/1)
+!   core to GEL-PE1   = GigabitEthernet0/0/0/0 (GNS3 adapter 1; was IOL Et0/0)
+!   other data        = Gi0/0/0/1, Gi0/0/0/2 (unused for ADL)
+!
+! Break-glass user 'labadmin' (group root-system) was created at FIRST BOOT with
+! its secret set interactively at the console. Do NOT re-add 'admin' (reserved/
+! locked on IOS-XR) and do NOT put a secret in this file.
+!
+! Automation users deferred: XRv 6.1.3 has no Ed25519. When wiring cisco.iosxr
+! automation, add aurora-codex/aurora-claude with a DEDICATED RSA-3072 key for the
+! legacy XR zone (separate change; see MOP closure / ADR-004 zone-scoped keys).
+!
+! ADL parity = management-only (no Loopback0, core shut/unaddressed) to match the
+! deployed IOL state. No VPNv4/VRF/renumbering in this MOP.
+
+! ===== Apply at the XR console (config mode) =====
+configure
+ hostname ADL-PE1-CISCO-IOSXR-RT01
+ domain name lab.aurora
+ !
+ ipv4 access-list MGMT-SOURCES
+  10 permit ipv4 host 10.255.191.1 any
+  20 deny ipv4 any any log
+ !
+ interface MgmtEth0/0/CPU0/0
+  description OOB_MGMT_TO_MGMT-SW01
+  ipv4 address 10.255.191.17 255.255.255.0
+  ipv4 access-group MGMT-SOURCES ingress
+  no shutdown
+ !
+ interface GigabitEthernet0/0/0/0
+  description CORE-to-GEL-PE1
+  shutdown
+ !
+ ssh server v2
+ ssh server vrf default
+ ssh server rate-limit 60
+ !
+ commit label CHG-AURORA-REG-A-XRV-001
+ end
+
+! ===== EXEC mode (after commit) =====
+! SSH host key is required before the SSH server will accept connections.
+! When prompted for the modulus, enter 2048.
+crypto key generate rsa
+
+! ===== Offline pre-check (still UNLINKED — interfaces expected down/down) =====
+show configuration commit list
+show running-config
+show interfaces brief
+show configuration failed

@@ -1,0 +1,5 @@
+expected_hostname: GEL-PE1-CISCO-IOSXR-RT01
+expected_management_ipv4: 10.255.191.15
+expected_loopback0: 10.0.0.3
+platform_role: regional_pe
+

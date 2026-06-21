@@ -1,0 +1,20 @@
+---
+- name: Capture Melbourne IOS-XRv core convergence evidence
+  hosts: mel_iosxr_core
+  gather_facts: false
+
+  tasks:
+    - name: Collect IS-IS, LDP, and route state
+      cisco.iosxr.iosxr_command:
+        commands:
+          - show isis adjacency
+          - show isis database
+          - show mpls ldp neighbor
+          - show mpls ldp bindings
+          - show route ipv4
+      register: core_evidence
+
+    - name: Display core convergence evidence
+      ansible.builtin.debug:
+        var: core_evidence.stdout_lines
+

@@ -1,0 +1,74 @@
+! MEL-PE1 IOS-XRv 6.1.3 parity configuration
+! Interfaces (mapping confirmed on canary; same XRv image):
+!   management          = MgmtEth0/0/CPU0/0       (adapter 0; was IOL Et0/1 -> MGMT-SW01 p2)
+!   core EAST to MEL-P  = GigabitEthernet0/0/0/0  (adapter 1; was IOL Et0/0, 10.255.0.1/31, IS-IS+LDP)
+!   core WEST to GEL    = GigabitEthernet0/0/0/1  (adapter 2; was IOL Et0/2, shut)
+!
+! IS-IS/LDP parity verified against live IOL: net 49.0001.0000.0000.0002.00,
+! is-type level-2-only, metric-style wide, Lo0 passive, LDP router-id 10.0.0.2.
+! Break-glass user 'labadmin' created at FIRST BOOT (secret interactive). No 'admin', no secret in file.
+! aurora-codex/aurora-claude (RSA-3072) deferred to post-migration access-hardening change.
+
+! ===== Apply at the XR console (config mode) =====
+configure
+ hostname MEL-PE1-CISCO-IOSXR-RT01
+ domain name lab.aurora
+ !
+ ipv4 access-list MGMT-SOURCES
+  10 permit ipv4 host 10.255.191.1 any
+  20 deny ipv4 any any log
+ !
+ interface Loopback0
+  ipv4 address 10.0.0.2 255.255.255.255
+ !
+ interface MgmtEth0/0/CPU0/0
+  description OOB_MGMT_TO_MGMT-SW01
+  ipv4 address 10.255.191.12 255.255.255.0
+  ipv4 access-group MGMT-SOURCES ingress
+  no shutdown
+ !
+ interface GigabitEthernet0/0/0/0
+  description CORE-to-MEL-P
+  ipv4 address 10.255.0.1 255.255.255.254
+  no shutdown
+ !
+ interface GigabitEthernet0/0/0/1
+  description CORE-to-GEL-PE1
+  shutdown
+ !
+ router isis CORE
+  net 49.0001.0000.0000.0002.00
+  is-type level-2-only
+  address-family ipv4 unicast
+   metric-style wide
+  !
+  interface Loopback0
+   passive
+   address-family ipv4 unicast
+   !
+  !
+  interface GigabitEthernet0/0/0/0
+   point-to-point
+   address-family ipv4 unicast
+   !
+  !
+ !
+ mpls ldp
+  router-id 10.0.0.2
+  interface GigabitEthernet0/0/0/0
+  !
+ !
+ ssh server v2
+ ssh server vrf default
+ ssh server rate-limit 60
+ commit label CHG-AURORA-REG-A-XRV-001
+ end
+
+! ===== EXEC mode (after commit) — SSH host key (modulus 2048) =====
+crypto key generate rsa
+
+! ===== Offline pre-check (UNLINKED — core down/down, adjacency none yet) =====
+show configuration commit list
+show running-config
+show interfaces brief
+show configuration failed
