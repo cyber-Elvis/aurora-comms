@@ -127,6 +127,8 @@ if (-not $mwbSettings) {
 }
 
 $mwbSettings.properties.SecurityKey.value = $securityKey
+# Preserve UseService when this script is re-run. Service registration and the
+# elevated transition are handled by enable-powertoys-mwb-service.ps1.
 $mwbSettings.properties.MachineMatrixString = @($MachineMatrix)
 $mwbSettings.properties.Name2IP.value = $nameMappings
 $mwbSettings.properties.ShareClipboard.value = $true

@@ -8,6 +8,14 @@ param(
     [ValidateSet('local', 'cloud', 'devnet')]
     [string]$Zone,
 
+    [ValidateSet('ed25519', 'rsa')]
+    [string]$KeyType = 'ed25519',
+
+    [ValidateRange(2048, 8192)]
+    [int]$RsaBits = 3072,
+
+    [string]$NameSuffix = '',
+
     [string]$OutDir = (Join-Path $HOME '.ssh'),
 
     [string]$Passphrase = '',
@@ -26,7 +34,8 @@ if (-not (Test-Path -LiteralPath $OutDir)) {
     New-Item -ItemType Directory -Path $OutDir | Out-Null
 }
 
-$baseName = "aurora-$Agent-$Zone-ed25519"
+$suffix = if ([string]::IsNullOrWhiteSpace($NameSuffix)) { '' } else { "-$NameSuffix" }
+$baseName = "aurora-$Agent-$Zone$suffix-$KeyType"
 $privateKey = Join-Path $OutDir $baseName
 $publicKey = "$privateKey.pub"
 
@@ -43,9 +52,14 @@ if ($Force) {
     Remove-Item -LiteralPath $publicKey -Force -ErrorAction SilentlyContinue
 }
 
-$comment = "aurora-$Agent-$Zone"
+$comment = "aurora-$Agent-$Zone$suffix"
 $sshPassphrase = if ($Passphrase.Length -eq 0) { '""' } else { $Passphrase }
-& ssh-keygen.exe -t ed25519 -f $privateKey -N $sshPassphrase -C $comment
+$keyArguments = @('-t', $KeyType)
+if ($KeyType -eq 'rsa') {
+    $keyArguments += @('-b', [string]$RsaBits)
+}
+$keyArguments += @('-f', $privateKey, '-N', $sshPassphrase, '-C', $comment)
+& ssh-keygen.exe @keyArguments
 
 Write-Host ""
 Write-Host "Private key: $privateKey"

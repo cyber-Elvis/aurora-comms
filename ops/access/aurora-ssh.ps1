@@ -7,7 +7,7 @@ param(
     [string]$User,
 
     [Parameter(ParameterSetName = 'Connect')]
-    [ValidateSet('modern', 'sros-legacy', 'network-console')]
+    [ValidateSet('modern', 'iosxr', 'sros-legacy', 'network-console')]
     [string]$Profile,
 
     [Parameter(ParameterSetName = 'Connect')]
@@ -42,7 +42,8 @@ if ([string]::IsNullOrWhiteSpace($InventoryPath)) {
     $InventoryPath = Join-Path $scriptRoot 'inventory.yml'
 }
 
-if ([string]::IsNullOrWhiteSpace($KnownHostsFile)) {
+$knownHostsFileWasDefault = [string]::IsNullOrWhiteSpace($KnownHostsFile)
+if ($knownHostsFileWasDefault) {
     $KnownHostsFile = Join-Path $HOME '.ssh\aurora_known_hosts'
 }
 
@@ -165,6 +166,18 @@ if ([string]::IsNullOrWhiteSpace($effectiveProfile)) {
     $effectiveProfile = $node.profile
 }
 
+if (
+    $UseCodex -and
+    $effectiveProfile -eq 'iosxr' -and
+    [string]::IsNullOrWhiteSpace($IdentityFile)
+) {
+    $IdentityFile = Join-Path $HOME '.ssh\aurora-codex-local-iosxr-rsa'
+}
+
+if ($effectiveProfile -eq 'iosxr' -and $knownHostsFileWasDefault) {
+    $KnownHostsFile = Join-Path $HOME '.ssh\aurora_iosxr_known_hosts'
+}
+
 if ([string]::IsNullOrWhiteSpace($node.host) -or $node.host -eq 'TBD') {
     throw "Alias '$Alias' is not connectable yet because its host is '$($node.host)'. Update inventory.yml when the endpoint exists."
 }
@@ -206,6 +219,14 @@ else {
     if ($effectiveProfile -eq 'sros-legacy') {
         $cmd += @(
             '-o', 'KexAlgorithms=+diffie-hellman-group-exchange-sha1,diffie-hellman-group1-sha1,diffie-hellman-group14-sha1',
+            '-o', 'HostKeyAlgorithms=+ssh-rsa',
+            '-o', 'PubkeyAcceptedAlgorithms=+ssh-rsa'
+        )
+    }
+    elseif ($effectiveProfile -eq 'iosxr') {
+        # IOS-XRv 6.1.3 predates Ed25519 and can require the legacy ssh-rsa
+        # signature algorithm. Keep this compatibility exception scoped to XR.
+        $cmd += @(
             '-o', 'HostKeyAlgorithms=+ssh-rsa',
             '-o', 'PubkeyAcceptedAlgorithms=+ssh-rsa'
         )

@@ -1,0 +1,45 @@
+---
+# Apply config COMMON to every Region A IOS-XRv node, idempotently and in PARALLEL.
+# This is the conventional "push one change to all routers at once" pattern:
+#   - one source of truth (group_vars/region_a_iosxr.yml)
+#   - idempotent module (iosxr_config only pushes drift)
+#   - concurrent across hosts (forks in ansible.cfg) = applied "at the same time"
+#   - per-device labelled commit (XR transaction)
+#
+#   Pre-check (dry run, no change):  ansible-playbook playbooks/baseline.yml --check --diff
+#   Apply:                           ansible-playbook playbooks/baseline.yml
+#   Limit to one node:               ansible-playbook playbooks/baseline.yml --limit gel-pe1
+#
+# NOTE on atomicity: Ansible applies to all nodes concurrently but each device commits
+# independently. For TRUE network-wide all-or-nothing, step up to NETCONF confirmed-commit
+# or Cisco NSO (the carrier-grade tier).
+- name: Region A IOS-XRv common baseline
+  hosts: region_a_iosxr
+  gather_facts: false
+
+  tasks:
+    - name: Global baseline (domain name, disable console logging)
+      cisco.iosxr.iosxr_config:
+        lines:
+          - "domain name {{ baseline_domain_name }}"
+          - "logging console disable"
+        comment: "{{ baseline_commit_label }}"
+
+    - name: Console line baseline (exec-timeout)
+      cisco.iosxr.iosxr_config:
+        parents: "line console"
+        lines:
+          - "exec-timeout {{ baseline_console_exec_timeout }}"
+        comment: "{{ baseline_commit_label }}"
+
+    - name: Capture evidence of the committed baseline
+      cisco.iosxr.iosxr_command:
+        commands:
+          - "show running-config line console"
+          - "show running-config | include domain name"
+          - "show configuration commit list 1"
+      register: baseline_evidence
+
+    - name: Display baseline evidence
+      ansible.builtin.debug:
+        var: baseline_evidence.stdout_lines

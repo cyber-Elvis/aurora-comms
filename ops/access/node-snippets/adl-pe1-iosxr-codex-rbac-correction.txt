@@ -1,0 +1,180 @@
+! ADL correction after the IOS-XRv 6.1.3 validation attempts.
+! 77 assignable read grants + 77 debug grants + execute basic-services only.
+! There are intentionally NO task write grants.
+! The following five reported task IDs are metadata/reserved and are rejected
+! in a taskgroup: cisco-support, disallowed, root-lr, root-system, universal.
+
+configure
+ taskgroup AURORA-CODEX-RO
+  task read aaa
+  task read acl
+  task read admin
+  task read ancp
+  task read atm
+  task read basic-services
+  task read bcdl
+  task read bfd
+  task read bgp
+  task read boot
+  task read bundle
+  task read call-home
+  task read cdp
+  task read cef
+  task read cgn
+  task read config-mgmt
+  task read config-services
+  task read crypto
+  task read diag
+  task read drivers
+  task read dwdm
+  task read eem
+  task read eigrp
+  task read ethernet-services
+  task read ext-access
+  task read fabric
+  task read fault-mgr
+  task read filesystem
+  task read firewall
+  task read fr
+  task read hdlc
+  task read host-services
+  task read hsrp
+  task read interface
+  task read inventory
+  task read ip-services
+  task read ipv4
+  task read ipv6
+  task read isis
+  task read l2vpn
+  task read li
+  task read lisp
+  task read logging
+  task read lpts
+  task read monitor
+  task read mpls-ldp
+  task read mpls-static
+  task read mpls-te
+  task read multicast
+  task read netflow
+  task read network
+  task read nps
+  task read ospf
+  task read otn
+  task read ouni
+  task read pbr
+  task read pkg-mgmt
+  task read pos-dpt
+  task read ppp
+  task read qos
+  task read rcmd
+  task read rib
+  task read rip
+  task read route-map
+  task read route-policy
+  task read sbc
+  task read snmp
+  task read sonet-sdh
+  task read static
+  task read sysmgr
+  task read system
+  task read transport
+  task read tty-access
+  task read tunnel
+  task read vlan
+  task read vpdn
+  task read vrrp
+  task execute basic-services
+  task debug aaa
+  task debug acl
+  task debug admin
+  task debug ancp
+  task debug atm
+  task debug basic-services
+  task debug bcdl
+  task debug bfd
+  task debug bgp
+  task debug boot
+  task debug bundle
+  task debug call-home
+  task debug cdp
+  task debug cef
+  task debug cgn
+  task debug config-mgmt
+  task debug config-services
+  task debug crypto
+  task debug diag
+  task debug drivers
+  task debug dwdm
+  task debug eem
+  task debug eigrp
+  task debug ethernet-services
+  task debug ext-access
+  task debug fabric
+  task debug fault-mgr
+  task debug filesystem
+  task debug firewall
+  task debug fr
+  task debug hdlc
+  task debug host-services
+  task debug hsrp
+  task debug interface
+  task debug inventory
+  task debug ip-services
+  task debug ipv4
+  task debug ipv6
+  task debug isis
+  task debug l2vpn
+  task debug li
+  task debug lisp
+  task debug logging
+  task debug lpts
+  task debug monitor
+  task debug mpls-ldp
+  task debug mpls-static
+  task debug mpls-te
+  task debug multicast
+  task debug netflow
+  task debug network
+  task debug nps
+  task debug ospf
+  task debug otn
+  task debug ouni
+  task debug pbr
+  task debug pkg-mgmt
+  task debug pos-dpt
+  task debug ppp
+  task debug qos
+  task debug rcmd
+  task debug rib
+  task debug rip
+  task debug route-map
+  task debug route-policy
+  task debug sbc
+  task debug snmp
+  task debug sonet-sdh
+  task debug static
+  task debug sysmgr
+  task debug system
+  task debug transport
+  task debug tty-access
+  task debug tunnel
+  task debug vlan
+  task debug vpdn
+  task debug vrrp
+ !
+ root
+ show configuration
+ commit label AURORA_CODEX_RBAC
+ end
+
+! IOS-XRv 6.1.3 rejected `sshkey` in username submode. Inspect the commands
+! actually supported by this image before selecting an authentication method:
+configure
+ username aurora-codex
+  ?
+
+! Evidence.
+show running-config taskgroup AURORA-CODEX-RO
+show running-config usergroup AURORA-CODEX-RO-USERS
+show running-config username aurora-codex
+show crypto key authentication rsa
