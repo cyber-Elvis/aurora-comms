@@ -1,0 +1,96 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+:root{
+  --color-text-primary:#20222a;
+  --color-text-secondary:#6b7280;
+  --color-text-info:#2f6fed;
+  --color-background-primary:#ffffff;
+  --color-border-secondary:#d3d7de;
+  --color-border-tertiary:#e6e9ee;
+  --font-serif:Georgia,'Times New Roman',serif;
+}
+html,body{margin:0;padding:0;background:#ffffff}
+svg{display:block}
+</style></head><body>
+<svg width="880" height="530" viewBox="0 0 880 530" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl desc">
+  <title id="ttl">Region A Ansible automation architecture</title>
+  <desc id="desc">An Ansible control node in WSL on PC1 connects through the GNS3 VM jump host to four IOS-XRv routers, authenticating as the scoped aurora-automation account decrypted from an Ansible vault; separate read-only agent accounts handle verification.</desc>
+  <style>
+    .ttl{font:600 21px var(--font-serif),Georgia,serif;fill:var(--color-text-primary)}
+    .sub{font:12px ui-sans-serif,system-ui,sans-serif;fill:var(--color-text-secondary)}
+    .h{font:600 13px ui-sans-serif,system-ui,sans-serif;fill:var(--color-text-primary)}
+    .s{font:11px ui-sans-serif,system-ui,sans-serif;fill:var(--color-text-secondary)}
+    .chip{font:10.5px ui-monospace,SFMono-Regular,monospace;fill:var(--color-text-primary)}
+    .lbl{font:10.5px ui-sans-serif,system-ui,sans-serif;fill:var(--color-text-secondary)}
+    .nn{font:600 12px ui-sans-serif,system-ui,sans-serif;fill:var(--color-text-primary)}
+    .box{fill:var(--color-background-primary);stroke:var(--color-border-secondary);stroke-width:1.5}
+    .cb{fill:none;stroke:var(--color-border-tertiary);stroke-width:1}
+    .acc{stroke:var(--color-text-info)}
+    .accf{fill:var(--color-text-info);opacity:.07}
+    .at{fill:var(--color-text-info)}
+    .flow{stroke:var(--color-text-info);stroke-width:1.8;fill:none}
+  </style>
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="var(--color-text-info)"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="530" fill="var(--color-background-primary)"/>
+
+  <text x="40" y="34" class="ttl">How the Region A automation is wired</text>
+  <text x="40" y="55" class="sub">config-as-code · least-privilege account · jump-host path</text>
+
+  <rect x="40" y="84" width="540" height="126" rx="11" class="box"/>
+  <text x="56" y="108" class="h">1 · Ansible control node — WSL Ubuntu (PC1)</text>
+  <text x="56" y="126" class="s">ansible-core 2.21 · cisco.iosxr 12.3.1 · paramiko</text>
+  <rect x="56" y="136" width="100" height="22" rx="6" class="cb"/><text x="64" y="151" class="chip">inventory.yml</text>
+  <rect x="164" y="136" width="90" height="22" rx="6" class="cb"/><text x="172" y="151" class="chip">ansible.cfg</text>
+  <rect x="262" y="136" width="222" height="22" rx="6" class="cb"/><text x="270" y="151" class="chip">group_vars → aurora-automation</text>
+  <rect x="56" y="168" width="452" height="30" rx="7" class="acc accf" stroke-width="1.5"/>
+  <text x="66" y="187" class="chip at">Vault — aurora-automation secret  ·  key: ~/.aurora-vault-pass</text>
+
+  <path d="M310,210 L310,236" class="flow" marker-end="url(#ah)"/>
+  <text x="322" y="227" class="lbl">decrypt secret → SSH paramiko (dh-group14-sha1 / ssh-rsa)</text>
+
+  <rect x="130" y="238" width="360" height="56" rx="11" class="box"/>
+  <text x="146" y="262" class="h">2 · GNS3 VM — jump host (ProxyJump)</text>
+  <text x="146" y="281" class="s">gns3@100.118.0.46</text>
+
+  <path d="M310,294 L310,320" class="flow" marker-end="url(#ah)"/>
+  <text x="322" y="311" class="lbl">mgmt net 10.255.191.0/24  ·  login as aurora-automation</text>
+
+  <rect x="40" y="322" width="540" height="158" rx="11" class="box"/>
+  <text x="56" y="346" class="h">3 · Region A — 4 × IOS-XRv 6.1.3</text>
+  <rect x="56" y="358" width="118" height="56" rx="8" class="cb"/>
+  <text x="115" y="384" class="nn" text-anchor="middle">ADL-PE1</text><text x="115" y="402" class="s" text-anchor="middle">10.255.191.17</text>
+  <rect x="186" y="358" width="118" height="56" rx="8" class="cb"/>
+  <text x="245" y="384" class="nn" text-anchor="middle">MEL-P</text><text x="245" y="402" class="s" text-anchor="middle">10.255.191.11</text>
+  <rect x="316" y="358" width="118" height="56" rx="8" class="cb"/>
+  <text x="375" y="384" class="nn" text-anchor="middle">MEL-PE1</text><text x="375" y="402" class="s" text-anchor="middle">10.255.191.12</text>
+  <rect x="446" y="358" width="118" height="56" rx="8" class="cb"/>
+  <text x="505" y="384" class="nn" text-anchor="middle">GEL-PE1</text><text x="505" y="402" class="s" text-anchor="middle">10.255.191.15</text>
+  <rect x="56" y="434" width="508" height="30" rx="7" class="cb"/>
+  <text x="66" y="453" class="chip">on connect: show version | utility head  →  cleared by filesystem-execute ✓</text>
+
+  <rect x="606" y="84" width="244" height="396" rx="11" class="box"/>
+  <text x="622" y="108" class="h">Accounts on every node</text>
+  <text x="622" y="126" class="s">RBAC · separation of duties</text>
+  <rect x="622" y="138" width="212" height="56" rx="8" class="cb"/>
+  <text x="632" y="160" class="nn">labadmin / admin</text>
+  <text x="632" y="178" class="s">root-system — human break-glass</text>
+  <rect x="622" y="206" width="212" height="92" rx="8" class="acc accf" stroke-width="1.6"/>
+  <text x="632" y="228" class="nn at">aurora-automation</text>
+  <text x="632" y="247" class="s">read + write — scoped</text>
+  <text x="632" y="265" class="s">no aaa · li · crypto · no root/shell</text>
+  <text x="632" y="283" class="s">77 read · 74 write · 3 execute</text>
+  <rect x="622" y="310" width="212" height="66" rx="8" class="cb"/>
+  <text x="632" y="332" class="nn">aurora-codex · aurora-claude</text>
+  <text x="632" y="350" class="s">read-only — agents</text>
+  <text x="632" y="368" class="s">aurora-claude = my verify login</text>
+  <rect x="622" y="396" width="13" height="13" rx="3" class="acc accf" stroke-width="1.4"/>
+  <text x="642" y="406" class="lbl">= the account Ansible logs in as</text>
+
+  <text x="40" y="508" class="s">Workflow — you drive (run ansible-playbook); I coach (playbook + MOP) and verify read-only via aurora-claude.</text>
+</svg>
+</body></html>
