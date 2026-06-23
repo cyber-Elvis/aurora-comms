@@ -1,0 +1,39 @@
+! Region A IOS-XRv 6.1.3: aurora-codex read/diagnostic role
+! Change: CHG-AURORA-REG-A-CODEX-RBAC-001
+!
+! IOS-XRv 6.1.3 DOES NOT accept `task read all` or `task debug all`.
+! The generator removes five reported but non-assignable metadata/reserved
+! task IDs and emits the 77 accepted read/debug grants.
+! Do not apply this file until the generated task block has replaced
+! <GENERATED_READ_AND_DEBUG_TASK_LINES>.
+!
+! Apply identically to MEL-P, MEL-PE1, GEL-PE1, and ADL-PE1.
+! Elvis enters and commits this block. Codex does not use labadmin or commit it.
+
+configure
+ taskgroup AURORA-CODEX-RO
+  description Full read plus basic-services and debug with no write
+  <GENERATED_READ_AND_DEBUG_TASK_LINES>
+ !
+ usergroup AURORA-CODEX-RO-USERS
+  taskgroup AURORA-CODEX-RO
+ !
+ username aurora-codex
+  group AURORA-CODEX-RO-USERS
+ !
+ root
+ show configuration
+ commit label AURORA_CODEX_RBAC
+ end
+
+! IOS-XRv 6.1.3 rejected `sshkey` in username submode on the ADL canary.
+! Inspect the supported subcommands before selecting an authentication method:
+configure
+ username aurora-codex
+  ?
+
+! Evidence
+show running-config taskgroup AURORA-CODEX-RO
+show running-config usergroup AURORA-CODEX-RO-USERS
+show running-config username aurora-codex
+show crypto key authentication rsa

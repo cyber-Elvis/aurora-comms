@@ -1,0 +1,27 @@
+# Connection and common variables for the Region A IOS-XRv group.
+# Authentication uses a local secret stored in Ansible Vault. RSA user-key
+# binding is unavailable on IOS-XRv 6.1.3.
+#
+# aurora-automation is the dedicated NON-HUMAN automation service account for
+# config-as-code (RBAC: AURORA-AUTOMATION-RW). It is intentionally distinct from
+# the read-only agent accounts aurora-codex and aurora-claude.
+
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.iosxr.iosxr
+ansible_user: aurora-automation
+ansible_password: "{{ vault_aurora_automation_secret }}"
+
+# Reach node management through the GNS3 VM. Keep the legacy algorithms scoped
+# to this inventory and retain learned host keys in a dedicated file.
+ansible_ssh_common_args: >-
+  -o ProxyJump=gns3@100.118.0.46
+  -o KexAlgorithms=+diffie-hellman-group14-sha1
+  -o HostKeyAlgorithms=+ssh-rsa
+  -o StrictHostKeyChecking=accept-new
+  -o UserKnownHostsFile=~/.ssh/aurora_iosxr_known_hosts
+  -o PubkeyAuthentication=no
+
+# Common baseline knobs consumed by playbooks/baseline.yml.
+baseline_domain_name: lab.aurora
+baseline_console_exec_timeout: "0 0"
+baseline_commit_label: "CHG-AURORA-REG-A-BASELINE"

@@ -1,9 +1,22 @@
+# Connection + COMMON variables for the Region A IOS-XRv group.
+# group_vars is the idiomatic Ansible home for config common to every node in the
+# group: change it once here, the baseline playbook renders it onto all nodes.
+
 ansible_connection: ansible.netcommon.network_cli
 ansible_network_os: cisco.iosxr.iosxr
 ansible_user: aurora-claude
-ansible_ssh_private_key_file: "~/.ssh/aurora-claude-local-ed25519"
+# XRv 6.1.3 has no Ed25519 -> dedicated RSA-3072 automation key for the XR zone
+# (ADR-004 zone-scoped key). Public half is installed on each node by the one-time
+# bootstrap (see README); private half stays in ~/.ssh on PC1.
+ansible_ssh_private_key_file: "~/.ssh/aurora-claude-xr-rsa"
 ansible_ssh_common_args: >-
   -o ProxyJump=gns3@100.118.0.46
   -o UserKnownHostsFile=~/.ssh/aurora_iosxr_known_hosts
   -o StrictHostKeyChecking=yes
 
+# --- Common baseline knobs (consumed by playbooks/baseline.yml) ---
+baseline_domain_name: lab.aurora
+# Console idle-logout: "0 0" = never (lab convenience so a console stays usable for
+# break-glass); set e.g. "10 0" to harden once SSH/Ansible is the primary config path.
+baseline_console_exec_timeout: "0 0"
+baseline_commit_label: "CHG-AURORA-REG-A-BASELINE"

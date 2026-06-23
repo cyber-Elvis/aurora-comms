@@ -1,5 +1,5 @@
 ! Cisco IOS-XR placeholder template.
-! Use local full privilege during build; move to TACACS+ command authorization later.
+! Break-glass is full privilege. Automation/read accounts use explicit RBAC.
 
 hostname <HOSTNAME>
 domain name lab.aurora
@@ -10,14 +10,22 @@ username admin
  group root-system
  secret <YOU_SET_THIS_ON_BOX>
 !
+taskgroup AURORA-CODEX-RO
+ ! IOS-XR 6.1.3 has no `all` task ID. Generate one `task read <TASK-ID>`
+ ! and one `task debug <TASK-ID>` for each assignable operational ID using:
+ ! show aaa task supported
+ ! The local generator excludes the five reported but rejected metadata/
+ ! reserved IDs: cisco-support, disallowed, root-lr, root-system, universal.
+ task execute basic-services
+!
+usergroup AURORA-CODEX-RO-USERS
+ taskgroup AURORA-CODEX-RO
+!
 username aurora-codex
- group root-system
- sshkey <AURORA_CODEX_PUBLIC_KEY>
+ group AURORA-CODEX-RO-USERS
 !
-username aurora-claude
- group root-system
- sshkey <AURORA_CLAUDE_PUBLIC_KEY>
-!
+
+! Authentication method is image-specific. Validate on the IOS-XR canary.
 
 ! Restrict management sources with an ingress ACL on the management interface/VRF.
 ipv4 access-list MGMT-SOURCES

@@ -1,0 +1,53 @@
+! Region A IOS-XRv 6.1.3: aurora-automation Ansible config-as-code role
+! Change: CHG-AURORA-REG-A-AUTOMATION-RW-001
+!
+! Dedicated NON-HUMAN automation service account for Ansible config push.
+! Separate identity from the agent accounts: aurora-codex and aurora-claude
+! stay read-only and are NOT touched by this change. This is NOT a
+! full-privilege account: explicitly NOT in root-system, root-lr, cisco-support.
+!
+!   - task read    <id>  for every assignable task ID
+!   - task write   <id>  for every assignable task ID EXCEPT aaa, li, crypto
+!   - task execute basic-services, filesystem, system
+!   - NO task debug grants
+!
+! Rationale for the write exclusions (least privilege / separation of duties):
+!   aaa    - automation must not create users or alter RBAC (no self-escalation)
+!   li     - lawful intercept is never automated
+!   crypto - key/certificate material stays with break-glass only
+!
+! `task execute filesystem` is included because the cisco.iosxr connect probe
+! runs `show version | utility head -n 20`; the `head` utility is gated above
+! `basic-services` execute. Confirm with the on-box probe test in the MOP and
+! escalate the execute set only if the probe still fails.
+!
+! Apply identically to MEL-P, MEL-PE1, GEL-PE1, and ADL-PE1.
+! Elvis enters and commits this block. Do not apply this file until the
+! generated task block has replaced <GENERATED_RW_TASK_LINES>.
+
+configure
+ taskgroup AURORA-AUTOMATION-RW
+  description Ansible config-as-code: read all, write network, no aaa/li/crypto, no debug
+  <GENERATED_RW_TASK_LINES>
+ !
+ usergroup AURORA-AUTOMATION-RW-USERS
+  taskgroup AURORA-AUTOMATION-RW
+ !
+ username aurora-automation
+  group AURORA-AUTOMATION-RW-USERS
+  secret <RANDOM_ALPHANUMERIC_SECRET_FROM_VAULT>
+ !
+ root
+ show configuration
+ commit label AURORA_AUTOMATION_RBAC
+ end
+
+! Apply large taskgroups in chunks of no more than 12-15 lines, then verify the
+! complete taskgroup before committing. XR console pastes can silently drop lines.
+
+! Evidence
+show running-config taskgroup AURORA-AUTOMATION-RW
+show running-config usergroup AURORA-AUTOMATION-RW-USERS
+show running-config username aurora-automation
+show user group
+show user tasks
