@@ -1,0 +1,4 @@
+2026-06-23 17:39:47,478 -  nornir.core -     INFO -        run() - Running task 'show version | include Version' with args {} on 4 hosts
+2026-06-23 17:43:37,919 -  nornir.core -     INFO -        run() - Running task 'show ip interface brief' with args {} on 4 hosts
+2026-06-23 17:44:14,340 -  nornir.core -     INFO -        run() - Running task 'show version | include Version' with args {} on 4 hosts
+2026-06-23 17:46:09,765 -  nornir.core -     INFO -        run() - Running task 'show isis neighbors' with args {} on 4 hosts

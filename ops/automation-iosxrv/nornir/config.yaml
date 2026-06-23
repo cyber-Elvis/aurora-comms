@@ -1,0 +1,12 @@
+---
+# Nornir config (Phase 2 mini-lab). Run from this directory.
+inventory:
+  plugin: SimpleInventory
+  options:
+    host_file: "inventory/hosts.yaml"
+    group_file: "inventory/groups.yaml"
+    defaults_file: "inventory/defaults.yaml"
+runner:
+  plugin: threaded
+  options:
+    num_workers: 8          # all four nodes concurrently (same idea as Ansible forks)

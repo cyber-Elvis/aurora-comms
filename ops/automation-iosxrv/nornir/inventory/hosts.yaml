@@ -1,0 +1,14 @@
+---
+# The four Region A IOS-XRv nodes — same hosts as the Ansible inventory.
+adl-pe1:
+  hostname: "10.255.191.17"
+  groups: [region_a]
+gel-pe1:
+  hostname: "10.255.191.15"
+  groups: [region_a]
+mel-pe1:
+  hostname: "10.255.191.12"
+  groups: [region_a]
+mel-p:
+  hostname: "10.255.191.11"
+  groups: [region_a]
