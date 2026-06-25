@@ -1,6 +1,52 @@
 # Aurora Deployment Status
 
-> **Latest state: 2026-06-21** (top). Earlier snapshots are kept below as the historical record.
+> **Latest state: 2026-06-25** (top). Earlier snapshots are kept below as the historical record.
+
+## Current state - 2026-06-25: Inter-region border (ASBR) designated + XRv9000 re-platform DECLINED
+
+**(a) Region A-side inter-region ASBR / Region B border router = `MEL-PE1`.** `MEL-PE1`
+(Aurora-PE-1, IOS-XRv 6.1.3, `Lo0 10.0.0.2`) is the designated ASBR that terminates the
+inter-region eBGP `64496 ↔ 65002` to Region B's `DC-P-R1`. It already carries iBGP VPNv4 +
+ipv4-unicast, the Transit-A eBGP (64497), the Northwind PE-CE, and the Melbourne IXP attachment.
+Inter-AS is plain eBGP (global IPv4 unicast, Option A only — no MPLS label transfer across the
+openconnect + MASQUERADE NAT). `MEL-P` (Aurora-P, `Lo0 10.0.0.1`) remains a **pure P router**
+(IS-IS L2 + LDP, no BGP) and is only the right-side **transport** handoff toward the PC1/Region B
+bridge — it is transport, not the BGP border. `SYD-PE1` is a **Region B node only** (Sydney;
+Region B/C edge, first IOS-XR ROV enforcer) and is not the Region A end of the A↔B boundary.
+
+**(b) XRv9000 re-platform of a MEL node — EVALUATED AND DECLINED.** Re-platforming a MEL node to
+an XRv9000 on the Dell GNS3 VM was considered and rejected: the 19 GiB / 2-core GNS3 VM cannot
+sustain a 16 GB singleton alongside the fabric. Measured 2026-06-24/25, the full fabric plus an
+idle XRv9000 at ~9.7 GB RSS left only ~1.85 GB free, with no swap. `MEL-PE1` stays IOS-XRv 6.1.3.
+
+## Current state - 2026-06-24: Region A Internet-edge transit nodes STAGED (unconfigured)
+
+The two Internet-edge transits were **created, wired, and booted** in GNS3 project `ops-lab`
+(`d8119db0-…`, controller `http://192.168.137.1:3080`). **No service config yet** — staged per
+the operator's "stage the nodes now" decision; config is deferred to the deploy MOP stages.
+
+| Node | Template / NOS | node_id | Data link | OOB | Console |
+| --- | --- | --- | --- | --- |
+| `transit-a-csr` | CSR1000v-16.08.01 (AS 64497, primary) | `a08c23d6-974b-4189-a43a-67a233f9bdd3` | Gi2 ↔ `MEL-PE1` Gi0/0/0/2 (→ `10.255.2.0/30`) | Gi1 ↔ MGMT-SW01 p6 | `:5009` |
+| `transit-b-iol` | IOL-AdvEnterprise-L3 = IOL-XE 17.15 (AS 64498, backup) | `9c51daa2-24ae-4ce7-9d6f-9e57e036edd4` | e0/0 ↔ `ADL-PE1` Gi0/0/0/1 (→ `10.255.2.4/30`) | e0/1 ↔ MGMT-SW01 p7 | `:5013` |
+
+- Booted **staggered** (IOL first, then CSR) per ADR-002 §3.9.4 Rule 2; all backbone XRv nodes
+  stayed `started`, no OOM/crash. XRv9000 singleton left `stopped`.
+- OOB mgmt cabled to MGMT-SW01 (mgmt IPs TBD at config — e.g. `10.255.191.21/.22`, free in the plan).
+- **Config still to do** (operator-driven, per `ops/access/mops/2026-06-24-region-a-transit-edge-deploy.md`):
+  Stage 0 = backbone iBGP with **vpnv4 + ipv4-unicast + next-hop-self** (the §5.1a failover fix —
+  prerequisite); Stage 2 = transit link IPs + originate `0/0`+mock prefixes + eBGP; Stage 3 =
+  §5.4 hardening (TCP-AO/BFD/GTSM/GR/max-prefix/ROV-C1); Stage 4 = failover + ROV verify.
+
+### Transit-plan doc fixes applied 2026-06-24 (pre-deploy)
+- **Failover bug fixed** — `region-a-plan.md` §5.1a: iBGP must carry IPv4-unicast + next-hop-self
+  so the transit default propagates between PEs (a VPNv4-only mesh could never fail over).
+- **IOS-XR refresh** — transit/PE CLI, two-stage commit, `Gi0/0/0/x`, IOL-L3 labels dropped;
+  `ip-plan.md` re-dated 2026-06-24 + PE labels → IOS-XRv.
+- **RPKI reordered** — ROV enforced on both transit sessions from Phase C1 (HIGH gap closed).
+- **Transit-edge hardening** — new §5.4 + transit patching MOP (`…-region-a-transit-patching.md`).
+- **Capacity re-cost** — §2.5 + ADR-002 §3.9.5 note: backbone re-priced at 4×IOS-XRv (~10–11 GiB
+  total), CPU cold-start soak flagged.
 
 ## Current state - 2026-06-21: Region A migrated to IOS-XRv 6.1.3 (COMPLETE)
 
@@ -20,7 +66,7 @@ parity preserved (addresses, loopbacks, IS-IS L2 + LDP).
 - **GNS3 interface mapping** (adapter→XR, offset because XRv inserts MgmtEth as NIC0): adapter0 = `MgmtEth0/0/CPU0/0`, adapter1 = `Gi0/0/0/0`, adapter2 = `Gi0/0/0/1`. Link labels relabeled to real XR names.
 - **Rollback retained:** IOL nodes (`*-CISCO-IOL-RT01`) stopped + unlinked + saved (≈1 MB each on disk, 0 RAM) until ~2026-06-28 or two clean sessions.
 - **Artifacts:** MOP + per-node evidence `ops/access/mops/2026-06-21-region-a-iol-to-iosxrv-migration.md`; parity configs `ops/migration/region-a-iosxrv/`; **active automation `ops/automation-iosxrv/` (`cisco.iosxr`)** — supersedes `ops/automation/` (`cisco.ios`, IOL/legacy).
-- **Pending:** 60-min soak + MEL link-flap reconvergence test; access hardening (dedicated RSA-3072 `aurora-codex`/`aurora-claude` on the XR zone, remove personal `id_ed25519` from GEL); separate MPLS L3VPN / VPNv4 MOP.
+- **Pending:** 60-min soak + MEL link-flap reconvergence test; complete separate password-authenticated read-only `aurora-codex`/`aurora-claude` accounts on all XRv nodes (secrets in Ansible Vault; RSA user-key binding is unavailable on XRv 6.1.3); separate MPLS L3VPN / VPNv4 MOP.
 
 ---
 

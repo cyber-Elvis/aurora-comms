@@ -1,0 +1,4 @@
+# Scripts that run in WSL/Linux must stay LF — a CRLF checkout breaks the shebang
+# and `set -euo pipefail` (bash chokes on the trailing \r).
+*.sh    text eol=lf
+*.py    text eol=lf

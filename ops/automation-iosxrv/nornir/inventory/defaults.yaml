@@ -1,0 +1,6 @@
+---
+# Inventory defaults. Password is injected at runtime from $AURORA_XR_PASSWORD
+# (decrypted from the Ansible vault by run.sh) — never written to disk here.
+data:
+  lab: aurora-region-a
+  platform_note: "IOS-XRv 6.1.3"

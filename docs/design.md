@@ -1,6 +1,6 @@
 # Aurora Communications — Network Design Document
 
-> **Current scope note (ADR-003 v1.4 / ADR-004 v1.0, 2026-06-15):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.5: Dell/PC2 hosts the `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P` line, with `MEL-P` as the logical handoff toward PC1 / Region B `SYD-PE1`. Brisbane and Sydney are Region B CML nodes. Transit-A and Transit-B remain local Region A Internet-edge nodes on `MEL-PE1` and `ADL-PE1`; FRR IXP peers and tenant workload containers are Region B/PC1 Docker offload candidates. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**. ADR-004 adds the secure management/data-plane ring model: host OSes are protected management anchors, while virtual edge routers carry lab transport. Older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
+> **Current scope note (ADR-003 v1.4 / ADR-004 v1.0, 2026-06-15):** this document is now a protocol-design reference, not the executable build plan. The active build is the Cisco Region A core in `docs/region-a-plan.md` v2.5: Dell/PC2 hosts the `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P` line, with `MEL-PE1` as the Region A-side inter-region border/ASBR (inter-region eBGP `64496 <-> 65002` to Region B's `DC-P-R1`) and `MEL-P` a pure-P transport handoff toward PC1 / Region B. Brisbane and Sydney are Region B CML nodes. Transit-A and Transit-B remain local Region A Internet-edge nodes on `MEL-PE1` and `ADL-PE1`; FRR IXP peers and tenant workload containers are Region B/PC1 Docker offload candidates. The **Melbourne/Sydney/Brisbane/Geelong/Adelaide/Perth/Darwin/Tasmania POP geography remains current**. ADR-004 adds the secure management/data-plane ring model: host OSes are protected management anchors, while virtual edge routers carry lab transport. Older FRR/containerlab, AS65100, and Nokia/VPRN wording below is retained for historical rationale unless superseded inline.
 
 | Field | Value |
 | --- | --- |
@@ -103,7 +103,7 @@ Legend: `====` = high-capacity east-coast core/interconnect path; `----` / `|` =
 
 | POP | Role | Loopback | NET |
 | --- | --- | --- | --- |
-| Melbourne | Local core / PE site: `MEL-P` and `MEL-PE1`, Transit-A and logical IXP attachment | 10.0.0.1 / 10.0.0.2 | 49.0001.0010.0000.0001.00 / 49.0001.0010.0000.0002.00 |
+| Melbourne | Local core / PE site: `MEL-PE1` (Region A-side inter-region border/ASBR — eBGP `64496<->65002` to Region B `DC-P-R1`), `MEL-P` (pure P, transport handoff only), Transit-A and logical IXP attachment | 10.0.0.1 / 10.0.0.2 | 49.0001.0010.0000.0001.00 / 49.0001.0010.0000.0002.00 |
 | Sydney | Region B interconnect PE, Region B/C handoff, first ROV enforcer | TBD in CML | TBD |
 | Brisbane | Region B regional enterprise PE / Helix service attachment | TBD in CML | TBD |
 | Geelong | Local regional-line PE | 10.0.0.5 | 49.0001.0010.0000.0005.00 |

@@ -1,0 +1,16 @@
+---
+# Group settings for all Region A nodes. Connection details mirror the working
+# Ansible path: aurora-automation, bastion jump (ssh_config ProxyCommand), and
+# the legacy host-key algo XRv 6.1.3 needs (disabled_algorithms forces ssh-rsa).
+# Password is NOT stored here — it is injected at runtime from $AURORA_XR_PASSWORD.
+region_a:
+  platform: cisco_xr            # -> Netmiko device_type
+  username: aurora-automation
+  connection_options:
+    netmiko:
+      extras:
+        ssh_config_file: "/mnt/d/CyberLab/Repos/aurora-comms/ops/automation-iosxrv/nornir/ssh_config"
+        disabled_algorithms:
+          pubkeys: ["rsa-sha2-256", "rsa-sha2-512"]
+        conn_timeout: 30
+        fast_cli: false

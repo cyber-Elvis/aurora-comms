@@ -1,0 +1,43 @@
+---
+# CHG-AURORA-REGA-NOIDLE - disable idle (exec) timeout on ALL Region A IOS-XRv lines.
+#
+# Runs as aurora-automation (scoped RW; holds 'task write tty-access'). Idempotent:
+# iosxr_config only pushes drift, concurrent across hosts, per-device labelled commit.
+#
+#   Dry run (preview, NO change):
+#     ansible-playbook -i inventory.yml playbooks/region-a-disable-idle-timeout.yml --check --diff
+#   Apply:
+#     ansible-playbook -i inventory.yml playbooks/region-a-disable-idle-timeout.yml
+#   One node:
+#     ... --limit adl-pe1
+#
+# SECURITY NOTE (Protect & Secure): exec-timeout 0 0 removes idle-session
+# auto-logout - a hardening regression (idle privileged sessions stay open
+# indefinitely). This is a conscious TechOps choice. Safer shapes if reconsidered:
+# console-only, or a finite value such as 'exec-timeout 30 0'.
+- name: Region A - disable idle (exec) timeout on all lines
+  hosts: region_a_iosxr
+  gather_facts: false
+
+  tasks:
+    - name: exec-timeout 0 0 on console + default (vty) lines
+      cisco.iosxr.iosxr_config:
+        parents: "{{ item }}"
+        lines:
+          - "exec-timeout 0 0"
+        comment: "CHG-AURORA-REGA-NOIDLE"
+      loop:
+        - "line console"
+        - "line default"
+
+    - name: Capture post-change evidence
+      cisco.iosxr.iosxr_command:
+        commands:
+          - "show running-config line console"
+          - "show running-config line default"
+          - "show configuration commit list 2"
+      register: noidle_evidence
+
+    - name: Show evidence
+      ansible.builtin.debug:
+        var: noidle_evidence.stdout_lines
