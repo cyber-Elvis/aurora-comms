@@ -24,7 +24,7 @@ Region A's empirical capacity envelope (ADR-002 §3.9) is the constraint this pl
 
 > **Build update (2026-06-15):** `GEL-PE1-CISCO-IOL-RT01` and `ADL-PE1-CISCO-IOL-RT01` are created and wired in `ops-lab`, both left stopped for wave-controlled bring-up. The local Region A line is wired as `MEL-P <-> MEL-PE1 <-> GEL-PE1 <-> ADL-PE1`, but the live canvas is aligned geographically left-to-right as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. `MEL-P` is the right-side local core and the logical handoff toward PC1-hosted `SYD-PE1` in Region B. `BNE-PE1-CISCO-IOL-RT01` and `SYD-PE1-CISCO-IOSXR-RT01` were removed from local Region A staging and moved to Region B planning.
 
-> **Access update (2026-06-16):** the PC1/PC2 local Ethernet segment now carries internet and uses `192.168.137.0/24`. Current plan values are PC1/gateway/Routinator `192.168.137.1` and PC2/Dell/GNS3 controller `192.168.137.2:3080`.
+> **Access update (2026-06-16):** the PC1/PC2 local Ethernet segment now carries internet and uses `192.168.137.0/24`. Current plan values are PC1/gateway/Routinator `192.168.137.1` and PC2/Dell/GNS3 controller `192.168.137.1:3080`.
 
 ### 1.1 National POP overlay
 
@@ -32,8 +32,8 @@ The national model still spans Melbourne, Sydney, Brisbane, Geelong, Adelaide, P
 
 | POP | Active lab node(s) | Role in the carrier story |
 | --- | --- | --- |
-| Melbourne | `Aurora-P` (`MEL-P`) + `Aurora-PE-1` (`MEL-PE1`) | `MEL-PE1` sits with the left-side regional line; `MEL-P` sits on the right as local core/transport handoff toward PC1/SYD |
-| Sydney | Region B target `SYD-PE1` / `Aurora-PE-3` | PC1-hosted logical peer from `MEL-P`; major interconnect, Region B/C handoff, first IOS-XR ROV enforcer |
+| Melbourne | `Aurora-P` (`MEL-P`) + `Aurora-PE-1` (`MEL-PE1`) | `MEL-PE1` sits with the left-side regional line and is the **inter-region eBGP border / ASBR** (terminates `64496 ↔ 65002` to Region B's `DC-P-R1`); `MEL-P` sits on the right as the local core / **transport** handoff toward PC1/Region B |
+| Sydney | Region B target `SYD-PE1` / `Aurora-PE-3` | PC1-hosted Region B node; major interconnect, Region B/C edge, first IOS-XR ROV enforcer. (The inter-region eBGP border is `MEL-PE1` ↔ Region B's `DC-P-R1`, **not** SYD-PE1.) |
 | Brisbane | Region B target `BNE-PE1` / `Aurora-PE-2` | Regional enterprise edge and Helix services |
 | Geelong | `GEL-PE1` | Dell/PC2 regional-line midpoint between ADL and MEL-PE1; smaller-enterprise edge / branch-failover scenarios |
 | Adelaide | `ADL-PE1` | Dell/PC2 regional-line endpoint; south-central aggregation POP useful for east-west path policy and maintenance-window drills |
@@ -94,13 +94,13 @@ ASNs are **RFC 5398 documentation ASNs** (64496–64511); prefixes are **RFC 573
 
 | Tier | Declared | Idle RSS (est.) |
 | --- | --- | --- |
-| Backbone (4× IOL-L3) | ~4 GB | ~2 GB |
+| Backbone (4× **IOS-XRv 6.1.3**) | ~12 GB | ~4 GB |
 | Customer Edge (FortiGate + Aruba CX; spare CE optional) | ~5 GB | ~2.7 GB |
 | Internet Edge local slice (Transit-A CSR 3 + Transit-B IOL 2 + fabric 0; FRR IXP offloaded) | ~5 GB | ~3 GB |
 | Docker offload (IXP FRR + tenant workloads) | Region B/PC1 | off Dell/PC2 budget |
-| **Total local core running fabric** | **~14 GB declared** | **~8–8.5 GiB actual idle** |
+| **Total local core running fabric** | **~22 GB declared** | **~10–11 GiB actual idle** |
 
-Comfortably inside the envelope (19 GiB GNS3 VM, ~17 GiB usable; qemu overcommit at idle means declared ≠ resident). **The all-IOL backbone freed ~1 GiB** vs the old SR Linux+SR OS core, which is why both transits can stay local. The spare CE (`region-a-ce-spare`) is bring-up-on-demand and not counted in the core total.
+**Re-costed for the 2026-06-21 IOL→IOS-XRv migration (2026-06-24):** each IOS-XRv 6.1.3 node is ~3 GB declared / ~1 GB idle (ADR-002 §3.9.5), ~2× the ~0.5 GB IOL it replaced, so the backbone rose from ~4 GB→~12 GB declared and ~2 GB→~4 GB idle. Still inside the envelope on **RAM** (19 GiB GNS3 VM, ~17 GiB usable; qemu overcommit means declared ≠ resident — ~10–11 GiB resident leaves ~6 GiB headroom, so both transits still stay local). The pre-migration "all-IOL backbone freed ~1 GiB, so the transits fit" rationale **no longer holds** — they fit on remaining headroom, not on a light backbone. **The binding risk is now CPU on cold-start**, not RAM: XRv boots heavier than IOL and the 2-core VM already hit load ~9 at 7 nodes (ADR-002 §3.9.3). Therefore bring the 4×XRv backbone + 2 transits up **strictly staggered (waves of 2–3, let each converge)** and run a **30–60 min soak with `clear bgp *`** before declaring the edge stable (ADR-002 §3.9.4 Rules 2 & 4). The spare CE (`region-a-ce-spare`) is bring-up-on-demand and not counted in the core total.
 
 ### 2.6 Design choices noted explicitly (callable for review)
 
@@ -112,7 +112,7 @@ Comfortably inside the envelope (19 GiB GNS3 VM, ~17 GiB usable; qemu overcommit
 - **Two transits terminate on different local PEs** (Transit-A on `MEL-PE1`, Transit-B on `ADL-PE1`). This keeps the original Region A Internet-edge design and exercises the whole ADL-GEL-MEL path during backup-default failover.
 - **IXP route server = FRR, not IOS/CSR, but FRR can move to Region B/PC1.** FRR (and BIRD) are what real IXPs run; FRR gives proper route-server semantics (next-hop preservation, multilateral reflection) an IOS eBGP-with-next-hop-self only approximates. Because these are Docker-dependent nodes, host them in Region B/PC1 when the local Dell/PC2 budget is better spent on router and firewall NOSes.
 - **Dual IXP attachment is a later lab pedagogy target** — kept to demo IX-uplink-failure and iBGP reconvergence once a second eligible edge is active.
-- **iBGP topology = full mesh among local Region A PEs**. Below the threshold where route reflection earns its complexity. Aurora-P (IOL-L3) does **not** run BGP — pure IS-IS/LDP transit.
+- **iBGP topology = full mesh among local Region A PEs**. Below the threshold where route reflection earns its complexity. Aurora-P (IOS-XRv) does **not** run BGP — pure IS-IS/LDP transit.
 - **Helix LAN connection model is mode-switched** (see §10): when Region B is up, Helix CE/PE lives with BNE-PE1 in Region B. When Region B is down, the standalone local Aruba CX remains useful for access-switching and segmentation practice without making Brisbane a Region A PE.
 - **Maple Ridge workloads are not in Region A.** Maple Ridge primary CE is Region B (Cat8000v in CML, ADR-002 §3.2).
 - **Documentation ASNs (RFC 5398, 64496–64511), not private ASNs (RFC 6996).** Aurora = 64496; transits 64497/64498; IXP RS/content/eyeball 64499/64500/64501; customer 64502. (Private ASN 64512 is used only for the private-customer CE model.)
@@ -148,10 +148,10 @@ graph LR
     end
 
     subgraph Backbone["Aurora AS 64496 — Cisco P/PE core (drawn west-to-east: ADL, GEL, MEL-PE1, MEL-P)"]
-        ADL["ADL-PE1<br/>IOL-AdvEnterprise-L3<br/>(regional L3VPN PE)"]
-        GEL["GEL-PE1<br/>IOL-AdvEnterprise-L3<br/>(regional L3VPN PE)"]
-        PE1["Aurora-PE-1 / MEL-PE1<br/>IOL-AdvEnterprise-L3<br/>(L3VPN PE)"]
-        P["Aurora-P / MEL-P<br/>IOL-AdvEnterprise-L3<br/>(right-side core handoff)"]
+        ADL["ADL-PE1<br/>IOS-XRv 6.1.3<br/>(regional L3VPN PE)"]
+        GEL["GEL-PE1<br/>IOS-XRv 6.1.3<br/>(regional L3VPN PE)"]
+        PE1["Aurora-PE-1 / MEL-PE1<br/>IOS-XRv 6.1.3<br/>(L3VPN PE)"]
+        P["Aurora-P / MEL-P<br/>IOS-XRv 6.1.3<br/>(right-side core handoff)"]
     end
 
     subgraph CEs["Customer Edge"]
@@ -200,7 +200,8 @@ graph LR
     ADL ---|Dell/PC2 regional line| GEL
     GEL ---|Dell/PC2 regional line| PE1
     PE1 ---|IS-IS L2 + LDP| P
-    P -.->|logical PC1 / Region B handoff| SYD
+    P -.->|logical PC1 / Region B transport handoff| SYD
+    PE1 -.->|inter-region eBGP 64496↔65002<br/>ASBR border → Region B DC-P-R1| SYD
 
     %% iBGP full mesh (overlay)
     PE1 -.->|iBGP VPNv4| GEL
@@ -251,7 +252,7 @@ The Internet Edge sits **north of Aurora AS 64496** and is entirely simulated �
      transit-a-csr  AS 64497            transit-b-iol  AS 64498
      (CSR1000v, primary)                 (IOL-XE, backup)
             |                                     |
-       Aurora-PE-1 (IOL-L3)              ADL-PE1 (IOL-L3)
+       Aurora-PE-1 (IOS-XRv)              ADL-PE1 (IOS-XRv)
             \                              local backup edge
              \           eBGP transit      (RTR from rpki-rp1)
               +--------- Aurora AS 64496 --------+
@@ -283,10 +284,10 @@ The Internet Edge sits **north of Aurora AS 64496** and is entirely simulated �
 
 ### 3.3 Physical mapping
 
-- **GNS3 controller**: `http://192.168.137.2:3080/v2` (Dell-Windows host on the internet-carrying PC1/PC2 ethernet link). Project = `ops-lab` (`d8119db0-dd43-4d20-870d-9d62fd6345f1`).
+- **GNS3 controller**: `http://192.168.137.1:3080/v2` (Dell-Windows host on the internet-carrying PC1/PC2 ethernet link). Project = `ops-lab` (`d8119db0-dd43-4d20-870d-9d62fd6345f1`).
 - **GNS3 VM**: VMware Workstation appliance on Dell, Tailscale `gns3@100.118.0.46`, **2 physical vCPU / 19 GiB RAM** — the empirical constraint envelope per ADR-002 §3.9.
 - **All local Region A router/firewall nodes run on `compute_id: "vm"`** (the GNS3 VM compute). Docker-dependent FRR IXP peers and tenant workload containers are Region B/PC1 offload candidates rather than Dell/PC2 GNS3 docker dependencies.
-- **Dell/PC2 regional line**: the local link graph is `MEL-P <-> MEL-PE1 <-> GEL-PE1 <-> ADL-PE1`, and the live canvas is aligned geographically west-to-east as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. `MEL-P` deliberately sits to the right as the local core/handoff toward PC1-hosted `SYD-PE1`. `SYD-PE1` remains the IOS-XRv interop / ROV / Region B edge; `BNE-PE1` remains the Helix / Brisbane Region B PE.
+- **Dell/PC2 regional line**: the local link graph is `MEL-P <-> MEL-PE1 <-> GEL-PE1 <-> ADL-PE1`, and the live canvas is aligned geographically west-to-east as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. `MEL-P` deliberately sits to the right as the local core / **transport** handoff toward the PC1/Region B bridge. The **inter-region eBGP border / ASBR is `MEL-PE1`** (it terminates `64496 ↔ 65002` to Region B's `DC-P-R1`), not `MEL-P` and not `SYD-PE1`. `SYD-PE1` remains the IOS-XRv interop / ROV / Region B edge; `BNE-PE1` remains the Helix / Brisbane Region B PE.
 - **Console-driven config**: the `iolcfg.py` socket helper on the GNS3 VM drives IOL/IOS-XR consoles (raw socket + telnet IAC; the VM's Python 3.14 has no `telnetlib`). Claude drives; the user verifies via the REST API (`memory/lab-coaching-workflow.md`).
 - **Management plane** (Wazuh, MISP, Cowork, openconnect to DevNet) stays on **PC1** per ADR-002 §6.
 - **Secure access model** follows ADR-004: `admin` is Elvis-owned break-glass; `aurora-codex` and `aurora-claude` are per-agent lab-node-only automation identities; PC1, PC2/Dell, DO, and Oracle host OSes are not routed lab nodes.
@@ -299,10 +300,10 @@ The Internet Edge sits **north of Aurora AS 64496** and is entirely simulated �
 
 | Node | Loopback (Lo0) | Mgmt | Role |
 | --- | --- | --- | --- |
-| Aurora-P / MEL-P (IOL-L3) | 10.0.0.1/32 | 10.255.191.11/24 | IS-IS L2 / LDP only (no BGP) |
-| Aurora-PE-1 / MEL-PE1 (IOL-L3) | 10.0.0.2/32 | 10.255.191.12/24 | iBGP full-mesh VPNv4 PE; Northwind CE; Transit-A + logical Melbourne IXP attachment |
-| GEL-PE1 (IOL-L3) | 10.0.0.5/32 | 10.255.191.15/24 | Dell/PC2 regional-line midpoint between ADL and MEL-PE1 |
-| ADL-PE1 (IOL-L3) | 10.0.0.6/32 | 10.255.191.17/24 | Dell/PC2 regional-line endpoint |
+| Aurora-P / MEL-P (IOS-XRv) | 10.0.0.1/32 | 10.255.191.11/24 | IS-IS L2 / LDP only (no BGP) |
+| Aurora-PE-1 / MEL-PE1 (IOS-XRv) | 10.0.0.2/32 | 10.255.191.12/24 | iBGP full-mesh VPNv4 PE; Northwind CE; Transit-A + logical Melbourne IXP attachment |
+| GEL-PE1 (IOS-XRv) | 10.0.0.5/32 | 10.255.191.15/24 | Dell/PC2 regional-line midpoint between ADL and MEL-PE1 |
+| ADL-PE1 (IOS-XRv) | 10.0.0.6/32 | 10.255.191.17/24 | Dell/PC2 regional-line endpoint |
 | Northwind CE (FortiGate) | 10.0.1.1/32 | DHCP from PE-1 link | eBGP to PE-1, **AS 64512 (private customer AS — default model)** |
 | Spare CE (IOSv, optional) | 10.0.1.2/32 | DHCP from ADL link | optional eBGP to ADL-PE1, AS 64513 (or AS 64502 in the BYO-AS scenario) |
 | Helix LAN switch (Aruba CX) | n/a (L2) | 10.255.191.16/24 | Local access-switching practice; Region B owns the Brisbane PE attachment |
@@ -347,13 +348,13 @@ Aurora mock public/PI block: `203.0.113.0/25` (TEST-NET-3). Customer block `203.
 | --- | --- | --- |
 | IGP | **IS-IS L2 wide-metrics** | Single area; `metric-style wide`; loopbacks announced into IS-IS for LDP and BGP next-hop reachability. |
 | Label distribution | **LDP** (not SR-MPLS) | LDP transport = Lo0 (`mpls ldp router-id Loopback0 force`). SR-MPLS is a later iteration. |
-| Backbone overlay | **iBGP full mesh** among MEL-PE1, GEL-PE1, and ADL-PE1 (3 sessions) | **VPNv4 address family** (`no bgp default ipv4-unicast`; `address-family vpnv4`). No RR at this size. |
+| Backbone overlay | **iBGP full mesh** among MEL-PE1, GEL-PE1, and ADL-PE1 (3 sessions) | **Two address-families: `vpnv4 unicast` (L3VPN) + `ipv4 unicast` (global Internet table), with `next-hop-self` on the edge PEs.** The `ipv4 unicast` AF is **required** so the transit default propagates between PEs (§5.1a). No RR at this size. On IOS-XR each AF is enabled explicitly per neighbor (there is no `no bgp default ipv4-unicast`). |
 | PE-CE | **eBGP** (Northwind, optional spare CE); **local access VLAN practice** (Helix LAN) | eBGP keepalive 30 / holdtime 90 (default). |
 | Internet edge | **eBGP** to transits (global table) + **eBGP** to IXP route server | Default route from transits; IXP for specific peer prefixes. Policy §5.1; RPKI/ROV §5.2. |
 | L3VPN | **VRF + MP-BGP VPNv4** | Validation VRF `CUST-A` (§5.3); tenant VRFs Northwind (MEL-PE1) and later Region B Helix/BNE. |
 | Authentication | **None in v2.5** | TCP-AO / MD5 deferred per ADR-002 §9.6. |
 | Address family | **IPv4 + IPv6 dual-stack** | Both AFI/SAFI on backbone, PE-CE, Internet edge. Build Phase B layers v6 after v4. |
-| RPKI / ROV | **Routinator (RP) + SLURM lab VRPs + RPKI-RTR; ROV-enforce at the edge** | First IOS-XR enforcer `SYD-PE1` in Region B; local IOL ingress can enforce later. |
+| RPKI / ROV | **Routinator (RP) + SLURM lab VRPs + RPKI-RTR; ROV-enforce at the edge** | Enforced from **C1 on both transit sessions (Transit-A@MEL-PE1, Transit-B@ADL-PE1)** + Region B `SYD-PE1` — all IOS-XRv. §5.2. |
 | Tenant services | **VRF per tenant** on each PE that hosts the tenant | Northwind VRF on MEL-PE1; Helix moves with BNE-PE1 in Region B. |
 
 ### 5.1 Internet-edge BGP policy
@@ -374,6 +375,31 @@ Applied on MEL-PE1 (Transit-A + logical IXP attachment) and ADL-PE1 (Transit-B);
 
 LOCAL_PREF hierarchy: **IXP (300) > Transit-A (200) > Transit-B (100)**. RPKI-Invalid routes are dropped *before* best-path runs.
 
+#### 5.1a Transit default propagation (failover correctness — fixed 2026-06-24)
+
+The primary/backup failover only works if **both** transit defaults can be compared in one
+BGP RIB. The transit `0.0.0.0/0` is learned via eBGP into the **global IPv4-unicast** table,
+but the backup (Transit-B) terminates on a *different* PE (ADL-PE1) than the primary
+(Transit-A on MEL-PE1). A **VPNv4-only iBGP mesh therefore never carries the default between
+PEs**, so LOCAL_PREF can never arbitrate and killing Transit-A leaves MEL-PE1 (and Northwind
+behind it) with no default. Fix:
+
+- Activate **`address-family ipv4 unicast` on every iBGP session** (in addition to `vpnv4
+  unicast`), with **`next-hop-self`** on the transit-edge PEs (MEL-PE1, ADL-PE1) so the
+  default's next-hop is a reachable loopback.
+- Then MEL-PE1 also learns ADL-PE1's Transit-B default (LP 100) and vice-versa; on Transit-A
+  shut, LOCAL_PREF elects Transit-B and the default reconverges via ADL-PE1.
+- **Region B depends on this too:** the inter-region eBGP (64496↔65002) — terminated on the
+  Region A ASBR / border `MEL-PE1` and the Region B ASBR (`DC-P-R1`) — re-advertises this
+  global default to Region B, so Region B's Internet egress also requires
+  the IPv4-unicast activation (mirrored in `ops/region-b-cml/addressing.md` §7).
+- Keep tenant routes in `vpnv4`; the `ipv4 unicast` mesh carries **only** the default +
+  Internet/mock-PI prefixes (outbound policy), not the full customer VRF tables.
+
+> **IOS-XR (deployed PEs):** under `router bgp 64496` add `address-family ipv4 unicast` and,
+> per iBGP neighbor, `address-family ipv4 unicast` + `next-hop-self`; **commit** (two-stage).
+> XR has no `no bgp default ipv4-unicast` — address-families are explicit per neighbor.
+
 ### 5.2 RPKI / ROV (lab, via Routinator + SLURM)
 
 Real route-origin-validation without paying an RIR. Build Phase C — after the IPv4+IPv6 BGP fabric (§6 Phases A/B) is converged.
@@ -382,7 +408,7 @@ Real route-origin-validation without paying an RIR. Build Phase C — after the 
 | --- | --- | --- |
 | **Routinator** (NLnet Labs) | RPKI validator / Relying Party — produces VRPs, serves RPKI-RTR (RFC 8210, TCP 3323) | `rpki-rp1` (docker on **PC1**) |
 | **SLURM** (RFC 8416) | local exceptions — `locallyAddedAssertions` mint VRPs for doc prefixes (no real ROAs exist) | config on `rpki-rp1` |
-| **ROV enforcer** | router as RTR client — classifies Valid/Invalid/NotFound, applies policy | `SYD-PE1` / `Aurora-PE-3` (IOS-XRv) first in Region B; local IOL ingress later |
+| **ROV enforcer** | router as RTR client — classifies Valid/Invalid/NotFound, applies policy | **Transit-A@MEL-PE1, Transit-B@ADL-PE1, and `SYD-PE1` (all IOS-XRv) — enforced together from Phase C1** |
 
 **SLURM VRP set:**
 
@@ -393,14 +419,14 @@ Real route-origin-validation without paying an RIR. Build Phase C — after the 
 | `198.51.100.128/25` + `2001:db8:e0::/48` | 64501 (eyeball) | Valid |
 | `192.0.2.0/24` slices | (intentionally **no** VRP) | NotFound |
 
-**Enforcement is phased; design target = ROV at *every* eBGP ingress:**
-- **Phase C1 — XR-only.** Enforce on Region B `SYD-PE1` / `Aurora-PE-3` (IOS-XR, mature RTR/ROV); prove Valid/Invalid/NotFound first.
-- **Phase C2 — FRR reference enforcer** for the IXP side. FRR's `rpki` module is **confirmed present** (`librtr.so` in `frrouting/frr:latest`).
-- **Phase C3 — all eBGP ingress.** Enforce on Transit-A@MEL-PE1, Transit-B@ADL-PE1, and IXP ingress. **IOL-L3 (IOS) supports BGP origin-validation** (RTR + route-map `match rpki`), so local Region A ingress can enforce — the all-Cisco backbone makes this uniform (no mixed-vendor gap to work around, unlike the prior SR OS plan).
+**Enforcement is phased; design target = ROV at *every* eBGP ingress. Reordered 2026-06-24 so the real upstreams are validated from day one (the transit ingress is the point that matters most, not the last to be done):**
+- **Phase C1 — transit ingress first.** Enforce ROV on **Transit-A@MEL-PE1 and Transit-B@ADL-PE1** alongside Region B `SYD-PE1`. All three PEs are IOS-XRv, which has mature RPKI-RTR + origin-validation (`router bgp` → `rpki server <addr>` + a `route-policy` matching `validation-state is invalid` → drop). Prove Valid/Invalid/NotFound **on the transit sessions**, not only on SYD-PE1.
+- **Phase C2 — IXP ingress.** FRR reference enforcer for the IXP route-server side; FRR's `rpki` module is **confirmed present** (`librtr.so` in `frrouting/frr:latest`).
+- **Phase C3 — sweep.** Confirm ROV on any remaining eBGP ingress — the optional BYO-AS customer (AS 64502) and the IXP content/eyeball sessions once the Docker offload is bridged.
 
-> **Enforcement gap to mind (HIGH).** Until C3, local Region A ingress points (Transit-A on MEL-PE1, Transit-B on ADL-PE1, and later IXP ingress) accept routes without ROV. Keep the C1 demo honest by introducing the forged-Invalid only via the Region B SYD-PE1-facing session, or enforce on MEL-PE1/ADL-PE1 early.
+> **Gap CLOSED (was HIGH).** The earlier ordering deferred local transit ingress to a final C3, leaving Transit-A@MEL-PE1 and Transit-B@ADL-PE1 accepting routes with no origin validation — directly contradicting the §5.1 "reject RPKI-invalid at the edge" rule. With C1 now enforcing on **both transit sessions from the start**, the production upstream ingress points validate origins from day one.
 
-**Test matrix** (for C1, introduce the Invalid via Region B SYD-PE1 only):
+**Test matrix** (C1 — introduce the forged-Invalid on a **transit session** or SYD-PE1; it must be rejected at every enforcing ingress):
 
 | State | Setup | Expected on enforcer |
 | --- | --- | --- |
@@ -415,6 +441,28 @@ Before tenant VRFs, prove the MPLS-L3VPN data path end to end with a minimal tes
 - **VRF** `CUST-A`, `rd 64496:100`, `route-target import/export 64496:100`, on MEL-PE1 and GEL-PE1.
 - A test interface (or `Loopback100`) in `CUST-A` on each: MEL-PE1 `172.16.100.1/32`, GEL-PE1 `172.16.100.2/32`; `redistribute connected` into `address-family ipv4 vrf CUST-A`.
 - **Proof:** `show bgp vpnv4 unicast all` on each PE shows the *other* PE's VRF prefix with a VPN label; `ping vrf CUST-A 172.16.100.2 source 172.16.100.1` from MEL-PE1 succeeds — traffic rides LDP transport + the VPNv4 service label across the local line. This is the canonical "L3VPN works" gate (§7) before any tenant service is wired.
+
+### 5.4 Transit-edge hardening (per Transit-A / Transit-B session)
+
+Transit-scoped requirements — **not** the blanket "auth deferred" of §9. Apply to both eBGP
+sessions (to transit-a-csr AS 64497 and transit-b-iol AS 64498):
+
+| Control | Setting | Why |
+| --- | --- | --- |
+| **Session auth** | **TCP-AO** key-chain (MD5 only if a peer lacks AO) | resist TCP-RST injection / session hijack at the upstream border |
+| **Fast failover** | **single-hop BFD** (~300 ms × 3) + BGP `fall-over bfd` | detect a dead transit in <1 s vs the 90 s holdtime — §5.1a failover is only as fast as detection |
+| **Spoof protection** | **GTSM** `ttl-security hops 1` | drop spoofed multi-hop packets at the eBGP border |
+| **Patch resilience** | **BGP graceful-restart** | forwarding continues while a transit restarts during a patch window (§8.8) |
+| **Prefix safety** | **`maximum-prefix`** IPv4 **1000** (warn 75%, restart 5 min), IPv6 **200** (warn 75%); IXP sessions warning-only | survive a misconfigured/leaking upstream without a hard drop |
+| **Origin validation** | RPKI ROV from Phase **C1** (drop `invalid`) — §5.2 | reject origin hijacks at the real upstream ingress |
+| **Inbound sanitation** | full bogon/martian (**separate v4 and v6 lists**), RFC 8212 **default-deny** policy, AS-path sanity (drop private ASN in path, length cap), reject default/mock-PI from peers | edge hygiene; no implicit accept |
+| **Visibility** | **`log neighbor-changes`** + syslog → PC1 (Wazuh); prefix-count + max-prefix-threshold alarms | every failover/leak yields operational evidence (the ops-plan deliverable) |
+| **Dual-stack parity** | mirror **all** of the above + the §5.1 LOCAL_PREF / no-leak policy for `::/0` and the v6 doc prefixes | v6 must not be a soft underbelly |
+
+IOS-XR (deployed PEs): TCP-AO via `key chain` + neighbor `ao`; BFD via `bfd
+minimum-interval`/`multiplier` + neighbor `bfd fast-detect`; GTSM via `ttl-security`; GR via
+`bgp graceful-restart`; ROV via `rpki server` + `route-policy … validation-state is invalid →
+drop`. The transit nodes themselves (IOS-XE CSR1000v / IOL-XE) use the IOS-XE equivalents.
 
 ## 6. Bring-up procedure (staggered waves per ADR-002 §3.9.4)
 
@@ -443,7 +491,7 @@ POST /v2/projects/{ops-lab}/nodes/{GEL-PE1}/start
 
 ### Wave 2 — Adelaide regional PE (~3 min)
 
-Nodes: `ADL-PE1` (IOL-L3). (Optional `region-a-ce-spare` IOSv is on-demand.)
+Nodes: `ADL-PE1` (IOS-XRv). (Optional `region-a-ce-spare` IOSv is on-demand.)
 
 ```
 POST /v2/projects/{ops-lab}/nodes/{ADL-PE1}/start
@@ -479,9 +527,11 @@ POST /v2/projects/{ops-lab}/nodes/{transit-b-iol}/start
 ```
 
 **Verify:**
-- PE-1: `show bgp ipv4 unicast neighbors 10.255.2.1` → Transit-A Established; `show ip route 0.0.0.0` → default via Transit-A (LOCAL_PREF 200).
-- ADL-PE1: `show bgp ipv4 unicast neighbors 10.255.2.5` → Transit-B Established; default present (backup, LOCAL_PREF 100).
-- Transit failover: shut Transit-A on MEL-PE1 → `show ip route 0.0.0.0` on local PEs shows backup default via ADL-PE1 / Transit-B.
+  (PE side = **IOS-XR** `show route`/`show bgp`; transit side = IOS-XE on the CSR/IOL-XE)
+- MEL-PE1 (XR): `show bgp ipv4 unicast neighbors 10.255.2.1` → Transit-A Established; `show route 0.0.0.0/0` → default via Transit-A (LP 200).
+- ADL-PE1 (XR): `show bgp ipv4 unicast neighbors 10.255.2.5` → Transit-B Established; `show route 0.0.0.0/0` → its Transit-B default (LP 100).
+- **iBGP propagation (the §5.1a fix):** on MEL-PE1 `show bgp ipv4 unicast 0.0.0.0/0` shows **both** the local Transit-A default (LP 200) **and** ADL-PE1's Transit-B default (LP 100, learned via iBGP, next-hop = ADL Lo0). If only one appears, the `ipv4 unicast` AF / `next-hop-self` is missing.
+- **Transit failover:** shut Transit-A on MEL-PE1 → `show route 0.0.0.0/0` on MEL-PE1 reconverges to Transit-B via ADL-PE1 (and the Region B ASBR still holds a default over the inter-region eBGP).
 - IXP route-server proof waits for the Region B/PC1 Docker offload (`ixp-rs1`, `ixp-content1`, `ixp-eyeball1`).
 
 ### Wave 4 — Tenant workload containers (Region B/PC1 offload)
@@ -508,10 +558,10 @@ Verify `docker ps` → 8 Running on the Region B/PC1 Docker host; `iperf3`/`curl
 
 | Node | Command | Expected |
 | --- | --- | --- |
-| Aurora-P (IOL) | `show isis neighbors` | MEL-PE1 adjacency Up |
-| Aurora-P (IOL) | `show mpls ldp neighbor` | MEL-PE1 LDP session Operational |
-| MEL-PE1/GEL-PE1/ADL-PE1 (IOL) | `show isis neighbors` / `show mpls ldp neighbor` | Local line adjacencies + LDP Up |
-| MEL-PE1/GEL-PE1/ADL-PE1 (IOL) | `show bgp vpnv4 unicast all summary` | Local PE iBGP neighbours Established; VPNv4 prefixes > 0 |
+| Aurora-P (IOS-XR) | `show isis adjacency` | MEL-PE1 adjacency Up |
+| Aurora-P (IOS-XR) | `show mpls ldp neighbor` | MEL-PE1 LDP session Operational |
+| MEL-PE1/GEL-PE1/ADL-PE1 (IOS-XR) | `show isis adjacency` / `show mpls ldp neighbor` | Local line adjacencies + LDP Up |
+| MEL-PE1/GEL-PE1/ADL-PE1 (IOS-XR) | `show bgp vpnv4 unicast summary` + `show bgp ipv4 unicast summary` | iBGP neighbours Established (both AFs); VPNv4 prefixes > 0 and the default present in ipv4-unicast |
 | **L3VPN proof (PE-1)** | `ping vrf CUST-A 172.16.100.2 source 172.16.100.1` | success — VPNv4 + LDP label path across P |
 | Region B SYD-PE1 (IOS-XR) | `show isis adjacency` / `show bgp vpnv4 unicast summary` | Region B edge Up once CML topology is built |
 | Northwind CE (FortiGate) | `get router info bgp summary` | eBGP to PE-1 Established |
@@ -520,8 +570,8 @@ Verify `docker ps` → 8 Running on the Region B/PC1 Docker host; `iperf3`/`curl
 | Transit-A (PE-1 view) | `show bgp ipv4 unicast neighbors 10.255.2.1` | Established; `0.0.0.0/0` received, LOCAL_PREF 200 |
 | Transit-B (ADL-PE1 view) | `show bgp ipv4 unicast neighbors 10.255.2.5` | Established; `0.0.0.0/0` received, LOCAL_PREF 100 |
 | IXP route server (`ixp-rs1`) | `vtysh -c "show bgp summary"` on Region B/PC1 Docker host | 4 neighbours Established once offload is built |
-| IXP route preference (PE-1) | `show ip route 198.51.100.0` | next-hop via `ixp-fabric` / RS once offload is built (LOCAL_PREF 300) |
-| Transit failover | shut Transit-A on PE-1 → `show ip route 0.0.0.0` | default reconverges to Transit-B via ADL-PE1 |
+| IXP route preference (PE-1) | `show route 198.51.100.0` | next-hop via `ixp-fabric` / RS once offload is built (LOCAL_PREF 300) |
+| Transit failover | shut Transit-A on PE-1 → `show route 0.0.0.0/0` | default reconverges to Transit-B via ADL-PE1 (needs §5.1a ipv4-unicast iBGP) |
 | Egress reachability | from a CE or attached tenant workload: `ping <mock Internet /28 .1>` | succeeds via Transit-A, then via Transit-B during failover |
 | IPv6 dual-stack (SYD-PE1 in Region B) | `show bgp ipv6 unicast summary` / `ping6 2001:db8:a::1` | v6 sessions Established; v6 egress works |
 | Routinator (`rpki-rp1`) | `routinator vrps \| wc -l` | VRP count > 0 |
@@ -533,13 +583,13 @@ Verify `docker ps` → 8 Running on the Region B/PC1 Docker host; `iperf3`/`curl
 ### 8.1 Daily verify (no changes)
 
 ```
-curl http://192.168.137.2:3080/v2/projects/{ops-lab}/nodes | jq '.[] | {name, status}'
+curl http://192.168.137.1:3080/v2/projects/{ops-lab}/nodes | jq '.[] | {name, status}'
 # All nodes "started"; then run §7 smoke (~5 min)
 ```
 
 ### 8.2 Update a node — no service impact (GEL-PE1 example)
 
-Config-only change (no template change, no NOS upgrade): console/SSH to the node → `conf t` → edit → `end` → `write memory` → §7 smoke for that node. iBGP and IS-IS absorb the change; no restart.
+Config-only change (no template/image change): SSH to the node. **IOS-XR PEs** (MEL-P, MEL-PE1, GEL-PE1, ADL-PE1): `configure` → edit → `commit` (two-stage, durable — **no `write memory`** on XR). **IOS-XE transits** (transit-a-csr, transit-b-iol): `conf t` → edit → `end` → `write memory`. Then §7 smoke for that node. iBGP and IS-IS absorb the change; no restart.
 
 ### 8.3 Update a node — with service impact (PE-1 example, template/NOS change)
 
@@ -569,13 +619,26 @@ Forward-wave order per §6. Do not skip the convergence gates.
 - IOL nodes persist startup-config in their NVRAM file; QEMU disks persist across stop/start.
 - **Backup target**: rsync `/opt/gns3/projects/<ops-lab>/` to Dell `E:\aurora-backups\` after major changes; per-node config files (§10) are the source of truth.
 
+### 8.8 Transit-node patching (CSR1000v / IOL-XE — IOS-XE upgrade under failover)
+
+The transit nodes are the lab's IOS-XE patch targets (`telstra-ops-practice-plan.md` Day-1).
+Patch **one transit at a time** under the primary/backup design so Internet egress never drops.
+Full MOP: `ops/access/mops/2026-06-24-region-a-transit-patching.md`. Shape:
+
+1. PSIRT / upgrade-path check for the target version; stage the image; verify md5.
+2. **Drain** the transit being patched (shut its eBGP or raise holdtime) → confirm the default
+   moves to the other transit (**requires §5.1a failover working first**).
+3. Upgrade in **install mode**; reload; verify version.
+4. Restore the session; confirm eBGP Established, default at the correct LOCAL_PREF, ROV active, BFD up.
+5. §7 smoke; capture operational evidence; then repeat for the other transit.
+
 ## 9. What's NOT in v2.5 (deferred / out of scope)
 
 - **Singleton heavyweights** (FTDv, Cat9kv, FMC, XRv9000, PA-VM 11). On-demand per §8.6; never in the running fabric.
 - **Region B (DevNet CML)** — Cisco **+ Juniper** (vSRX/vJunos via BYOI). ADR-002 §3.2 + ADR-003 §2.3–2.4.
 - **Region C (cloud edge)** — DigitalOcean containerlab (cRPD + FRR + Routinator + public-IP route-server). ADR-003 §2.4.
-- **Inter-region BGP confederation** (Region A ADL/GEL/MEL-PE1/MEL-P line -> Region B over openconnect-on-PC1, with MEL-P as the local handoff). Later phase once Region B is up.
-- **Authentication** (TCP-AO/MD5). Deferred per ADR-002 §9.6.
+- **Inter-region BGP** (Region A ADL/GEL/MEL-PE1/MEL-P line -> Region B over openconnect-on-PC1; **`MEL-PE1` is the inter-region eBGP border / ASBR** — plain eBGP `64496↔65002`, global IPv4 unicast, Option A — terminating to Region B's `DC-P-R1`, with `MEL-P` as the local **transport** handoff). Later phase once Region B is up.
+- **Authentication** (TCP-AO/MD5) on the **backbone/iBGP** sessions remains deferred per ADR-002 §9.6. **Exception: the transit eBGP sessions (Transit-A/Transit-B) get TCP-AO from the start** — see §5.4.
 - **Maple Ridge workload containers** — live with the Region B Maple Ridge CE.
 - **Local Nokia / Juniper PEs** — Nokia archived (ADR-003 §2.2); Juniper (vSRX/vJunos) is Region B + cloud, with **vSRX standalone-local** for practice only (not a Region A core node).
 - **Real public ASNs / registered ROAs / advertising to the real Internet** — doc ASNs + SLURM lab VRPs only.
@@ -587,7 +650,7 @@ Forward-wave order per §6. Do not skip the convergence gates.
 - **`region-a-cisco/ansible/`** — `make region-a-up` (wraps §6 waves), `make smoke` (§7), `make region-a-down` (§8.4).
 - **Helix LAN mode-switch** when Region B comes up (local access-switching practice -> Region B BNE-PE1 service attachment).
 - **Backup / restore drill** — verify §8.7 rsync + GNS3 project import round-trip.
-- ✅ **`region-a-topology.drawio` regen — DONE** (Cisco Region A core). PNG export is deferred until a drawio renderer is available.
+- ✅ **Region A topology — code-generated** by `ops/region-a/diagrams/render_topology.py` → `docs/region-a-topology.svg` + `.png` (single programmatic source; legacy `.drawio`/`_v2.drawio`/`-screenshot.png` retired 2026-06-24; re-run after plan changes so SVG+PNG never drift).
 - ✅ **IOL (IOU) on the Dell GNS3 VM — resolved** (`memory/gns3-nos-boot-quirks.md`); console via `iolcfg.py` socket helper.
 - ✅ **FRR rpki module check — DONE** (`librtr.so` in `frrouting/frr:latest`); deployment target is now Region B/PC1 Docker offload instead of Dell/PC2 GNS3 docker.
 - **RPKI/ROV build (Phase C)** — Routinator + SLURM on PC1; GNS3 Cloud node to `192.168.137.x`; RTR `192.168.137.1:3323`; C1 (Region B SYD-PE1) -> C3 (all ingress).

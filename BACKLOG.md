@@ -62,7 +62,7 @@ National POP overlay: Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Dar
 - [ ] **Instantiate Brisbane and Sydney PEs** — move `BNE-PE1` and `SYD-PE1` into the Region B CML topology; SYD remains the IOS-XR ROV / Region B-C edge.
 - [ ] **Docker offload target** — host FRR IXP peers and tenant workload containers from Region B/PC1 instead of consuming Dell/PC2 GNS3 Docker budget.
 - [ ] **Add Juniper presence** — vSRX/vJunos via CML/BYOI where practical; local vSRX remains standalone practice.
-- [ ] **Inter-region edge** — eBGP/confed from right-side Region A `MEL-P` into PC1 / Region B `SYD-PE1`.
+- [ ] **Inter-region edge** — plain eBGP `64496 ↔ 65002` (global IPv4 unicast, Option A only) from Region A ASBR `MEL-PE1` into PC1 / Region B `DC-P-R1`. Region A's right-side `MEL-P` is the transport handoff only (pure P, IS-IS L2 + LDP, no BGP), not the border. (XRv9000-on-Dell swap DECLINED — resource ceiling, 2026-06-25; Region A border router = MEL-PE1.)
 - [ ] **Maple Ridge enterprise model** — Cat8000v/Cat9kv/NX-OS style enterprise/campus/DC slice in CML.
 - [ ] **Export Region B topology** — persist CML YAML/configs so reservations are reproducible.
 
@@ -93,7 +93,7 @@ Run these one at a time with Region A stopped:
 - [ ] PA-VM 11.0 policy/content/software update workflow.
 - [ ] FortiGate upgrade-path workflow.
 - [ ] Cat9kv campus switching / IOS-XE install-mode workflow.
-- [ ] XRv9000 / Nexus via DevNet where local Dell cannot run them reliably.
+- [ ] XRv9000 / Nexus via DevNet where local Dell cannot run them reliably. (Re-platforming a MEL node to XRv9000 on the Dell GNS3 was DECLINED — 19 GiB / 2-core VM cannot sustain a 16 GB singleton alongside the fabric; 2026-06-25. MEL-PE1 stays IOS-XRv 6.1.3 and remains the Region A inter-region ASBR/border.)
 
 ## Long-Term
 

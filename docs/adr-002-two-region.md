@@ -304,6 +304,8 @@ graph TB
 
 ### 3.3 Interconnect — the region boundary
 
+> **Forward-note (current Cisco build).** In the active Cisco build, Region A's inter-region border / ASBR is **MEL-PE1** (Aurora-PE-1, IOS-XRv 6.1.3), which terminates the inter-region eBGP `64496 ↔ 65002` to Region B's `DC-P-R1` (Option A, plain eBGP, global IPv4 unicast). **MEL-P** is the right-side transport handoff toward the PC1/Region B bridge only — a pure P router (IS-IS L2 + LDP, no BGP), not the border. See `ops/region-b-cml/addressing.md` §7 and ADR-003. The Nokia confederation framing below is historical.
+
 Region A and Region B are connected at L3 over the openconnect VPN tunnel:
 
 ```
@@ -579,6 +581,8 @@ With v1.4 capacity, Region A's default **steady-state fabric** on Dell expands f
 | **Total** | **~18 GB declared / ~9-10 GB actual** | |
 
 Headroom for additional lights (IOSv, vIOS-L2, MikroTik, IOL, ASAv): ~8-10 GB. **Region A is no longer fabric-poor.**
+
+> **Re-cost for the all-Cisco 4×IOS-XRv backbone (ADR-003; added 2026-06-24).** This §3.9.5 table is the historical Nokia-era mix (SR Linux + 2×SR OS + a single XRv). Region A is now **four IOS-XRv 6.1.3 nodes** (MEL-P/MEL-PE1/GEL-PE1/ADL-PE1) at ~3 GB declared / ~1 GB idle each ≈ ~12 GB / ~4 GB, plus the two Internet-edge transits (CSR1000v ~3 GB/~2.5 idle; IOL-XE ~0.5) + FortiGate + Aruba CX ≈ **~10–11 GiB resident**, still inside ~17 GiB usable. RAM is fine; the unmeasured risk is **CPU cold-start** for 4×XRv (heavier to boot than IOL) on the 2-core VM — apply §3.9.4 Rule 2 (staggered waves) + Rule 4 (soak). Canonical re-cost: `region-a-plan.md` §2.5.
 
 A bonus from validating Aruba CX 10.16.1040 natively on Dell: the v1.0 architectural reason for the Helix-LAN-via-GRE-cross-region pattern (§3.1/§3.2.2) was that DevNet CML is Cisco-only and Aruba CX couldn't run there without BYOI. That cross-region GRE remains a useful **MSP demonstration pattern** ("carrier-managed CE in Region B reaching customer-owned LAN in Region A over secure transport"), but it's no longer a workaround for a hosting gap — it's now an explicit architectural choice.
 

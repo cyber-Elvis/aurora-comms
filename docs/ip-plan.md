@@ -4,7 +4,7 @@
 | --- | --- |
 | Document version | 2.5 |
 | Status | Active index; Region A summary mirrors `region-a-plan.md` §4 |
-| Last updated | 2026-06-16 |
+| Last updated | 2026-06-24 |
 
 This file is the cross-region addressing index. The **canonical executable source for Region A** remains `docs/region-a-plan.md` §4. If this summary and Region A disagree, fix this summary or follow `region-a-plan.md`.
 
@@ -15,7 +15,7 @@ Earlier ADR-001 numbering (`AS65100`, `10.1.0.0/16`) is retired for the active l
 | Region | Role | Addressing status |
 | --- | --- | --- |
 | Region A | Local Dell GNS3 Cisco ISP/core fabric: ADL -> GEL -> MEL-PE1 -> MEL-P | Active; values below |
-| Region B | PC1 / DevNet CML Cisco + Juniper extension, including Brisbane and Sydney PEs | Planned; reservation-dependent CML addressing to be recorded when built |
+| Region B | PC1 / DevNet CML Cisco + Juniper extension, including Brisbane and Sydney PEs | **Proposed plan** in `ops/region-b-cml/addressing.md` (2026-06-23) — `10.0.20.0/24` loopbacks, `10.255.20.0/24` core, member-AS `65002`; reservation-assigned mgmt recorded per reservation. Ratify before deploy |
 | Region C | Cloud edge with cRPD/FRR/Routinator | Planned; cloud public/private addressing to be recorded when provisioned |
 
 ## Secure Ring Addressing Model
@@ -58,7 +58,7 @@ Region A/B/C are deployment domains. POP names are the national carrier topology
 | POP | Active / target node | Function |
 | --- | --- | --- |
 | Melbourne | `Aurora-P` (`MEL-P`), `Aurora-PE-1` (`MEL-PE1`) | National core, primary transit, Melbourne IXP, Northwind edge |
-| Sydney | PC1 / Region B target `SYD-PE1` / `Aurora-PE-3` | Logical peer from right-side `MEL-P`; major interconnect, Region B/C handoff, first IOS-XR ROV enforcer |
+| Sydney | PC1 / Region B target `SYD-PE1` / `Aurora-PE-3` | Transport reached via right-side `MEL-P` (the inter-region eBGP border is `MEL-PE1`, not SYD-PE1); major interconnect, Region B/C handoff, first IOS-XR ROV enforcer |
 | Brisbane | Region B target `BNE-PE1` / `Aurora-PE-2` | Regional enterprise edge and Helix services |
 | Geelong | `GEL-PE1` | Dell/PC2 regional-line midpoint, drawn left of `MEL-PE1` |
 | Adelaide | `ADL-PE1` | Dell/PC2 left-side regional-line endpoint and south-central aggregation POP |
@@ -72,10 +72,10 @@ Placement rule: the local line is hosted on Dell/PC2 in the Region A GNS3 projec
 
 | Node | Loopback | Management | Role |
 | --- | --- | --- | --- |
-| `Aurora-P` (`MEL-P`) | `10.0.0.1/32` | `10.255.191.11/24` | Cisco IOL-L3 P router; IS-IS L2 + LDP only |
-| `Aurora-PE-1` (`MEL-PE1`) | `10.0.0.2/32` | `10.255.191.12/24` | Cisco IOL-L3 PE; Northwind, Transit-A, logical Melbourne IXP attachment |
-| `GEL-PE1` | `10.0.0.5/32` | `10.255.191.15/24` | Cisco IOL-L3 PE; Dell/PC2 regional-line midpoint |
-| `ADL-PE1` | `10.0.0.6/32` | `10.255.191.17/24` | Cisco IOL-L3 PE; Dell/PC2 regional-line endpoint and Transit-B backup edge |
+| `Aurora-P` (`MEL-P`) | `10.0.0.1/32` | `10.255.191.11/24` | Cisco IOS-XRv 6.1.3 P router; IS-IS L2 + LDP only |
+| `Aurora-PE-1` (`MEL-PE1`) | `10.0.0.2/32` | `10.255.191.12/24` | Cisco IOS-XRv 6.1.3 PE; Northwind, Transit-A, logical Melbourne IXP attachment |
+| `GEL-PE1` | `10.0.0.5/32` | `10.255.191.15/24` | Cisco IOS-XRv 6.1.3 PE; Dell/PC2 regional-line midpoint |
+| `ADL-PE1` | `10.0.0.6/32` | `10.255.191.17/24` | Cisco IOS-XRv 6.1.3 PE; Dell/PC2 regional-line endpoint and Transit-B backup edge |
 | `northwind-ce` | `10.0.1.1/32` | PE-CE link / DHCP | FortiGate CE, default private AS model |
 | `region-a-ce-spare` | `10.0.1.2/32` | PE-CE link / DHCP | Optional IOSv CE |
 | `helix-lan-sw` | n/a | `10.255.191.16/24` | Aruba CX L2/L3 access practice switch |
@@ -94,6 +94,23 @@ These are reserved for future expansion and should be added to configs only when
 
 Region B CML management addressing is TBD until the DevNet reservation topology is created. The national POP aliases are reserved here so they are not reintroduced into Region A by mistake.
 
+> **PROPOSED (2026-06-23, ratify before deploy):** the full Region B build plan lives in
+> `ops/region-b-cml/addressing.md`. Headline allocations, kept disjoint from Region A:
+> carrier loopbacks `10.0.20.0/24`, CE loopbacks `10.0.21.0/24`, backbone /31s
+> `10.255.20.0/24`, PE-CE /30s `10.255.21.0/24`; IS-IS area `49.0002`; member-AS `65002`
+> under confederation `64496` (inter-region eBGP to Region A `64496` until Region A is
+> later migrated to member-AS `65001`). Tenants reuse carrier RD/RT `64496:1`
+> (Maple Ridge) / `64496:2` (Helix). When instantiated, replace this note with the
+> ratified values mirrored from `addressing.md`.
+
+> **Inter-region border (canonical):** the Region A-side inter-region border / ASBR is
+> `MEL-PE1` (`Aurora-PE-1`, Lo0 `10.0.0.2`). It terminates the inter-region eBGP
+> `64496 ↔ 65002` to Region B's `DC-P-R1` (Option A only — global IPv4 unicast, no MPLS
+> label transfer across the openconnect + MASQUERADE NAT). `MEL-P` is a pure P router and
+> serves only as the right-side transport handoff toward PC1 / Region B; it is not the
+> BGP border. `SYD-PE1` is a Region B node (Sydney edge, first IOS-XR ROV enforcer) and is
+> not the Region A end of the A↔B boundary.
+
 | Planned Region B node | Carrier loopback reservation | Management | Role |
 | --- | --- | --- | --- |
 | `BNE-PE1` / `Aurora-PE-2` | TBD in Region B build | TBD | Brisbane / Helix enterprise edge |
@@ -104,7 +121,7 @@ Management reachability is via the PC1/Dell internet-carrying Ethernet segment:
 | Endpoint | Address |
 | --- | --- |
 | PC1 Ethernet / gateway / Routinator host | `192.168.137.1` |
-| Dell GNS3 controller | `192.168.137.2:3080` |
+| Dell GNS3 controller | `192.168.137.1:3080` |
 | GNS3 VM Tailscale | `100.118.0.46` |
 | GNS3 management TAP | `10.255.191.1/24` |
 
@@ -131,7 +148,7 @@ Region A uses RFC 5398 documentation ASNs for lab safety. Nothing is advertised 
 | `Aurora-P` ↔ `Aurora-PE-1` | `10.255.0.0/31` | `2001:db8:ffff::/127` | Backbone link |
 | `Aurora-PE-1` (`MEL-PE1`) ↔ `GEL-PE1` | `10.255.0.6/31` | next /127 | Dell/PC2 regional-line link |
 | `GEL-PE1` ↔ `ADL-PE1` | `10.255.0.8/31` | next /127 | Dell/PC2 regional-line link |
-| `MEL-P` ↔ PC1 / Region B `SYD-PE1` | TBD in Region B build | TBD | Logical inter-region handoff; not a local Dell/PC2 node link yet |
+| `MEL-P` ↔ PC1 / Region B | TBD in Region B build | TBD | Transport handoff only; not a local Dell/PC2 node link yet. The inter-region eBGP border itself is `MEL-PE1` (`64496 ↔ 65002` to Region B `DC-P-R1`) — `MEL-P` is pure transport, not the ASBR |
 | PE-CE links | `10.255.1.0/24` carved as /30s | matching /127s | Customer/enterprise edge |
 | PE-1 ↔ Transit-A | `10.255.2.0/30` | `2001:db8:ffff:2::/127` | Primary default |
 | ADL-PE1 ↔ Transit-B | `10.255.2.4/30` | `2001:db8:ffff:2::2/127` | Region A local backup default |

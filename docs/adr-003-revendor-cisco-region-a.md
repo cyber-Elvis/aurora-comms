@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Accepted |
-| Version | 1.4 |
+| Version | 1.5 |
 | Date | 2026-06-15 |
 | Supersedes (in part) | ADR-002 §3.1 — the Region A *vendor stack* (Nokia SR Linux + SR OS core). The two-region *structure*, VPN boundary, tenant model, and Dell capability envelope in ADR-002 still stand. |
 | Relates | ADR-001 (lab-architecture.md), ADR-002 (two-region), ADR-004 (secure rings and host isolation), `region-a-plan.md` v2.5, `telstra-ops-practice-plan.md` |
@@ -30,12 +30,12 @@ The user also reframed the sequencing explicitly: **build the network first, the
 ### 2.0 National POP model retained and expanded
 The Cisco re-vendor does **not** remove the Australian carrier geography. **Region A/B/C are deployment domains** (where the lab runs); **Melbourne, Sydney, Brisbane, Geelong, Adelaide, Perth, Darwin, and Tasmania/Hobart are the POP topology** (what the carrier represents).
 
-The active build maps the lightweight Cisco core onto the national POP model. **v1.4 placement correction plus Internet-edge correction:** the permanent Dell/PC2 Region A canvas is drawn geographically as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. `MEL-P` sits on the right as the local core and logical handoff toward PC1 / Region B `SYD-PE1`. Brisbane and Sydney move to Region B CML planning; SYD keeps the IOS-XRv VPNv4/ROV/Region B-C edge role there. Both simulated upstream transits stay in Region A: Transit-A on `MEL-PE1`, Transit-B on `ADL-PE1`. Docker-dependent FRR/tenant workload nodes can be offloaded to Region B/PC1.
+The active build maps the lightweight Cisco core onto the national POP model. **v1.4 placement correction plus Internet-edge correction:** the permanent Dell/PC2 Region A canvas is drawn geographically as `ADL-PE1 -> GEL-PE1 -> MEL-PE1 -> MEL-P`. `MEL-P` sits on the right as the local core and the right-side **transport handoff** toward PC1 / Region B. **The Region A↔B inter-region border/ASBR is `MEL-PE1`** — it terminates the inter-region eBGP `64496 ↔ 65002` to Region B's `DC-P-R1` (global IPv4-unicast, Option A). `MEL-P` is a pure P router (IS-IS L2 + LDP, no BGP) and is the transport handoff only, *not* the border. Brisbane and Sydney move to Region B CML planning; `SYD-PE1` is a Region B node (it keeps the IOS-XRv VPNv4/ROV/Region B-C edge role there) and is **not** the Region A end of the inter-region boundary. Both simulated upstream transits stay in Region A: Transit-A on `MEL-PE1`, Transit-B on `ADL-PE1`. Docker-dependent FRR/tenant workload nodes can be offloaded to Region B/PC1.
 
 | POP | Active / target role |
 | --- | --- |
-| Melbourne | `Aurora-P` (`MEL-P`) + `Aurora-PE-1` (`MEL-PE1`); `MEL-PE1` stays with the left-side regional line while right-side `MEL-P` is the core/handoff |
-| Sydney | PC1 / Region B target `Aurora-PE-3` (`SYD-PE1`), logical peer from `MEL-P`, Region B/C interconnect, first RPKI/ROV enforcer |
+| Melbourne | `Aurora-P` (`MEL-P`) + `Aurora-PE-1` (`MEL-PE1`); `MEL-PE1` is the **Region A↔B inter-region border/ASBR** (terminates eBGP `64496 ↔ 65002` to Region B `DC-P-R1`), while right-side `MEL-P` is the pure-P **transport handoff only** (IS-IS L2 + LDP, no BGP) |
+| Sydney | Region B node `Aurora-PE-3` (`SYD-PE1`) on PC1 / DevNet CML; Region B/C interconnect, first RPKI/ROV enforcer — **not** the Region A end of the A↔B border |
 | Brisbane | Region B target `Aurora-PE-2` (`BNE-PE1`), Helix/customer regional edge |
 | Geelong | Dell/PC2 Region A `GEL-PE1`, midpoint of the ADL-GEL-MEL-PE1-MEL-P line |
 | Adelaide | Dell/PC2 Region A `ADL-PE1`, leftmost endpoint of the ADL-GEL-MEL-PE1-MEL-P line and local Transit-B backup edge |
@@ -54,6 +54,8 @@ Region A's P/PE backbone moves from Nokia to Cisco:
 | ADL-PE1 (regional L3VPN PE) | planned POP | **IOL-AdvEnterprise-L3** (full MPLS L3VPN) |
 | Aurora-PE-2 / BNE-PE1 | SR OS 13.0R4 / prior PE-2 concept | **Moved to Region B planning** |
 | Aurora-PE-3 / SYD-PE1 (interop PE, ROV enforcer) | IOS-XRv 6.1.3 | **Moved to Region B planning** as IOS-XRv |
+
+**Inter-region border:** `MEL-PE1` (Aurora-PE-1) is the designated Region A↔B border router / ASBR — it terminates the inter-region eBGP `64496 ↔ 65002` to Region B's `DC-P-R1` (Option A, global IPv4-unicast). `MEL-P` (Aurora-P) is a pure P router and is the right-side transport handoff toward PC1 / Region B only, not the BGP border. (Re-platforming a MEL node to an XRv9000 on the Dell GNS3 was evaluated and declined — the 19 GiB / 2-core VM cannot sustain a 16 GB singleton alongside the fabric; `MEL-PE1` stays IOS-XRv 6.1.3.)
 
 IOL-AdvEnterprise-L3 is the standard light MPLS-L3VPN lab platform (~0.5 GB each, runs the whole core together with headroom) and is **resolved/working** on this box. The Internet Edge, Customer Edge, IXP, and RPKI tiers keep their logical roles, with the current placement being: Transit-A and Transit-B local to Region A, and Docker-dependent FRR / workload nodes offloadable to Region B/PC1.
 
@@ -105,13 +107,14 @@ Discipline: everything cloud is **built as code** (containerlab YAML / cloud-ini
 - `region-a-plan.md` → **v2.5** (Dell/PC2 ADL-GEL-MEL-PE1-MEL-P geographic canvas; BNE/SYD moved to Region B; eight-POP national overlay preserved; Nokia archive note).
 - `adr-002-two-region.md` → §3.1 marked superseded-in-part by this ADR.
 - `aurora-deployment-status.md`, `telstra-ops-practice-plan.md`, `devnet-resource-strategy.md`, `design.md`, `lab-architecture.md` → re-vendor/placement corrections + cross-refs.
-- `docs/region-a-topology.drawio` → refreshed to the Cisco Region A core. PNG export is deferred until a drawio renderer is available.
+- `docs/region-a-topology.svg`/`.png` → **regenerated 2026-06-24 from `ops/region-a/diagrams/render_topology.py`** (single programmatic source; the legacy `.drawio`/`_v2`/`-screenshot.png` were retired). Reflects the §5.1a iBGP IPv4-unicast failover fix, ROV-C1 at the transit ingress, §5.4 hardening, controller `192.168.137.1:3080`, and the STAGED transits.
 - `docs/adr-004-secure-rings-host-isolation.md` + `ops/access/` → secure access, per-agent automation, management/data-plane rings, and host-isolation validation.
 
 ## 4. Operating model (how we build/change)
 Claude **drives** the device console (types commands); the user **coaches** — sets up devices, provides command sequences + the MOP/operational-evidence template, checks the work, and verifies via the GNS3 REST API (staying off the console to avoid single-client collisions). Changes are **MOP-driven** with operational evidence captured (Change ID, risk/impact, backout, pre-check, implementation log, post-check, rollback, closure). See `memory/lab-coaching-workflow.md` and `telstra-ops-practice-plan.md`.
 
 ## 5. Revision history
+- **v1.5 (2026-06-25)** - inter-region border designation: `MEL-PE1` is the Region A↔B border/ASBR (terminates eBGP `64496 ↔ 65002` to Region B `DC-P-R1`, Option A); `MEL-P` is the transport handoff only (pure P, no BGP); `SYD-PE1` is a Region B node, not the Region A end of the boundary. Re-platforming a MEL node to an XRv9000 on the Dell GNS3 evaluated and declined (RAM/core ceiling) — MEL-PE1 stays IOS-XRv 6.1.3.
 - **v1.4 (2026-06-15)** - geographic canvas alignment: ADL/GEL/MEL-PE1 sit left, MEL-P sits right, and MEL-P is the logical handoff toward PC1 / Region B SYD-PE1.
 - **v1.3 (2026-06-15)** - placement correction: Dell/PC2 Region A is the MEL-GEL-ADL line; Brisbane/Sydney move to Region B CML planning, with SYD retaining the IOS-XRv VPNv4/ROV edge role.
 - **v1.2 (2026-06-14)** - expands the national POP overlay beyond the first four POPs to include Adelaide, Perth, Darwin, and Tasmania/Hobart as planned POPs.
