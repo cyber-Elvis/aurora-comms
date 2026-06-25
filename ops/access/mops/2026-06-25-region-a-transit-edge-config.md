@@ -24,6 +24,7 @@ Execution MOP with the actual device configs. Companion to
 | Aurora AS / Transit-A AS / Transit-B AS | 64496 / 64497 / 64498 |
 | Transit-A link (MEL-PE1 `Gi0/0/0/2` ↔ CSR `Gi2`) | `10.255.2.0/30` — PE `.1`, CSR `.2`; v6 `2001:db8:ffff:2::/127` — PE `::`, CSR `::1` |
 | Transit-B link (ADL-PE1 `Gi0/0/0/1` ↔ IOL `e0/0`) | `10.255.2.4/30` — PE `.5`, IOL `.6`; v6 `2001:db8:ffff:2::2/127` — PE `::2`, IOL `::3` |
+| **Transit mgmt (OOB → MGMT-SW01)** | transit-a-csr `Gi1` = `10.255.191.21/24`; transit-b-iol `e0/1` = `10.255.191.22/24` (mgmt net `10.255.191.0/24`, gw/jump `.1`) |
 | Aurora PI (advertised outward) | `203.0.113.0/25` + `2001:db8:aaaa::/48` (originated on MEL-PE1) |
 | Customer aggregate (advertised when up) | `203.0.113.128/25` + `2001:db8:bbbb::/48` (not yet originated — in the advertise set ready) |
 | Transit-originated "Internet" | `0.0.0.0/0` + `::/0` + 8×/28 from `192.0.2.0/24` + `2001:db8:a::/48` |
@@ -32,6 +33,112 @@ Execution MOP with the actual device configs. Companion to
 > **Pre-checks (read-only, coach):** Stage 0 iBGP mesh Established both AFs on all 3 PEs;
 > Stage 1 nodes up (CSR on `virtio-net-pci`, IOL-XE 17.15). PE transit interfaces currently
 > `Shutdown/unassigned` (MEL-PE1 `Gi0/0/0/2`, ADL-PE1 `Gi0/0/0/1`) — expected.
+
+---
+
+## Stage M — Management bootstrap (secure SSH, do FIRST on each transit)
+
+**Why first:** a deployed node's first step is reachable, *authenticated* management. The
+transits boot blank/console-only, so the path is: connect to the **telnet console once**
+(PC3 Termius → `100.118.0.46:5009` transit-a / `:5013` transit-b — the only way into a node
+with no SSH yet), configure secure SSH below, then switch to the **SSH jump path** for all
+subsequent access:
+
+```
+PC3 Termius --ssh--> gns3@100.118.0.46 --ssh--> labadmin@10.255.191.21   (transit-a-csr)
+                                        \--ssh--> labadmin@10.255.191.22   (transit-b-iol)
+```
+
+After SSH is up, stop using the telnet console — treat it as break-glass only.
+
+### M.1 — transit-a-csr (console 5009) — operator types
+```
+configure terminal
+hostname transit-a-csr
+ip domain name aurora.lab
+!
+interface GigabitEthernet1
+ description MGMT to MGMT-SW01 (OOB management)
+ ip address 10.255.191.21 255.255.255.0
+ no shutdown
+exit
+!
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+username labadmin privilege 15 secret <STRONG-RANDOM-PW>     ! store in vault; not personal
+!
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+ip access-list standard MGMT-SSH
+ permit 10.255.191.0 0.0.0.255
+ deny   any log
+!
+line vty 0 4
+ transport input ssh
+ access-class MGMT-SSH in
+ exec-timeout 15 0
+ login authentication default
+!
+line con 0
+ exec-timeout 15 0
+end
+write memory
+```
+
+### M.2 — transit-b-iol (console 5013) — operator types
+Identical, but the MGMT-SW01-facing interface is **Ethernet0/1** and the IP is **.22**:
+```
+configure terminal
+hostname transit-b-iol
+ip domain name aurora.lab
+!
+interface Ethernet0/1
+ description MGMT to MGMT-SW01 (OOB management)
+ ip address 10.255.191.22 255.255.255.0
+ no shutdown
+exit
+!
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+username labadmin privilege 15 secret <STRONG-RANDOM-PW>
+!
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+ip access-list standard MGMT-SSH
+ permit 10.255.191.0 0.0.0.255
+ deny   any log
+!
+line vty 0 4
+ transport input ssh
+ access-class MGMT-SSH in
+ exec-timeout 15 0
+ login authentication default
+end
+write memory
+```
+
+### M.3 — Verify (coach, read-only via the jump)
+- From the GNS3 jump: `ssh labadmin@10.255.191.21` / `.22` connects (SSHv2 password prompt).
+- On the node: `show ip ssh` → v2 enabled; `show run | include transport input` → `ssh` only (telnet to vty refused); `ping 10.255.191.1` (mgmt gw/jump) succeeds.
+
+**Notes / hardening:**
+- `transport input ssh` + `access-class MGMT-SSH` = SSH only, and only from the mgmt subnet.
+  The GNS3 **console** telnet is separate and unavoidable for the one-time bootstrap — break-glass after.
+- Mgmt is in the **global table** here (matches the XR `MgmtEth` convention). Gold standard =
+  a dedicated **management VRF** (`vrf forwarding Mgmt-intf` + in-VRF `ip ssh`) to fully isolate
+  mgmt from the eBGP data plane — optional follow-up.
+- IOS-XE supports **SSH public-key** auth (`ip ssh pubkey-chain`) — password is the baseline to
+  match the lab; pubkey is a later hardening (mirrors the parked XR key goal).
+- `labadmin` = dedicated break-glass admin (random pw, stored in the vault, not personal). Scoped
+  automation/read-only accounts can follow later, mirroring the XR RBAC tiers.
 
 ---
 
