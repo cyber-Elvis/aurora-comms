@@ -122,8 +122,8 @@ for i,(nm,lbl) in enumerate([("WLH","helix: orthanc·emr·doctor"),("WLN","north
 # ---- edges -----------------------------------------------------------------
 def lbl(x, y, s, color="#475569"): text(x, y, s, size=9, fill=color, anchor="middle")
 # transit eBGP (purple)
-line(*Eb("TB"), *Et("ADL"), color=TRANSIT, sw=2.2); lbl(150, 380, "eBGP 64498→64496 · 10.255.2.4/30 · LP100 · ROV C1 · TCP-AO/BFD", TRANSIT)
-line(*Eb("TA"), *Et("MELPE1"), color=TRANSIT, sw=2.2); lbl(560, 384, "eBGP 64497→64496 · 10.255.2.0/30 · LP200 · ROV C1 · TCP-AO/BFD", TRANSIT)
+line(*Eb("TB"), *Et("ADL"), color=TRANSIT, sw=2.2); lbl(150, 330, "eBGP 64498→64496 · 10.255.2.4/30 · LP100 · ROV C1 · TCP-AO/BFD", TRANSIT)
+line(*Eb("TA"), *Et("MELPE1"), color=TRANSIT, sw=2.2); lbl(560, 330, "eBGP 64497→64496 · 10.255.2.0/30 · LP200 · ROV C1 · TCP-AO/BFD", TRANSIT)
 # IXP fabric (teal)
 line(*El("IXPF"), *Et("MELPE1"), color=IXPF, sw=2.0); lbl(648, 360, "IXP .1", IXPF)
 line(*Eb("RS"), *Et("IXPF"), color=IXPF, sw=1.8)
