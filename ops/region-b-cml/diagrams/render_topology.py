@@ -223,8 +223,9 @@ print("wrote", OUT_SVG)
 # registered as it drew), so they auto-track the layout. Consumed by make_projector_slides.py.
 for _g in ("topology", "ref_top", "ref_bot"):
     assert _g in REG, f"region group '{_g}' has no registered content — sidecar would be incomplete"
-def _pad(group, p=8):
-    x0, y0, x1, y1 = REG[group]
+def _pad(*groups, p=8):  # bbox over one or more region groups, padded, clamped to canvas
+    x0 = min(REG[g][0] for g in groups); y0 = min(REG[g][1] for g in groups)
+    x1 = max(REG[g][2] for g in groups); y1 = max(REG[g][3] for g in groups)
     return [max(0, x0 - p), max(0, y0 - p), min(W, x1 + p), min(H, y1 + p)]
 regions = {
     "canvas": [W, H],
@@ -232,12 +233,10 @@ regions = {
         {"name": "01-topology.png",
          "caption": "Region B - TOPOLOGY (Region A edge / PC1 bridge / CML reservation)",
          "box": [0, 0, PX - 12, min(H, REG["topology"][3] + 14)]},
-        {"name": "02-reference-addressing-bgp-vrf.png",
-         "caption": "Region B - REFERENCE: Addressing / BGP-AS / VRF",
-         "box": _pad("ref_top")},
-        {"name": "03-reference-where-runs-build.png",
-         "caption": "Region B - REFERENCE: Where things run / Build state",
-         "box": _pad("ref_bot")},
+        # native 1080p has the headroom to fit the whole reference column on ONE slide
+        {"name": "02-reference.png",
+         "caption": "Region B - REFERENCE: addressing / BGP-AS / VRF / where-things-run / build",
+         "box": _pad("ref_top", "ref_bot")},
     ],
 }
 with open(OUT_REGIONS, "w", encoding="utf-8") as f:

@@ -6,7 +6,7 @@
   "slides": [
     {
       "name": "01-topology.png",
-      "caption": "Region A - TOPOLOGY (whole network \u2014 fine IP/BGP detail is on the reference slides)",
+      "caption": "Region A - TOPOLOGY (whole network \u2014 fine IP/BGP detail is on the reference slide)",
       "box": [
         0,
         0,
@@ -15,21 +15,11 @@
       ]
     },
     {
-      "name": "02-reference-rpki-mgmt-addressing.png",
-      "caption": "Region A - REFERENCE: PC1 RPKI / Mgmt / Addressing",
+      "name": "02-reference.png",
+      "caption": "Region A - REFERENCE: RPKI / mgmt / addressing / hardening / build / legend",
       "box": [
         1224,
         78,
-        1816,
-        474
-      ]
-    },
-    {
-      "name": "03-reference-hardening-build.png",
-      "caption": "Region A - REFERENCE: Hardening / Build state / Legend",
-      "box": [
-        1224,
-        470,
         1816,
         1138
       ]

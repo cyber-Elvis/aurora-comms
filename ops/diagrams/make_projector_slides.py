@@ -3,7 +3,7 @@
 
 Generic companion to the hand-tuned ops/region-a/diagrams/build_projector_assets.py: that one
 knows Region A's exact layout and cuts content-aligned slides; THIS one auto-tiles any image so
-that fine text clears ~18px on a ~720p-class projector panel (the VOPLLS Q5 the lab uses). Use it
+that fine text is legible on the native-1080p projector panel (the VOPLLS Q5 the lab uses). Use it
 for Region B, the automation-architecture diagram, or any ad-hoc screenshot you want on the wall.
 
     py -3.10 ops/diagrams/make_projector_slides.py docs/region-b-topology.svg
@@ -112,7 +112,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("input", help="SVG or PNG, repo-relative or absolute")
     ap.add_argument("--name", help="output subfolder name (default: file stem minus -topology)")
-    ap.add_argument("--zoom", type=float, default=2.0, help="zoom factor for tiles (2.0 -> ~18px text on a 720p panel)")
+    ap.add_argument("--zoom", type=float, default=1.6, help="zoom factor for grid tiles (1.6 -> ~12px text on a native 1080p panel; raise for bigger text + more tiles)")
     ap.add_argument("--overlap", type=float, default=0.12, help="fractional overlap between tiles")
     ap.add_argument("--render-scale", type=float, default=4.0, help="SVG render scale for the master")
     ap.add_argument("--regions", help="regions JSON for a semantic split (default: <input-stem>.regions.json if present)")

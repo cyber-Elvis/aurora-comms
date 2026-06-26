@@ -15,21 +15,11 @@
       ]
     },
     {
-      "name": "02-reference-addressing-bgp-vrf.png",
-      "caption": "Region B - REFERENCE: Addressing / BGP-AS / VRF",
+      "name": "02-reference.png",
+      "caption": "Region B - REFERENCE: addressing / BGP-AS / VRF / where-things-run / build",
       "box": [
         1232,
         84,
-        1732,
-        546
-      ]
-    },
-    {
-      "name": "03-reference-where-runs-build.png",
-      "caption": "Region B - REFERENCE: Where things run / Build state",
-      "box": [
-        1232,
-        542,
         1732,
         924
       ]

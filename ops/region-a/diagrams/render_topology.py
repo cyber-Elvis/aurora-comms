@@ -241,23 +241,22 @@ print("wrote", OUT_SVG)
 # layout (move a panel and its box follows). This is a genuine single source of truth.
 for _g in ("topology", "ref_top", "ref_bot"):
     assert _g in REG, f"region group '{_g}' has no registered content — sidecar would be incomplete"
-def _pad(group, p=8):
-    x0, y0, x1, y1 = REG[group]
+def _pad(*groups, p=8):  # bbox over one or more region groups, padded, clamped to canvas
+    x0 = min(REG[g][0] for g in groups); y0 = min(REG[g][1] for g in groups)
+    x1 = max(REG[g][2] for g in groups); y1 = max(REG[g][3] for g in groups)
     return [max(0, x0 - p), max(0, y0 - p), min(W, x1 + p), min(H, y1 + p)]
 regions = {
     "canvas": [W, H],
     "slides": [
         # whole-topology slide: x0/y0=0 pulls in the title + plan-summary line; stop just left of
-        # the panel column (PX) so the reference panels live on their own slides.
+        # the panel column (PX) so the reference panels live on their own slide(s).
         {"name": "01-topology.png",
-         "caption": "Region A - TOPOLOGY (whole network — fine IP/BGP detail is on the reference slides)",
+         "caption": "Region A - TOPOLOGY (whole network — fine IP/BGP detail is on the reference slide)",
          "box": [0, 0, PX - 12, min(H, REG["topology"][3] + 14)]},
-        {"name": "02-reference-rpki-mgmt-addressing.png",
-         "caption": "Region A - REFERENCE: PC1 RPKI / Mgmt / Addressing",
-         "box": _pad("ref_top")},
-        {"name": "03-reference-hardening-build.png",
-         "caption": "Region A - REFERENCE: Hardening / Build state / Legend",
-         "box": _pad("ref_bot")},
+        # native 1080p has the headroom to fit the whole reference column on ONE slide
+        {"name": "02-reference.png",
+         "caption": "Region A - REFERENCE: RPKI / mgmt / addressing / hardening / build / legend",
+         "box": _pad("ref_top", "ref_bot")},
     ],
 }
 with open(OUT_REGIONS, "w", encoding="utf-8") as f:
