@@ -8,9 +8,9 @@
 ! its secret set interactively at the console. Do NOT re-add 'admin' (reserved/
 ! locked on IOS-XR) and do NOT put a secret in this file.
 !
-! Automation users deferred: XRv 6.1.3 has no Ed25519. When wiring cisco.iosxr
-! automation, add aurora-codex/aurora-claude with a DEDICATED RSA-3072 key for the
-! legacy XR zone (separate change; see MOP closure / ADR-004 zone-scoped keys).
+! Agent users deferred to a separate access-hardening change. XRv 6.1.3 uses
+! separate password-authenticated read-only accounts; cleartext secrets remain
+! off-router in Ansible Vault.
 !
 ! ADL parity = management-only (no Loopback0, core shut/unaddressed) to match the
 ! deployed IOL state. No VPNv4/VRF/renumbering in this MOP.

@@ -7,7 +7,8 @@
 ! IS-IS/LDP parity verified against live IOL: net 49.0001.0000.0000.0002.00,
 ! is-type level-2-only, metric-style wide, Lo0 passive, LDP router-id 10.0.0.2.
 ! Break-glass user 'labadmin' created at FIRST BOOT (secret interactive). No 'admin', no secret in file.
-! aurora-codex/aurora-claude (RSA-3072) deferred to post-migration access-hardening change.
+! Password-authenticated read-only agent accounts are deferred to the
+! post-migration access-hardening change; secrets remain in Ansible Vault.
 
 ! ===== Apply at the XR console (config mode) =====
 configure

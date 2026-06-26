@@ -181,10 +181,10 @@ break-glass secret interactively. IOS-XR does not use IOS `enable` mode or the
 IOS command `enable algorithm-type scrypt secret`. Use the strongest
 platform-native secret form accepted by IOS-XRv 6.1.3.
 
-IOS-XRv 6.1.3 is old enough that Ed25519 user keys may not be available.
-Confirm the supported SSH algorithms on the canary. If Ed25519 is unsupported,
-generate a dedicated RSA 3072-bit automation key for this legacy XR zone;
-do not weaken global SSH client policy and do not reuse a host-management key.
+IOS-XRv 6.1.3 does not provide a usable per-username SSH public-key binding on
+this demo image. Agent accounts therefore use separate strong local secrets,
+stored off-router in Ansible Vault and bound to explicit read-only taskgroups.
+The legacy KEX and host-key exceptions remain scoped to the XR inventory.
 
 ## Per-node implementation procedure
 
@@ -440,7 +440,8 @@ After all four routers pass:
 | Post-check | mgmt `10.255.191.17` ping 3/3 0% loss ~2 ms; TCP/22 OK; SSH `labadmin` login OK; parity = mgmt-only, no Lo0/IS-IS/LDP; VM ~17 GiB free, load <0.3 |
 | Rollback retained | `ADL-PE1-CISCO-IOL-RT01` stopped + unlinked + config saved (keep 7 days / 2 sessions) |
 
-Automation key (aurora-codex/aurora-claude RSA-3072 for the XR zone) deferred to the
+Agent access (separate password-authenticated read-only aurora-codex and
+aurora-claude accounts, secrets retained in Ansible Vault) deferred to the
 access-hardening change after all four nodes are migrated.
 
 ### Node 2 of 4 — GEL-PE1 — RESULT: PASS
@@ -489,6 +490,5 @@ lab sessions.
 - [ ] one MEL core link-flap → verify IS-IS/LDP reconvergence
 - [ ] export GNS3 project
 - [ ] update inventory.yml / diagrams / region-a-plan / deployment-status; Ansible `cisco.ios` → `cisco.iosxr`
-- [ ] post-migration access hardening: dedicated RSA-3072 aurora-codex/aurora-claude keys on the XR zone; remove personal `id_ed25519` from GEL (ADR-004 deviation)
+- [ ] post-migration access hardening: separate read-only aurora-codex/aurora-claude local secrets in Ansible Vault; RSA user-key binding is unavailable on XRv 6.1.3
 - [ ] schedule separate MPLS L3VPN / VPNv4 MOP
-
