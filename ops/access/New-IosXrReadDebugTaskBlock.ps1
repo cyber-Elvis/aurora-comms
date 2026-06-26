@@ -34,6 +34,7 @@ $nonAssignableTaskIds = @(
     'disallowed',
     'root-lr',
     'root-system',
+    'ssh',
     'universal'
 )
 

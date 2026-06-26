@@ -3,8 +3,9 @@
 #
 # 2026-06-21: Region A re-platformed Cisco IOL -> IOS-XRv 6.1.3 (MOP CHG-AURORA-REG-A-XRV-001).
 #   The 4 live Region A nodes (mel-p1/mel-pe1/gel-pe1/adl-pe1) are now IOS-XRv; break-glass user
-#   is `labadmin` (XR reserves/locks `admin`). Automation user `aurora-claude` needs an RSA-3072
-#   key on the XR zone (pending; XRv 6.1.3 has no Ed25519). IOL rollback nodes retained (stopped)
+#   is `labadmin` (XR reserves/locks `admin`). XRv 6.1.3 agent accounts use strong
+#   local secrets retained off-router in Ansible Vault; RSA user-key binding is unavailable.
+#   IOL rollback nodes retained (stopped)
 #   until ~2026-06-28. Reserved/planned PE shells (per/drw/hba/...) stay IOL until built.
 
 nodes:

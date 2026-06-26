@@ -50,6 +50,12 @@ Automation identities are separate from the user's break-glass account.
 
 SSH public-key authentication is preferred for automation accounts. Private keys stay on PC1 or another approved operator host. Nodes receive only public keys. Password fallback is allowed only where a platform cannot support SSH public keys cleanly.
 
+IOS-XRv 6.1.3 is a documented fallback: the demo image cannot bind an imported
+RSA authentication key to a different local username and has no username
+`sshkey` command. Its agent accounts use separate strong local secrets in
+Ansible Vault, explicit no-write taskgroups, and legacy SSH algorithms scoped
+only to the XR inventory.
+
 Keys are scoped by zone:
 
 | Zone | Key material |
@@ -172,6 +178,8 @@ As of 2026-06-15, the first local management slice is live:
 - `mel-p1` (`10.255.191.11`) and `mel-pe1` (`10.255.191.12`) are reached from PC1 through `gns3@100.118.0.46`.
 - `aurora-codex` and `aurora-claude` local Ed25519 keys exist on PC1 only; public key bodies are installed on the MEL pair.
 - Both per-agent accounts have been verified by SSH hostname checks against `MEL-P-CISCO-IOL-RT01` and `MEL-PE1-CISCO-IOL-RT01`.
+- As of 2026-06-22, GEL IOS-XRv proved password-authenticated read-only agent
+  access through an interactive PTY. Region A XR rollout remains in progress.
 - As of 2026-06-19, PC3 is designated as the dedicated Termius operator
   terminal. Region A uses the GNS3 VM jump; the PC1 Linux jump for Region B is
   still pending because `forty3s-pc1-wsl` is currently offline.
