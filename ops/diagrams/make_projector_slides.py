@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-PW, PH = 1920, 1080
+PW, PH = 3840, 2160          # output slide size — 4K UHD by default (override with --height); 16:9
 WHITE, BLACK, INK = (255, 255, 255), (0, 0, 0), (13, 43, 78)
 
 def font(sz, bold=False):
@@ -95,7 +95,8 @@ def validate_regions(spec, W, H, path):
     return W / cw, H / ch
 
 def slide(crop, caption, path):
-    cap_h = 56
+    s = PH / 1080.0                          # scale caption bar/text with the output size (4K-aware)
+    cap_h = int(56 * s)
     avail_w, avail_h = PW, PH - cap_h
     r = min(avail_w / crop.width, avail_h / crop.height)
     nw, nh = int(crop.width * r), int(crop.height * r)
@@ -103,7 +104,7 @@ def slide(crop, caption, path):
     canvas = Image.new("RGB", (PW, PH), WHITE)
     d = ImageDraw.Draw(canvas)
     d.rectangle([0, 0, PW, cap_h], fill=INK)
-    d.text((24, 12), caption, font=font(30, True), fill=WHITE)
+    d.text((int(24 * s), int(12 * s)), caption, font=font(int(30 * s), True), fill=WHITE)
     canvas.paste(crop, ((PW - nw) // 2, cap_h + (avail_h - nh) // 2))
     canvas.save(path)
     print("wrote", path)
@@ -114,10 +115,14 @@ def main():
     ap.add_argument("--name", help="output subfolder name (default: file stem minus -topology)")
     ap.add_argument("--zoom", type=float, default=1.6, help="zoom factor for grid tiles (1.6 -> ~12px text on a native 1080p panel; raise for bigger text + more tiles)")
     ap.add_argument("--overlap", type=float, default=0.12, help="fractional overlap between tiles")
-    ap.add_argument("--render-scale", type=float, default=4.0, help="SVG render scale for the master")
+    ap.add_argument("--render-scale", type=float, default=6.0, help="SVG render scale for the master (6 keeps 4K crops crisp)")
+    ap.add_argument("--height", type=int, default=2160, help="output slide height px (default 2160 = 4K UHD; width is 16:9)")
     ap.add_argument("--regions", help="regions JSON for a semantic split (default: <input-stem>.regions.json if present)")
     ap.add_argument("--out", help="output dir (default docs/projector/<name>)")
     a = ap.parse_args()
+
+    global PW, PH                              # output size (default 4K); width derived 16:9
+    PH = a.height; PW = a.height * 16 // 9
 
     inp = a.input if os.path.isabs(a.input) else os.path.join(REPO, a.input)
     if not os.path.exists(inp):
