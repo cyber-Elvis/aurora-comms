@@ -1,0 +1,31 @@
+---
+# Phase 3 transport enable, run through the SEPARATE SECURITY PIPELINE
+# (aurora-security, the crypto role) — the change aurora-automation is correctly
+# denied. Same netconf lines as region-a-enable-netconf-yang.yml, but the play
+# overrides the connection creds to aurora-security (play vars > group_vars),
+# while still inheriting region_a_iosxr's bastion-jump ssh_common_args.
+#
+#   cd ops/automation-iosxrv && export ANSIBLE_CONFIG=$PWD/ansible.cfg
+#   ansible-playbook playbooks/region-a-enable-netconf-yang-security.yml --limit adl-pe1 --check --diff
+#   ansible-playbook playbooks/region-a-enable-netconf-yang-security.yml --limit adl-pe1
+- name: Enable NETCONF-YANG via aurora-security (crypto/transport role)
+  hosts: region_a_iosxr
+  gather_facts: false
+  vars_files:
+    - ../group_vars/region_a_iosxr_security/vault.yml
+  vars:
+    ansible_user: aurora-security
+    ansible_password: "{{ vault_aurora_security_secret }}"
+  tasks:
+    - name: netconf-yang agent + ssh netconf subsystem (:830)
+      cisco.iosxr.iosxr_config:
+        lines:
+          - netconf-yang agent ssh
+          - ssh server v2
+          - ssh server netconf vrf default
+        comment: CHG-AURORA-REGA-NETCONF
+      register: netconf_enable
+
+    - name: Report the lines applied (empty = already enabled / idempotent)
+      ansible.builtin.debug:
+        var: netconf_enable.commands

@@ -1,0 +1,25 @@
+---
+# Phase 3 (NETCONF/YANG): enable the netconf-yang agent and the SSH netconf
+# subsystem (TCP/830) on Region A IOS-XRv 6.1.3.
+#
+# Drive canary-first, in WSL with the repo ansible.cfg active:
+#   cd ops/automation-iosxrv && export ANSIBLE_CONFIG=$PWD/ansible.cfg
+#   ansible-playbook playbooks/region-a-enable-netconf-yang.yml --limit adl-pe1 --check --diff   # dry-run
+#   ansible-playbook playbooks/region-a-enable-netconf-yang.yml --limit adl-pe1                   # apply canary
+#   ansible-playbook playbooks/region-a-enable-netconf-yang.yml                                   # all four
+- name: Enable NETCONF-YANG on Region A IOS-XRv
+  hosts: region_a_iosxr
+  gather_facts: false
+  tasks:
+    - name: netconf-yang agent + ssh netconf subsystem (:830)
+      cisco.iosxr.iosxr_config:
+        lines:
+          - netconf-yang agent ssh
+          - ssh server v2
+          - ssh server netconf vrf default
+        comment: CHG-AURORA-REGA-NETCONF
+      register: netconf_enable
+
+    - name: Report the lines applied (empty = already enabled / idempotent)
+      ansible.builtin.debug:
+        var: netconf_enable.commands
