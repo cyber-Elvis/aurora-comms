@@ -1,0 +1,28 @@
+{
+  "canvas": [
+    1760,
+    1000
+  ],
+  "slides": [
+    {
+      "name": "01-topology.png",
+      "caption": "Region B - TOPOLOGY (Region A edge / PC1 bridge / CML reservation)",
+      "box": [
+        0,
+        0,
+        1228,
+        926
+      ]
+    },
+    {
+      "name": "02-reference.png",
+      "caption": "Region B - REFERENCE: addressing / BGP-AS / VRF / where-things-run / build",
+      "box": [
+        1232,
+        84,
+        1732,
+        924
+      ]
+    }
+  ]
+}

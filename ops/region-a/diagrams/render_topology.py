@@ -11,12 +11,14 @@ Reflects region-a-plan.md v2.5 + the 2026-06-24 fixes: iBGP VPNv4 + IPv4-unicast
 ROV from Phase C1 on both transit sessions, GNS3 controller 192.168.137.1:3080, transits STAGED.
 """
 import os
+import json
 from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OUT_SVG = os.path.join(REPO, "docs", "region-a-topology.svg")
 OUT_PNG = os.path.join(REPO, "docs", "region-a-topology.png")
+OUT_REGIONS = os.path.join(REPO, "docs", "region-a-topology.regions.json")
 
 W, H = 1840, 1200
 INK = "#0d2b4e"
@@ -50,8 +52,14 @@ def line(x1, y1, x2, y2, color=LINE, sw=2.0, dash=None):
     el(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}" stroke-width="{sw}"{d}/>')
 
 N = {}
+REG = {}  # accumulates the bbox of each projector-region group as elements are drawn (auto-tracks layout)
+def reg(group, x, y, w, h):
+    box = [x, y, x + w, y + h]
+    b = REG.get(group)
+    REG[group] = box if b is None else [min(b[0], x), min(b[1], y), max(b[2], x + w), max(b[3], y + h)]
 def node(name, x, y, w, h, title, sub, line3, fill, fg="#ffffff", dashed=False, badge=None):
     N[name] = (x, y, w, h)
+    reg("topology", x, y, w, h)
     stroke = "#f0b429" if badge else "#ffffff"
     dash = "6 4" if dashed else None
     rect(x, y, w, h, fill, stroke=stroke, rx=9, sw=(2.4 if badge else 1.0), dash=dash)
@@ -59,7 +67,9 @@ def node(name, x, y, w, h, title, sub, line3, fill, fg="#ffffff", dashed=False, 
     text(cx, y + 20, title, size=13, fill=fg, anchor="middle", bold=True)
     text(cx, y + 36, sub, size=9.5, fill=fg, anchor="middle")
     if line3:
-        text(cx, y + 50, line3, size=9, fill=fg, anchor="middle", italic=True)
+        # upright + 10px (not 9px italic): oblique thin strokes at the smallest size break up
+        # worst under projector downscale + lossy WiFi cast — italic carries no semantic load here
+        text(cx, y + 51, line3, size=10, fill=fg, anchor="middle")
     if badge:
         rect(x + w - 62, y + 4, 58, 14, "#f0b429", rx=3, sw=0)
         text(x + w - 33, y + 14, badge, size=8.5, fill="#3a2a00", anchor="middle", bold=True)
@@ -81,6 +91,7 @@ text(34, 58, "IS-IS L2 + MPLS LDP  ·  iBGP full mesh: VPNv4 + IPv4-unicast (nex
 
 # ---- bands -----------------------------------------------------------------
 def band(x, y, w, h, label, fill, stroke):
+    reg("topology", x, y, w, h)
     rect(x, y, w, h, fill, stroke=stroke, rx=12, sw=1.6, op=0.5)
     text(x + 14, y + 22, label, size=13, fill=stroke, bold=True)
 band(30, 86, 900, 268, "Internet Edge — simulated (doc ASNs/prefixes; never advertised to the real Internet)", "#f5f3ff", "#7e22ce")
@@ -89,6 +100,7 @@ band(30, 574, 900, 150, "Customer Edge", "#fff7ed", "#f97316")
 band(30, 736, 900, 110, "Tenant workloads — Region B/PC1 Docker offload", "#fefce8", "#ca8a04")
 # Region B handoff container (SYD-PE1 lives OUTSIDE the Region A core band)
 rect(948, 86, 264, 476, "#eef2ff", stroke="#1565c0", rx=12, sw=1.8, dash="7 5", op=0.5)
+reg("topology", 948, 86, 264, 476)
 text(962, 108, "REGION B (PC1 / DevNet CML)", size=12, fill="#1e3a8a", bold=True)
 text(962, 124, "logical handoff — not Region A", size=10, fill="#475569")
 
@@ -122,8 +134,8 @@ for i,(nm,lbl) in enumerate([("WLH","helix: orthanc·emr·doctor"),("WLN","north
 # ---- edges -----------------------------------------------------------------
 def lbl(x, y, s, color="#475569"): text(x, y, s, size=9, fill=color, anchor="middle")
 # transit eBGP (purple)
-line(*Eb("TB"), *Et("ADL"), color=TRANSIT, sw=2.2); lbl(150, 380, "eBGP 64498→64496 · 10.255.2.4/30 · LP100 · ROV C1 · TCP-AO/BFD", TRANSIT)
-line(*Eb("TA"), *Et("MELPE1"), color=TRANSIT, sw=2.2); lbl(560, 384, "eBGP 64497→64496 · 10.255.2.0/30 · LP200 · ROV C1 · TCP-AO/BFD", TRANSIT)
+line(*Eb("TB"), *Et("ADL"), color=TRANSIT, sw=2.2); lbl(150, 330, "eBGP 64498→64496 · 10.255.2.4/30 · LP100 · ROV C1 · TCP-AO/BFD", TRANSIT)
+line(*Eb("TA"), *Et("MELPE1"), color=TRANSIT, sw=2.2); lbl(560, 330, "eBGP 64497→64496 · 10.255.2.0/30 · LP200 · ROV C1 · TCP-AO/BFD", TRANSIT)
 # IXP fabric (teal)
 line(*El("IXPF"), *Et("MELPE1"), color=IXPF, sw=2.0); lbl(648, 360, "IXP .1", IXPF)
 line(*Eb("RS"), *Et("IXPF"), color=IXPF, sw=1.8)
@@ -147,7 +159,8 @@ line(C("NW")[0], 692, 480, 770, color="#94a3b8", sw=1.4, dash="2 4")
 line(*Er("MELP"), *El("SYD"), color="#64748b", sw=2.0, dash="2 5"); lbl(935, 430, "logical handoff", "#64748b")
 
 # ---- right panel -----------------------------------------------------------
-def panel(x, y, w, h, header, rows, hfill=INK):
+def panel(x, y, w, h, header, rows, hfill=INK, group="ref_top"):
+    reg(group, x, y, w, h)
     rect(x, y, w, h, PANEL_BG, stroke=PANEL_BR, rx=10, sw=1.4)
     rect(x, y, w, 26, hfill, rx=10, sw=0); rect(x, y+13, w, 13, hfill, rx=0, sw=0)
     text(x + 14, y + 18, header, size=12.5, fill="#ffffff", bold=True)
@@ -180,12 +193,12 @@ panel(PX, 478, PW, 132, "Transit-edge hardening (§5.4)", [
     ("Spoof / patch", "GTSM ttl-security hops 1 · graceful-restart"),
     ("Safety", "max-prefix v4 1000 / v6 200 · RPKI-invalid drop"),
     ("Visibility", "log neighbor-changes → Wazuh syslog"),
-])
+], group="ref_bot")
 panel(PX, 622, PW, 96, "Build state (2026-06-24)", [
     ("[x]", "4× IOS-XRv backbone started; MEL pair IS-IS/LDP"),
     ("[~]", "transit-a-csr / transit-b-iol STAGED (wired, unconfigured)"),
     ("[ ]", "Stage 0 iBGP (vpnv4+ipv4-unicast+NHS) → transit config"),
-])
+], group="ref_bot")
 
 # ---- legend ----------------------------------------------------------------
 LY = 736
@@ -211,6 +224,7 @@ text(PX+12, 1052, "local for practice.", size=10, fill="#7f1d1d")
 rect(PX, 1074, PW, 56, "#fff1f2", stroke="#be123c", rx=8)
 text(PX+12, 1096, "Guardrail: behavioural lab only. ASNs 64496–64502 = RFC 5398 doc ASNs; IPv4 =", size=10, fill="#881337", bold=True)
 text(PX+12, 1112, "RFC 5737, IPv6 = RFC 3849 doc space. No public Internet / registered RIR RPKI.", size=10, fill="#881337", bold=True)
+reg("ref_bot", PX, LY, PW, 1130 - LY)   # legend + archived + guardrail share the lower-right column
 
 text(34, H - 16, "Generated by ops/region-a/diagrams/render_topology.py · source: region-a-plan.md v2.5 (+2026-06-24) · "
      "GNS3 project ops-lab on Dell 192.168.137.1:3080", size=10.5, fill="#94a3b8")
@@ -220,6 +234,34 @@ doc = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBo
 with open(OUT_SVG, "w", encoding="utf-8") as f:
     f.write(doc)
 print("wrote", OUT_SVG)
+
+# Semantic projector regions — consumed by ops/diagrams/make_projector_slides.py to cut
+# intelligent slides (topology | reference) instead of a mechanical grid. The boxes are DERIVED
+# from REG, the bbox each band()/panel()/node() registered as it drew — so they auto-track the
+# layout (move a panel and its box follows). This is a genuine single source of truth.
+for _g in ("topology", "ref_top", "ref_bot"):
+    assert _g in REG, f"region group '{_g}' has no registered content — sidecar would be incomplete"
+def _pad(*groups, p=8):  # bbox over one or more region groups, padded, clamped to canvas
+    x0 = min(REG[g][0] for g in groups); y0 = min(REG[g][1] for g in groups)
+    x1 = max(REG[g][2] for g in groups); y1 = max(REG[g][3] for g in groups)
+    return [max(0, x0 - p), max(0, y0 - p), min(W, x1 + p), min(H, y1 + p)]
+regions = {
+    "canvas": [W, H],
+    "slides": [
+        # whole-topology slide: x0/y0=0 pulls in the title + plan-summary line; stop just left of
+        # the panel column (PX) so the reference panels live on their own slide(s).
+        {"name": "01-topology.png",
+         "caption": "Region A - TOPOLOGY (whole network — fine IP/BGP detail is on the reference slide)",
+         "box": [0, 0, PX - 12, min(H, REG["topology"][3] + 14)]},
+        # native 1080p has the headroom to fit the whole reference column on ONE slide
+        {"name": "02-reference.png",
+         "caption": "Region A - REFERENCE: RPKI / mgmt / addressing / hardening / build / legend",
+         "box": _pad("ref_top", "ref_bot")},
+    ],
+}
+with open(OUT_REGIONS, "w", encoding="utf-8") as f:
+    json.dump(regions, f, indent=2)
+print("wrote", OUT_REGIONS, "(derived from geometry)")
 
 try:
     from svglib.svglib import svg2rlg

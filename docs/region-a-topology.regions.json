@@ -1,0 +1,28 @@
+{
+  "canvas": [
+    1840,
+    1200
+  ],
+  "slides": [
+    {
+      "name": "01-topology.png",
+      "caption": "Region A - TOPOLOGY (whole network \u2014 fine IP/BGP detail is on the reference slide)",
+      "box": [
+        0,
+        0,
+        1220,
+        860
+      ]
+    },
+    {
+      "name": "02-reference.png",
+      "caption": "Region A - REFERENCE: RPKI / mgmt / addressing / hardening / build / legend",
+      "box": [
+        1224,
+        78,
+        1816,
+        1138
+      ]
+    }
+  ]
+}
