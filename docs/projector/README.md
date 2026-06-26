@@ -10,21 +10,22 @@ with enlarged text (smallest label clears ~18px, the confirmed "perfect" size on
 (right-click image → *Send to My Phone* → lands in Photos), then cast with the TV Casting app
 + the projector's FileShare. WiFi cast is lossy (softens text) — **HDMI is crispest**.
 
-## Layout — every diagram gets a `<name>/` subfolder, identical structure
+## Layout — every diagram gets a `<name>/` subfolder
 ```
 docs/projector/
   00-native-1080p-test.png   test pattern (generic; not a diagram)
-  region-a/   00-overview + 01..09 zoom tiles
-  region-b/   00-overview + 01..09 zoom tiles
-  region-a-automation/  00-overview + zoom tiles
+  region-a/   00-overview + SEMANTIC slides (topology / reference panels)
+  region-b/   00-overview + grid tiles            (generic tiler)
+  region-a-automation/  00-overview + grid tiles  (generic tiler)
 ```
 - **`00-overview.png`** in each folder = the whole diagram letterboxed — a "where am I" **map
   only; its text is NOT meant to be read** (denser diagrams like Region A look worse here —
-  that's inherent, not a bug). **Read from the numbered tiles, not the overview.**
-- **`01-…` onward** = overlapping zoom tiles (~2×), text enlarged to clear ~18px. Named by
-  grid position (`top/mid/bottom` × `left/center/right`).
-
-Region A and Region B use the **same generic tiler**, so both are laid out identically.
+  that's inherent, not a bug). **Read from the content slides, not the overview.**
+- **Region A is split SEMANTICALLY** (the intelligent way): `01-topology` = the whole network
+  graph on one slide; `02/03-reference-*` = the description panels, enlarged. Crops are defined
+  in `ops/region-a/diagrams/build_projector_assets.py` (`SLIDES`) in diagram units.
+- **Other diagrams** use the generic tiler's mechanical grid (`top/mid/bottom` ×
+  `left/center/right`). Region B can be converted to a semantic split the same way as Region A.
 
 ## Regenerate
 ```
