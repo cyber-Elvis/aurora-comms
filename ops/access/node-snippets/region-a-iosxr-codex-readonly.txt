@@ -20,20 +20,18 @@ configure
  !
  username aurora-codex
   group AURORA-CODEX-RO-USERS
+  secret <RANDOM_ALPHANUMERIC_SECRET_FROM_VAULT>
  !
  root
  show configuration
  commit label AURORA_CODEX_RBAC
  end
 
-! IOS-XRv 6.1.3 rejected `sshkey` in username submode on the ADL canary.
-! Inspect the supported subcommands before selecting an authentication method:
-configure
- username aurora-codex
-  ?
+! Apply large taskgroups in chunks of no more than 12-15 lines, then verify the
+! complete taskgroup before committing. XR console pastes can silently drop lines.
 
 ! Evidence
 show running-config taskgroup AURORA-CODEX-RO
 show running-config usergroup AURORA-CODEX-RO-USERS
 show running-config username aurora-codex
-show crypto key authentication rsa
+show user tasks

@@ -1,0 +1,12 @@
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.iosxr.iosxr
+ansible_user: aurora-codex
+ansible_password: "{{ vault_aurora_codex_secret }}"
+
+ansible_ssh_common_args: >-
+  -o ProxyJump=gns3@100.118.0.46
+  -o KexAlgorithms=+diffie-hellman-group14-sha1
+  -o HostKeyAlgorithms=+ssh-rsa
+  -o StrictHostKeyChecking=accept-new
+  -o UserKnownHostsFile=~/.ssh/aurora_iosxr_known_hosts
+  -o PubkeyAuthentication=no

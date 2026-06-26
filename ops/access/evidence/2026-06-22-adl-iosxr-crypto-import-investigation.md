@@ -41,8 +41,13 @@ Licensing directory not created: 'License Manager' detected the
 Because both XR and its host have substantial available memory, treat this as
 an unhealthy IOS-XRv crypto/license subsystem rather than a key-format result.
 
-## Decision
+## Final decision
 
-Suspend imports. Use ADL as the canary for an approved cold restart with a
-temporary RAM uplift to 4096 MB. Retest the crypto show command and logs before
-resuming key-format validation.
+RSA user-key authentication is retired for IOS-XRv 6.1.3. A GEL canary proved
+that a local `secret` on an explicitly read-only taskgroup authenticates
+successfully through an interactive SSH PTY. The license-manager memory event
+is an image defect and is not remediated by a RAM uplift.
+
+Do not cold-restart or resize ADL for this issue. Use a strong random
+alphanumeric local secret, allow XR to generate its native type-5 hash, and
+retain the cleartext only in Ansible Vault.

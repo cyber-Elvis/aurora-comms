@@ -1,0 +1,106 @@
+---
+# Broaden AURORA-SECURITY-RW to the operator shape: read-all EXCEPT aaa/li,
+# while WRITE stays crypto-only (the real security control). Fixes the
+# cisco.iosxr "unable to set terminal parameters" failure (the driver's session
+# setup needs broad read, incl. tty-access) without loosening the write boundary.
+#
+# Modifying a taskgroup is an `aaa` action -> run as break-glass labadmin.
+# vars_prompt keeps labadmin's password off disk and out of any vault.
+#   cd ops/automation-iosxrv && export ANSIBLE_CONFIG=$PWD/ansible.cfg
+#   ansible-playbook playbooks/region-a-broaden-security-read.yml --limit adl-pe1
+- name: Broaden AURORA-SECURITY-RW read scope (read-all except aaa/li)
+  hosts: region_a_iosxr
+  gather_facts: false
+  vars_prompt:
+    - name: labadmin_password
+      prompt: "labadmin (break-glass) password"
+      private: true
+  vars:
+    ansible_user: labadmin
+    ansible_password: "{{ labadmin_password }}"
+  tasks:
+    - name: Grant read on all assignable tasks except aaa/li (write stays crypto-only)
+      cisco.iosxr.iosxr_config:
+        parents: taskgroup AURORA-SECURITY-RW
+        lines:
+          - task read acl
+          - task read admin
+          - task read ancp
+          - task read atm
+          - task read basic-services
+          - task read bcdl
+          - task read bfd
+          - task read bgp
+          - task read boot
+          - task read bundle
+          - task read call-home
+          - task read cdp
+          - task read cef
+          - task read cgn
+          - task read config-mgmt
+          - task read config-services
+          - task read crypto
+          - task read diag
+          - task read drivers
+          - task read dwdm
+          - task read eem
+          - task read eigrp
+          - task read ethernet-services
+          - task read ext-access
+          - task read fabric
+          - task read fault-mgr
+          - task read filesystem
+          - task read firewall
+          - task read fr
+          - task read hdlc
+          - task read host-services
+          - task read hsrp
+          - task read interface
+          - task read inventory
+          - task read ip-services
+          - task read ipv4
+          - task read ipv6
+          - task read isis
+          - task read l2vpn
+          - task read lisp
+          - task read logging
+          - task read lpts
+          - task read monitor
+          - task read mpls-ldp
+          - task read mpls-static
+          - task read mpls-te
+          - task read multicast
+          - task read netflow
+          - task read network
+          - task read nps
+          - task read ospf
+          - task read otn
+          - task read ouni
+          - task read pbr
+          - task read pkg-mgmt
+          - task read pos-dpt
+          - task read ppp
+          - task read qos
+          - task read rcmd
+          - task read rib
+          - task read rip
+          - task read route-map
+          - task read route-policy
+          - task read sbc
+          - task read snmp
+          - task read sonet-sdh
+          - task read static
+          - task read sysmgr
+          - task read system
+          - task read transport
+          - task read tty-access
+          - task read tunnel
+          - task read vlan
+          - task read vpdn
+          - task read vrrp
+        comment: CHG-AURORA-REGA-SECURITY-READALL
+      register: broaden
+
+    - name: Report lines added (empty = already present / idempotent)
+      ansible.builtin.debug:
+        var: broaden.commands

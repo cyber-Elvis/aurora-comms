@@ -1,0 +1,56 @@
+! Region A IOS-XRv 6.1.3: aurora-security — crypto/transport security-plane role
+! Change: CHG-AURORA-REG-A-SECURITY-RW-001
+!
+! Carrier-style separation of duties (this is TIER 3 of 4):
+!   1  read-only agents      aurora-codex / aurora-claude
+!   2  config automation     aurora-automation  - write all EXCEPT aaa/li/crypto
+!   3  crypto/transport      aurora-security     - write CRYPTO ONLY   <- this file
+!   4  identity (aaa) + LI    break-glass / human only (most restricted)
+!
+! Scope: write+execute on `crypto` ONLY (SSH server, host keys, PKI, and the
+! crypto-gated management transports — netconf-yang, gNMI). Read+execute on
+! basic-services/system/config-services + execute filesystem (for the cisco.iosxr
+! connect probe) so it can log in, view, configure crypto, and commit.
+! DELIBERATELY no `aaa` (identity = self-escalation vector) and no `li` (intercept).
+!
+! Creating roles/users IS an `aaa` action, so this MUST be applied by break-glass
+! admin (labadmin / root-system): tier 4 gates the creation of tier 3.
+! Apply ADL first (canary), then MEL-P, MEL-PE1, GEL-PE1.
+!
+! `secret 5 <hash>` is the IOS-XR type-5 (MD5-crypt) hash of the random password
+! stored encrypted in the Ansible vault group_vars/region_a_iosxr_security/vault.yml
+! (vault-id security). The cleartext never appears here or on the console.
+!
+! Console pastes can silently drop lines — apply the taskgroup, verify it shows
+! all 9 task lines, THEN the usergroup + username, then commit. Or use a labadmin
+! SSH session (more reliable than the GNS3 console for multi-line paste).
+
+configure
+ taskgroup AURORA-SECURITY-RW
+  description Crypto/transport security plane (SSH/keys/PKI + netconf transport). Write=crypto only. No aaa/li.
+  task read crypto
+  task write crypto
+  task read basic-services
+  task execute basic-services
+  task read system
+  task execute system
+  task read config-services
+  task execute filesystem
+ !
+ usergroup AURORA-SECURITY-RW-USERS
+  taskgroup AURORA-SECURITY-RW
+ !
+ username aurora-security
+  group AURORA-SECURITY-RW-USERS
+  secret 5 $1$4HBm$/awrr9ZsrIz03bXMo3pxi/
+ !
+ root
+ show configuration
+ commit comment CHG-AURORA-REG-A-SECURITY-RW-001
+ end
+
+! Evidence
+show running-config taskgroup AURORA-SECURITY-RW
+show running-config usergroup AURORA-SECURITY-RW-USERS
+show running-config username aurora-security
+show user group

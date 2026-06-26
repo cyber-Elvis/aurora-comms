@@ -9,7 +9,7 @@
 | Operator / commit owner | Elvis |
 | Account | `aurora-codex` |
 | Scope | Four Region A IOS-XRv 6.1.3 routers |
-| Authentication | Dedicated zone-scoped RSA-3072 key |
+| Authentication | Strong local secret retained in Ansible Vault |
 | Configuration authority | None |
 
 ## Objective
@@ -37,13 +37,15 @@ show aaa task supported
 ```
 
 The command reports 82 names on this image. Five are metadata/reserved names
-that the taskgroup parser rejects for both `read` and `debug`:
+that the taskgroup parser rejects for both `read` and `debug`. The apparent
+`ssh` task seen in some contextual output is also invalid and must be ignored:
 
 ```text
 cisco-support
 disallowed
 root-lr
 root-system
+ssh
 universal
 ```
 
@@ -72,35 +74,41 @@ ended with `undebug all`.
 | `gel-pe1` | `GEL-PE1-CISCO-IOSXR-RT01` | `10.255.191.15` |
 | `adl-pe1` | `ADL-PE1-CISCO-IOSXR-RT01` | `10.255.191.17` |
 
-## Key evidence
+## Credential handling
 
-Private key, retained only on PC1:
+RSA user-key authentication is unavailable on this IOS-XRv 6.1.3 demo image:
+
+- the global importer has no target-username argument;
+- username configuration mode has no `sshkey` command;
+- tested public-key formats were rejected;
+- crypto access emits an internal license-manager resource error.
+
+Do not restart or resize the routers for this issue. Use a strong random
+alphanumeric local secret and allow XR to generate its native stored hash.
+
+The cleartext secret:
+
+- is generated separately for `aurora-codex`;
+- is never committed to Git or written into evidence;
+- is retained off-router in Ansible Vault;
+- is passed to the diagnostic helper only through
+  `AURORA_XR_PASSWORD`;
+- is rotated after bootstrap if it appeared in console scrollback.
+
+Codex uses a separate Ansible Vault identity:
 
 ```text
-C:\Users\Elvis\.ssh\aurora-codex-local-iosxr-rsa
+ops/automation-iosxrv/group_vars/region_a_iosxr_codex/vault.yml
+Vault ID: codex
+Variable: vault_aurora_codex_secret
+Password file: ~/.aurora-codex-vault-pass
 ```
 
-Public key:
-
-```text
-C:\Users\Elvis\.ssh\aurora-codex-local-iosxr-rsa.pub
-```
-
-Fingerprint:
-
-```text
-SHA256:hUJNjjl+Z/b2ZqASEWh/LCl1/nrvcT0Rl6yCjlF6xfM
-```
-
-Public key source:
-
-```text
-C:\Users\Elvis\.ssh\aurora-codex-local-iosxr-rsa.pub
-OpenSSH fingerprint: SHA256:hUJNjjl+Z/b2ZqASEWh/LCl1/nrvcT0Rl6yCjlF6xfM
-```
-
-The final key-binding method remains under canary validation for this legacy
-IOS-XRv 6.1.3 image.
+On the current Windows PC1 profile, the custody copy is
+`C:\Users\Elvis\.aurora-codex-vault-pass`, restricted to
+`FORTY3S-PC1\forty3`. Provision it separately into the approved Linux
+automation user's home when that control environment is restored. Do not
+store it on the GNS3 VM.
 
 ## Operator boundary
 
@@ -122,7 +130,6 @@ show aaa task supported
 show running-config taskgroup
 show running-config usergroup
 show running-config username aurora-codex
-show crypto key authentication rsa
 ```
 
 Expected:
@@ -172,6 +179,7 @@ configure
  !
  username aurora-codex
   group AURORA-CODEX-RO-USERS
+  secret <RANDOM_ALPHANUMERIC_SECRET>
  !
  root
  show configuration
@@ -184,113 +192,57 @@ with `show configuration`, then commit with the short label shown above. XR
 commit labels must start with a letter, contain only letters, digits, hyphens,
 or underscores, and be no longer than 30 characters.
 
-Inspect the authentication commands supported beneath the local username on
-the ADL canary:
+Enter the cleartext with `secret <value>` and let XR hash it. Do not paste a
+precomputed `$1$` value: this image rejected externally generated MD5-crypt
+hashes with incompatible salt handling.
 
-```iosxr
-configure
- username aurora-codex
-  ?
-```
+## Canary findings
 
-Capture the contextual help before selecting the key-binding method. Review
-any eventual candidate with `show configuration`, then commit as Elvis using
-a short label.
+ADL parser testing established:
 
-## ADL attempts - incomplete
+- `task read all` and `task debug all` are invalid;
+- 77 operational task IDs accept `read` and `debug`;
+- `cisco-support`, `disallowed`, `root-lr`, `root-system`, `ssh`, and
+  `universal` must not be emitted by the generator;
+- `commit check` is unavailable;
+- commit labels are limited to 30 characters;
+- username mode supports `group`, `password`, and `secret`, but no `sshkey`.
 
-The 2026-06-22 ADL transcript established:
+GEL then proved the supported access path end to end:
 
-- `task read all` and `task debug all` are invalid on IOS-XRv 6.1.3;
-- only `task execute basic-services` was committed;
-- `commit check` is not accepted by this IOS-XRv 6.1.3 image;
-- the crypto import command was pasted into the interactive `copy`
-  destination prompt;
-- the public key was not imported.
+- a cleartext local `secret` is accepted and stored by XR as a native hash;
+- password SSH succeeds with the read-only user;
+- `show user tasks` displays read/debug grants and
+  `execute basic-services`, with no write grant;
+- OpenSSH requires `diffie-hellman-group14-sha1` and `ssh-rsa`;
+- IOS-XR requires an interactive PTY for command output.
 
-The second ADL transcript established:
+The proposed ADL RAM uplift and cold restart are cancelled. They do not address
+the IOS-XRv 6.1.3 user-key limitation.
 
-- 77 operational task IDs accepted both `read` and `debug`;
-- `cisco-support`, `disallowed`, `root-lr`, `root-system`, and `universal`
-  were reported by `show aaa task supported` but rejected in the taskgroup;
-- candidate configuration contained no `task write` grants;
-- commit label `CHG-AURORA-REG-A-CODEX-RBAC-001-FIX` was rejected because it
-  exceeded the 30-character label limit;
-- the transcript ended after `end`, so no successful correction commit is
-  evidenced.
-
-The subsequent ADL key attempt established that this image rejects:
-
-```iosxr
-crypto key import authentication rsa username <USER> <FILE>
-```
-
-The caret was at `username`, proving the parser expects a different grammar
-before it evaluates the file path.
-
-Further controlled tests used the path-only grammar accepted by contextual
-help. XR rejected all three transferred representations with `Invalid
-argument`: the decoded SSH wire blob, one-line OpenSSH format, and RFC4716
-SECSH format. File existence and byte counts were verified.
-
-The subsequently tested `sshkey` command was also rejected in
-`config-un` username submode. Neither the EXEC importer nor a username
-`sshkey` command may be treated as validated for this image. Continue from
-the username submode's complete contextual-help output.
-
-The complete username submode help on ADL contains only `group`, `password`,
-and `secret` as authentication-related commands. There is no `sshkey`
-configuration command on this IOS-XRv 6.1.3 image.
-
-## ADL crypto subsystem fault
-
-Bounded console troubleshooting on 2026-06-22 established:
-
-- the node is assigned 3072 MB RAM and one vCPU;
-- `show memory summary` reports 3071 MB physical memory with 1448 MB
-  available;
-- the GNS3 VM has approximately 16 GiB memory available;
-- `show crypto key authentication rsa` has no installed authentication key;
-- both the read-only crypto show and each import attempt log:
-
-```text
-%PLATFORM-IOSXRV_LICENSE_UDI-7-ERR_INTERNAL :
-Licensing directory not created: 'License Manager' detected the
-'resource not available' condition 'Out of memory'
-```
-
-This is not ordinary host or guest memory exhaustion. The running XRv
-instance's crypto/license subsystem is unhealthy, and additional key-format
-experiments are suspended.
-
-### Recovery gate
-
-During an approved maintenance window:
-
-1. capture the running configuration, commit list, IS-IS/LDP state, and memory
-   summary;
-2. stop only ADL-PE1;
-3. increase ADL RAM from 3072 MB to 4096 MB as a diagnostic safety margin;
-4. cold-start ADL and allow IOS-XR to settle fully;
-5. verify management, interfaces, IS-IS, LDP, and route parity;
-6. run `show crypto key authentication rsa`;
-7. inspect recent logging and require the license-manager out-of-memory event
-   to be absent before another import attempt.
-
-Do not change all four routers until the ADL canary passes this recovery gate.
-
-ADL must be re-entered idempotently using the corrected 77-task block and
-committed with `AURORA_CODEX_RBAC`. The key copy/import must then be repeated
-one command at a time before account validation.
+ADL running-state evidence captured on 2026-06-23 confirms the complete Codex
+RBAC role, usergroup binding, username, and a native type-5 secret. ADL's RBAC
+configuration passes; credential custody and interactive SSH authorization
+tests remain pending.
 
 ## Per-node positive validation
 
-Codex verifies from PC1:
+IOS-XR swallows output from SSH exec channels, so validation must use an
+interactive PTY. The bounded helper runs on the GNS3 VM:
+
+```bash
+printf 'show user tasks\nshow interfaces brief\nshow isis adjacency\n' |
+  AURORA_XR_PASSWORD='<FROM_SECURE_STORE>' \
+  python3 /home/gns3/xr-ssh.py 10.255.191.17 aurora-codex
+```
+
+The helper accepts only `show`, `ping`, `traceroute`, `debug`, and `undebug`.
+It enables only the two legacy SSH algorithms required by XRv 6.1.3 and keeps
+learned host keys in `~/.ssh/aurora_iosxr_known_hosts`.
+
+For a human interactive session from PC1:
 
 ```powershell
-.\ops\access\aurora-ssh.ps1 mel-p1 -UseCodex
-.\ops\access\aurora-ssh.ps1 mel-pe1 -UseCodex
-.\ops\access\aurora-ssh.ps1 gel-pe1 -UseCodex
 .\ops\access\aurora-ssh.ps1 adl-pe1 -UseCodex
 ```
 
@@ -328,14 +280,16 @@ commit
 reload
 clear isis adjacency *
 process restart isis
-delete harddisk:/aurora-codex-local-iosxr-rsa.b64
 ```
 
 Expected:
 
-- each command is rejected by task authorization or unavailable in the current
-  mode;
-- no candidate configuration session is created;
+- verify the session identity before every negative test with `show users`;
+- `configure` may open an empty candidate shell;
+- an actual configuration command must be rejected as not authorized;
+- `show configuration` must remain empty;
+- an empty `commit` may report `No configuration changes to commit` before
+  performing a separate commit-authorization check;
 - no commit is accepted;
 - no route, process, file, or node state changes.
 
@@ -358,8 +312,9 @@ PRE-CHECK
 IMPLEMENTATION
 - Commit ID:
 - Commit label:
-- RSA key import:
-- Key fingerprint:
+- Local secret configured:
+- Cleartext retained only in Ansible Vault:
+- Stored hash present without exposing it:
 
 POSITIVE TEST
 - SSH authentication:
@@ -376,21 +331,12 @@ NEGATIVE TEST
 - reload rejected:
 - clear rejected:
 - process restart rejected:
-- file delete rejected:
 
 RESULT: PASS / FAIL / ROLLED BACK
 Notes:
 ```
 
 ## Rollback
-
-As `labadmin`, remove the authentication key first:
-
-```iosxr
-crypto key zeroize authentication rsa username aurora-codex
-```
-
-Then:
 
 ```iosxr
 configure
@@ -401,6 +347,6 @@ configure
  end
 ```
 
-Retain the private key on PC1 until the change is closed. Delete the temporary
-router-side test files and stop the GNS3 VM TFTP listener after all four nodes
-pass.
+Remove the corresponding Codex vault variable after all four routers confirm
+the username is absent. Delete the temporary router-side key-test files and
+stop the obsolete GNS3 VM TFTP listener after the change closes.
