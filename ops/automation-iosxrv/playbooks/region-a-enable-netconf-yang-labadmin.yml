@@ -1,0 +1,38 @@
+---
+# Enable NETCONF-YANG via break-glass labadmin (root-system, tier 4).
+#
+# FINDING (2026-06-23): the netconf-yang AGENT enablement is NOT delegatable to a
+# scoped role. `netconf-yang agent ssh` returns "% This command is not authorized"
+# for BOTH aurora-automation (write on all assignable except aaa/li/crypto) AND
+# aurora-security (write crypto). By elimination it requires aaa/li/root-system —
+# i.e. it's a root-system action. So standing up a new management transport is
+# tier-4 break-glass, even tighter than the crypto role. (The crypto role still
+# owns ongoing SSH-server/keys/PKI config; just not agent enablement.)
+#
+# labadmin password is prompted (never stored/vaulted).
+#   cd ops/automation-iosxrv && export ANSIBLE_CONFIG=$PWD/ansible.cfg
+#   ansible-playbook playbooks/region-a-enable-netconf-yang-labadmin.yml --limit adl-pe1 --check --diff
+#   ansible-playbook playbooks/region-a-enable-netconf-yang-labadmin.yml --limit adl-pe1
+- name: Enable NETCONF-YANG via labadmin (root-system / tier-4 break-glass)
+  hosts: region_a_iosxr
+  gather_facts: false
+  vars_prompt:
+    - name: labadmin_password
+      prompt: "labadmin (break-glass) password"
+      private: true
+  vars:
+    ansible_user: labadmin
+    ansible_password: "{{ labadmin_password }}"
+  tasks:
+    - name: netconf-yang agent + ssh netconf subsystem (:830)
+      cisco.iosxr.iosxr_config:
+        lines:
+          - netconf-yang agent ssh
+          - ssh server v2
+          - ssh server netconf vrf default
+        comment: CHG-AURORA-REGA-NETCONF
+      register: netconf_enable
+
+    - name: Report lines applied (empty = already enabled / idempotent)
+      ansible.builtin.debug:
+        var: netconf_enable.commands
