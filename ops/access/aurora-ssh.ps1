@@ -166,14 +166,6 @@ if ([string]::IsNullOrWhiteSpace($effectiveProfile)) {
     $effectiveProfile = $node.profile
 }
 
-if (
-    $UseCodex -and
-    $effectiveProfile -eq 'iosxr' -and
-    [string]::IsNullOrWhiteSpace($IdentityFile)
-) {
-    $IdentityFile = Join-Path $HOME '.ssh\aurora-codex-local-iosxr-rsa'
-}
-
 if ($effectiveProfile -eq 'iosxr' -and $knownHostsFileWasDefault) {
     $KnownHostsFile = Join-Path $HOME '.ssh\aurora_iosxr_known_hosts'
 }
@@ -224,12 +216,16 @@ else {
         )
     }
     elseif ($effectiveProfile -eq 'iosxr') {
-        # IOS-XRv 6.1.3 predates Ed25519 and can require the legacy ssh-rsa
-        # signature algorithm. Keep this compatibility exception scoped to XR.
+        # Keep the legacy compatibility exception scoped to IOS-XRv 6.1.3.
+        # Agent accounts use local password authentication on this image.
         $cmd += @(
+            '-o', 'KexAlgorithms=+diffie-hellman-group14-sha1',
             '-o', 'HostKeyAlgorithms=+ssh-rsa',
             '-o', 'PubkeyAcceptedAlgorithms=+ssh-rsa'
         )
+        if ($UseCodex -or $UseClaude) {
+            $cmd += @('-o', 'PubkeyAuthentication=no')
+        }
     }
 
     $cmd += $node.host

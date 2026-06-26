@@ -7,8 +7,11 @@ When a reply contains any command or config block the user must paste somewhere,
 copy-paste across machines (Mouse Without Borders' clipboard sync mangles rich text), and do
 NOT ask each time. Push multiple snippets as **separate Win+V clipboard-history entries**.
 
-- **Destination:** node config / anything pasted in Termius → **PC3** (default); PC2-specific
-  → **PC2**; PC1-specific → **PC1**. State which machine + item count.
+- **Destination: PC3, always.** PC3 is the dedicated terminal box — the user reaches
+  PC1-WSL, PC1-Windows, PC2, and the nodes all through Termius on PC3, so everything
+  pasted goes into a PC3 Termius session → push to **PC3**. (Only exception: a command
+  that must run in a *local elevated PowerShell* on PC1/PC2, not via Termius.)
+  State item count.
 - **Mechanism + `Push-Clip`:** [`ops/access/codex-clipboard-prompt.md`](ops/access/codex-clipboard-prompt.md).
   Persistent `Aurora-SetClipboard` task on PC1/PC2/PC3; stage `C:\ProgramData\Aurora\clip.txt`
   (items joined by a line `===AURORA-CLIP-SEP===`), then `Start-ScheduledTask`. PC1 local;

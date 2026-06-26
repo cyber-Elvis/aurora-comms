@@ -50,6 +50,77 @@ firewall scope, Wi-Fi state, power management, Tailscale path, and name
 resolution. `-ApplySafeFixes` creates a source-restricted TCP 15100-15101 rule
 for PC1/PC2 and sets Wi-Fi to Maximum Performance while connected to AC power.
 
+## Tailscale data-plane watchdog
+
+`repair-tailscale-dataplane.ps1` detects a "half-up" Tailscale state (service
+running and disco/DERP pongs return, but actual TCP to a peer's Tailscale IP is
+dead after sleep or an endpoint flip) and recovers it with
+`Restart-Service Tailscale -Force`. It runs as the SYSTEM scheduled task
+`Aurora-Tailscale-Health` (boot trigger + every 3 minutes).
+
+Deploy or repair it with the idempotent installer — run **elevated on the target
+box** (PC1/PC2/PC3). It copies the script to `C:\ProgramData\Aurora\`, writes a
+per-host `tailscale-peers.json` (each box watches a different always-up peer;
+default derived from hostname, override with `-TestPeers`), (re)registers the
+task, then runs it once and fails loudly unless `LastTaskResult` is `0`:
+
+```powershell
+.\ops\access\Install-TailscaleWatchdog.ps1
+# or pick the watched peer explicitly:
+.\ops\access\Install-TailscaleWatchdog.ps1 -TestPeers @(
+    @{ Name = 'PC1'; TailscaleIP = '100.88.225.123'; TestPort = 22 }
+)
+```
+
+Re-running is safe (`Register-ScheduledTask -Force` replaces the definition).
+
+**Diagnostic — the failure this installer prevents.** The task was once
+registered by hand without copying the script to its `-File` target, so every
+fire exited `0xFFFD0000` (`powershell -File <missing>`) without ever running.
+When the task "does nothing," check in this order:
+
+```powershell
+# 1. Did the last run succeed? 0 = OK; 0xFFFD0000 = -File target missing.
+Get-ScheduledTaskInfo -TaskName Aurora-Tailscale-Health | Format-List LastRunTime,LastTaskResult
+
+# 2. Does the -File target actually exist on this box?
+Test-Path C:\ProgramData\Aurora\repair-tailscale-dataplane.ps1
+
+# 3. What is the script logging?
+Get-Content C:\ProgramData\Aurora\tailscale-repair.log -Tail 20
+```
+
+A non-zero `LastTaskResult` with a missing target means the script was never
+deployed — re-run the installer.
+
+## Clipboard delivery
+
+Commands and configurations intended for manual paste are delivered directly
+to the destination machine's interactive clipboard:
+
+| Content | Default destination |
+| --- | --- |
+| Router, firewall, or Termius paste | PC3 |
+| PC2-specific host command | PC2 |
+| PC1-specific host command | PC1 |
+
+Use `push-clip.ps1` from PC1. Each item becomes a separate Win+V history entry:
+
+```powershell
+.\ops\access\push-clip.ps1 -Dest pc3 -Items 'show running-config'
+.\ops\access\push-clip.ps1 -Dest pc3 -Items @(
+    'configure',
+    'router isis CORE',
+    'commit'
+)
+```
+
+The receiver is the persistent interactive scheduled task
+`Aurora-SetClipboard`, backed by `C:\ProgramData\Aurora\set-clip.ps1`. Only
+pasteable text belongs in clipboard items; keystroke instructions remain in
+the operator steps. For router consoles, prefer the console driver over paste
+when bracketed-paste handling could alter the input.
+
 ## PC2 Termius opacity
 
 On the Dell PC2 interactive desktop, use the opacity helper to make Termius
@@ -116,6 +187,10 @@ The helper calls `ssh-keygen.exe` with an empty passphrase by default so automat
 ## Node snippets
 
 Initial SSH snippets for MEL-P and the PE nodes live in `node-snippets/`. MEL-P and MEL-PE1 now include the local `aurora-codex` and `aurora-claude` public key bodies. Secret placeholders for `admin` and `enable` are still replaced manually on-console and must not be committed.
+
+The preceding key examples apply to IOS/IOL. Region A IOS-XRv 6.1.3 uses
+separate password-authenticated read-only agent accounts because that image
+cannot bind imported user keys. Agent secrets remain in Ansible Vault.
 
 Current verified access:
 
