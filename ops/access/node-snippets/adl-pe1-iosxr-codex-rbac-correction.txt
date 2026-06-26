@@ -167,14 +167,19 @@ configure
  commit label AURORA_CODEX_RBAC
  end
 
-! IOS-XRv 6.1.3 rejected `sshkey` in username submode. Inspect the commands
-! actually supported by this image before selecting an authentication method:
+! Password authentication is the supported agent path on IOS-XRv 6.1.3.
+! Use a random alphanumeric cleartext secret and let XR generate its own hash.
 configure
  username aurora-codex
-  ?
+  secret <RANDOM_ALPHANUMERIC_SECRET_FROM_VAULT>
+ !
+ root
+ show configuration
+ commit label AURORA_CODEX_SECRET
+ end
 
 ! Evidence.
 show running-config taskgroup AURORA-CODEX-RO
 show running-config usergroup AURORA-CODEX-RO-USERS
 show running-config username aurora-codex
-show crypto key authentication rsa
+show user tasks

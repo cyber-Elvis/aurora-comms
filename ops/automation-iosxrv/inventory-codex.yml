@@ -1,0 +1,12 @@
+all:
+  children:
+    region_a_iosxr_codex:
+      hosts:
+        adl-pe1:
+          ansible_host: 10.255.191.17
+        gel-pe1:
+          ansible_host: 10.255.191.15
+        mel-pe1:
+          ansible_host: 10.255.191.12
+        mel-p:
+          ansible_host: 10.255.191.11
