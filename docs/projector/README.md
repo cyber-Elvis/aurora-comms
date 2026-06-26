@@ -10,35 +10,44 @@ with enlarged text (smallest label clears ~18px, the confirmed "perfect" size on
 (right-click image → *Send to My Phone* → lands in Photos), then cast with the TV Casting app
 + the projector's FileShare. WiFi cast is lossy (softens text) — **HDMI is crispest**.
 
-## Layout — every diagram gets a `<name>/` subfolder
+## Layout — every diagram gets a `<name>/` subfolder, all SEMANTIC
 ```
 docs/projector/
   00-native-1080p-test.png   test pattern (generic; not a diagram)
-  region-a/   00-overview + SEMANTIC slides (topology / reference panels)
-  region-b/   00-overview + grid tiles            (generic tiler)
-  region-a-automation/  00-overview + grid tiles  (generic tiler)
+  region-a/             00-overview + 01-topology + 02/03-reference-*
+  region-b/             00-overview + 01-topology + 02/03-reference-*
+  region-a-automation/  00-overview + 01-flow + 02-reference-accounts
 ```
 - **`00-overview.png`** in each folder = the whole diagram letterboxed — a "where am I" **map
   only; its text is NOT meant to be read**. **Read from the content slides, not the overview.**
-- **Region A is split SEMANTICALLY** (`01-topology` = whole network graph; `02/03-reference-*` =
-  description panels enlarged) — the intelligent split, not a grid.
-- **Other diagrams** (Region B, automation) currently use the mechanical grid.
+- **`01-…`** = the whole topology/flow on one slide (node names readable; fine IP/BGP detail is
+  on the reference slides). **`02/03-reference-*`** = the description panels enlarged.
+- All three diagrams use the **same semantic split** (topology | reference), not a grid.
 
-## How to get INTELLIGENT (semantic) slides for any diagram — the convention
+## How INTELLIGENT (semantic) slides work — the convention
 The shared tiler (`ops/diagrams/make_projector_slides.py`) checks for a **regions sidecar**
-next to the input — `docs/<name>-topology.regions.json`:
-- **sidecar present → SEMANTIC** slides (one per declared region: topology, reference, …);
-- **no sidecar → GRID** fallback (mechanical `top/mid/bottom` × `left/center/right` tiles).
+next to the input — `docs/<stem>.regions.json`:
+- **sidecar present → SEMANTIC** slides (one per declared region);
+- **no sidecar → GRID** fallback (mechanical tiles, fine for ad-hoc images).
 
-So a code-generated diagram opts into intelligent slides by having its generator **emit the
-sidecar once**. Region A's `render_topology.py` does this in its `regions` block (single source
-of truth — edit there to re-shape the slides). The sidecar format:
+A code-generated diagram opts in by emitting the sidecar from its generator. **The boxes are
+DERIVED from geometry, not hand-typed:** `band()/panel()/zone()/node()` register their rects into
+`REG` as they draw, and the sidecar boxes are the bbox of each region group — so they auto-track
+the layout (move a panel, its box follows). This is a genuine single source of truth. Sidecar
+format:
 ```json
-{ "canvas": [1840, 1200],
+{ "canvas": [W, H],   // MUST equal the diagram's native size (SVG viewBox / PNG pixels)
   "slides": [ { "name": "01-topology.png", "caption": "…", "box": [x0,y0,x1,y1] }, … ] }
 ```
-`box` is in the diagram's own canvas units. To make Region B (or any future diagram) semantic,
-add the same `regions` block to its generator — no tiler changes needed.
+The tiler **validates** every sidecar before cropping (canvas+slides present, x/y scaled
+independently, canvas aspect must match the master, boxes in-bounds and non-inverted, names
+unique) and **warns** if any drawn content lands on no content slide — so a bad or stale sidecar
+fails loudly instead of silently mis-cropping.
+
+**To make a NEW code-gen diagram semantic:** tag its draw helpers with a region group (as in
+`render_topology.py`) and emit the derived sidecar. For a **PNG-only** diagram (no generator),
+hand-write `docs/<stem>.regions.json` in pixel units (see
+`region-a-automation-architecture.regions.json`).
 
 ## Regenerate
 ```

@@ -1,0 +1,15 @@
+{
+  "canvas": [1760, 1060],
+  "slides": [
+    {
+      "name": "01-flow.png",
+      "caption": "Region A automation - FLOW (control node -> jump host -> 4x IOS-XRv)",
+      "box": [40, 0, 1185, 988]
+    },
+    {
+      "name": "02-reference-accounts.png",
+      "caption": "Region A automation - REFERENCE: per-node RBAC accounts",
+      "box": [1200, 168, 1716, 912]
+    }
+  ]
+}

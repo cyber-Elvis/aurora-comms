@@ -9,12 +9,14 @@ CML Cisco PEs. Self-contained raster via svglib + reportlab/rlPyCairo.
     python ops/region-b-cml/diagrams/render_topology.py
 """
 import os
+import json
 from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OUT_SVG = os.path.join(REPO, "docs", "region-b-topology.svg")
 OUT_PNG = os.path.join(REPO, "docs", "region-b-topology.png")
+OUT_REGIONS = os.path.join(REPO, "docs", "region-b-topology.regions.json")
 
 W, H = 1760, 1000
 INK = "#0d2b4e"
@@ -49,8 +51,14 @@ def poly(pts, color=LINE, sw=2.0, dash=None):
 
 # node registry: name -> (x, y, w, h)
 N = {}
+REG = {}  # bbox of each projector-region group, accumulated as elements draw (auto-tracks layout)
+def reg(group, x, y, w, h):
+    box = [x, y, x + w, y + h]
+    b = REG.get(group)
+    REG[group] = box if b is None else [min(b[0], x), min(b[1], y), max(b[2], x + w), max(b[3], y + h)]
 def node(name, x, y, title, sub, fill, fg="#ffffff", w=150, h=56, byoi=False, rr=False):
     N[name] = (x, y, w, h)
+    reg("topology", x, y, w, h)
     stroke = "#f0b429" if (byoi or rr) else "#ffffff"
     dash = "5 4" if byoi else None
     rect(x, y, w, h, fill, stroke=stroke, rx=9, sw=(3.0 if (byoi or rr) else 1.0), dash=dash)
@@ -74,6 +82,7 @@ text(34, 59, "CML = Cisco native + ONE BYOI (vJunos).  Non-Cisco CEs + IXP + RPK
 
 # ---- zone boxes ------------------------------------------------------------
 def zone(x, y, w, h, label):
+    reg("topology", x, y, w, h)
     rect(x, y, w, h, "#eef4fb", stroke=ZONE_BR, rx=14, sw=1.8, op=0.55)
     text(x + 16, y + 24, label, size=14, fill=INK, bold=True)
 
@@ -135,7 +144,8 @@ poly([Er("RPKI"), (530, 464), (690, 250), Eb("DCP1")], color=MGMT, sw=2.0, dash=
 text(560, 250, "RPKI-RTR -> ROV (SYD)", size=11, fill=MGMT, bold=True)
 
 # ---- right-hand info panels ------------------------------------------------
-def panel(x, y, w, h, header, rows):
+def panel(x, y, w, h, header, rows, group="ref_top"):
+    reg(group, x, y, w, h)
     rect(x, y, w, h, PANEL_BG, stroke=PANEL_BR, rx=10, sw=1.4)
     rect(x, y, w, 26, INK, rx=10, sw=0)
     rect(x, y + 13, w, 13, INK, rx=0, sw=0)
@@ -176,13 +186,13 @@ panel(PX, 550, PW, 214, "WHERE THINGS RUN  (the holistic answer)", [
     ("PC1 local", "Aruba CX Helix LAN"),
     ("Region A", "Transit-A/B  (NOT Region B)"),
     ("PC1 Docker", "IXP FRR peers + Routinator"),
-])
+], group="ref_bot")
 panel(PX, 776, PW, 140, "BUILD STATE  (2026-06-23)", [
     ("[x]", "config-as-code ops/region-b-cml/"),
     ("[x]", "holistic placement corrected"),
     ("[ ]", "reserve CML + openconnect bridge"),
     ("[ ]", "boot core -> verify -> bridge CEs"),
-])
+], group="ref_bot")
 
 # ---- legend + footer -------------------------------------------------------
 LY = 770
@@ -208,6 +218,31 @@ doc = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
 with open(OUT_SVG, "w", encoding="utf-8") as f:
     f.write(doc)
 print("wrote", OUT_SVG)
+
+# Semantic projector regions — boxes DERIVED from REG (the bbox each zone()/panel()/node()
+# registered as it drew), so they auto-track the layout. Consumed by make_projector_slides.py.
+for _g in ("topology", "ref_top", "ref_bot"):
+    assert _g in REG, f"region group '{_g}' has no registered content — sidecar would be incomplete"
+def _pad(group, p=8):
+    x0, y0, x1, y1 = REG[group]
+    return [max(0, x0 - p), max(0, y0 - p), min(W, x1 + p), min(H, y1 + p)]
+regions = {
+    "canvas": [W, H],
+    "slides": [
+        {"name": "01-topology.png",
+         "caption": "Region B - TOPOLOGY (Region A edge / PC1 bridge / CML reservation)",
+         "box": [0, 0, PX - 12, min(H, REG["topology"][3] + 14)]},
+        {"name": "02-reference-addressing-bgp-vrf.png",
+         "caption": "Region B - REFERENCE: Addressing / BGP-AS / VRF",
+         "box": _pad("ref_top")},
+        {"name": "03-reference-where-runs-build.png",
+         "caption": "Region B - REFERENCE: Where things run / Build state",
+         "box": _pad("ref_bot")},
+    ],
+}
+with open(OUT_REGIONS, "w", encoding="utf-8") as f:
+    json.dump(regions, f, indent=2)
+print("wrote", OUT_REGIONS, "(derived from geometry)")
 
 try:
     from svglib.svglib import svg2rlg

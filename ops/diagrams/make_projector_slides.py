@@ -138,11 +138,23 @@ def main():
         print(f"master {W}x{H}  name={name}  SEMANTIC ({len(spec['slides'])} slides "
               f"from {os.path.basename(regions_path)})")
         slide(m, f"{name} - OVERVIEW (map only - read the content slides)", os.path.join(out, "00-overview.png"))
+        boxes = []
         for sl in spec["slides"]:
             x0, y0 = int(sl["box"][0] * sx), int(sl["box"][1] * sy)
             x1, y1 = int(sl["box"][2] * sx), int(sl["box"][3] * sy)
+            boxes.append((x0, y0, x1, y1))
             slide(m.crop((min(x0, W), min(y0, H), min(x1, W), min(y1, H))),
                   sl["caption"], os.path.join(out, sl["name"]))
+        # coverage backstop: warn if a substantial strip of drawn content lands on NO content slide
+        from PIL import ImageChops
+        cbbox = ImageChops.difference(m, Image.new("RGB", m.size, WHITE)).getbbox()
+        if cbbox and boxes:
+            ux0, uy0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+            ux1, uy1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+            ty, tx = 0.05 * H, 0.05 * W   # ignore thin strips (e.g. a footer line); flag a dropped panel
+            if uy0 - cbbox[1] > ty or cbbox[3] - uy1 > ty or ux0 - cbbox[0] > tx or cbbox[2] - ux1 > tx:
+                print(f"  NOTE: some drawn content is outside every region box (content {cbbox} vs "
+                      f"union {(ux0, uy0, ux1, uy1)}) — it appears only on 00-overview.")
         print(f"\n{len(spec['slides'])} semantic slides + overview in {out}")
         return
 

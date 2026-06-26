@@ -6,12 +6,12 @@
   "slides": [
     {
       "name": "01-topology.png",
-      "caption": "Region A - TOPOLOGY (edge - core - customer - workloads - Region B)",
+      "caption": "Region A - TOPOLOGY (whole network \u2014 fine IP/BGP detail is on the reference slides)",
       "box": [
-        18,
-        78,
-        1218,
-        874
+        0,
+        0,
+        1220,
+        860
       ]
     },
     {
@@ -19,9 +19,9 @@
       "caption": "Region A - REFERENCE: PC1 RPKI / Mgmt / Addressing",
       "box": [
         1224,
-        80,
-        1812,
-        470
+        78,
+        1816,
+        474
       ]
     },
     {
@@ -30,8 +30,8 @@
       "box": [
         1224,
         470,
-        1812,
-        1134
+        1816,
+        1138
       ]
     }
   ]
