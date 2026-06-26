@@ -7,8 +7,8 @@
 ! Preserve deployed Loopback0 10.0.0.3/32 (NO renumber to .5 this MOP).
 ! Break-glass user 'labadmin' (group root-system) is created at FIRST BOOT with its
 ! secret set interactively. Do NOT re-add 'admin' (reserved/locked on XR); no secret in file.
-! Automation users (aurora-codex/aurora-claude RSA-3072) deferred to the post-migration
-! access-hardening change (XRv 6.1.3 has no Ed25519).
+! Separate password-authenticated read-only agent users are deferred to the
+! post-migration access-hardening change; secrets remain in Ansible Vault.
 !
 ! GEL parity = management + Loopback0 only; cores shut/unaddressed (no IS-IS/LDP).
 
