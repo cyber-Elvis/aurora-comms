@@ -1,0 +1,9 @@
+# Live per-reservation inventory carries VPN + CML + node credentials — never commit it.
+ansible/inventory/devnet-current.yml
+
+# Working copy of the topology with secrets substituted in (see topology header).
+topology/*.rendered.yaml
+
+# Ansible runtime artifacts
+*.retry
+ansible/.ansible/

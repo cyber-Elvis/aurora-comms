@@ -1,0 +1,58 @@
+# =============================================================================
+# EXAMPLE of a filled-in per-reservation inventory.
+# Copy this to devnet-current.yml (gitignored) and replace with REAL values from
+# the DevNet portal + CML once the reservation is live. Put passwords in vault, not here.
+#   cd ops/region-b-cml/ansible
+#   cp inventory/devnet-current.example.yml inventory/devnet-current.yml
+#   # edit mgmt IPs; encrypt the password vars:
+#   ansible-vault encrypt_string 'S3cret' --name ansible_password >> inventory/devnet-current.yml
+# =============================================================================
+all:
+  vars:
+    cml_url: "https://10.10.20.161"          # example — real value from portal
+    cml_username: "developer"
+    ansible_user: labadmin
+    # ansible_password: !vault | ...           # ansible-vault encrypt_string output
+
+  children:
+    region_b_iosxr:
+      vars:
+        ansible_network_os: cisco.iosxr.iosxr
+        ansible_connection: ansible.netcommon.network_cli
+      hosts:
+        dc-p-r1:   {ansible_host: 10.10.20.101, loopback0: 10.0.20.1}
+        dc-p-r2:   {ansible_host: 10.10.20.102, loopback0: 10.0.20.2}
+        mr-pe-r1:  {ansible_host: 10.10.20.111, loopback0: 10.0.20.11}
+        hh-pe-r1:  {ansible_host: 10.10.20.121, loopback0: 10.0.20.21}
+        hh-pe-r2:  {ansible_host: 10.10.20.122, loopback0: 10.0.20.22}
+
+    region_b_iosxe:
+      vars:
+        ansible_network_os: cisco.ios.ios
+        ansible_connection: ansible.netcommon.network_cli
+      hosts:
+        mr-pe-r2:  {ansible_host: 10.10.20.112, loopback0: 10.0.20.12}
+        mr-ce:     {ansible_host: 10.10.20.131, loopback0: 10.0.21.1}
+
+    region_b_panos:        # PA-VM LOCAL on PC1 vrnetlab (reach via the PC1 host, not CML)
+      vars:
+        ansible_network_os: paloaltonetworks.panos
+      hosts:
+        hh-ce:     {ansible_host: 192.168.137.1, loopback0: 10.0.21.2}   # example: PC1 vrnetlab mgmt
+
+    region_b_junos:
+      vars:
+        ansible_network_os: junipernetworks.junos.junos
+        ansible_connection: ansible.netcommon.network_cli
+      hosts:
+        jnx-p:     {ansible_host: 10.10.20.141, loopback0: 10.0.20.31}   # vJunos BYOI in CML
+        jnx-fw:    {ansible_host: 192.168.137.2, loopback0: 10.0.21.3}   # vSRX local on Dell GNS3
+
+    region_b_rr:
+      hosts: {dc-p-r1: , dc-p-r2: }
+    region_b_pe:
+      hosts: {mr-pe-r1: , mr-pe-r2: , hh-pe-r1: , hh-pe-r2: }
+    region_b_ce:
+      hosts: {mr-ce: , hh-ce: , jnx-fw: }
+    region_b_asbr:
+      hosts: {dc-p-r1: }

@@ -1,0 +1,58 @@
+# =============================================================================
+# Region B inventory TEMPLATE — committed shape, NO secrets.
+# Copy to devnet-current.yml (gitignored) and fill in per-reservation values.
+# Management IPs are assigned by CML/DevNet at reservation time (see MOP).
+# =============================================================================
+all:
+  vars:
+    # --- Per-reservation reachability (fill in devnet-current.yml) -------------
+    cml_url: "https://__CML_HOST__"          # CML controller UI/API
+    cml_username: "__CML_USER__"
+    # cml_password lives only in devnet-current.yml / vault
+    # Nodes are reached in-band over the openconnect bridge (PC1 WSL tun0).
+    ansible_user: labadmin
+    # ansible_password / ansible_ssh_pass -> vault in devnet-current.yml
+
+  children:
+    region_b_iosxr:
+      vars:
+        ansible_network_os: cisco.iosxr.iosxr
+        ansible_connection: ansible.netcommon.network_cli
+      hosts:
+        dc-p-r1:   {ansible_host: __DC_P_R1_MGMT__,   loopback0: 10.0.20.1}
+        dc-p-r2:   {ansible_host: __DC_P_R2_MGMT__,   loopback0: 10.0.20.2}
+        mr-pe-r1:  {ansible_host: __MR_PE_R1_MGMT__,  loopback0: 10.0.20.11}
+        hh-pe-r1:  {ansible_host: __HH_PE_R1_MGMT__,  loopback0: 10.0.20.21}
+        hh-pe-r2:  {ansible_host: __HH_PE_R2_MGMT__,  loopback0: 10.0.20.22}
+
+    region_b_iosxe:
+      vars:
+        ansible_network_os: cisco.ios.ios
+        ansible_connection: ansible.netcommon.network_cli
+      hosts:
+        mr-pe-r2:  {ansible_host: __MR_PE_R2_MGMT__,  loopback0: 10.0.20.12}
+        mr-ce:     {ansible_host: __MR_CE_MGMT__,     loopback0: 10.0.21.1}
+
+    region_b_panos:        # PA-VM 9.0.4 — LOCAL on PC1 vrnetlab (NOT CML); bridged in
+      vars:
+        ansible_network_os: paloaltonetworks.panos
+      hosts:
+        hh-ce:     {ansible_host: __HH_CE_PC1_MGMT__, loopback0: 10.0.21.2}  # PC1 vrnetlab mgmt
+
+    region_b_junos:
+      vars:
+        ansible_network_os: junipernetworks.junos.junos
+        ansible_connection: ansible.netcommon.network_cli
+      hosts:
+        jnx-p:     {ansible_host: __JNX_P_CML_MGMT__, loopback0: 10.0.20.31}  # vJunos BYOI in CML
+        jnx-fw:    {ansible_host: __JNX_FW_DELL_MGMT__, loopback0: 10.0.21.3} # vSRX local on Dell
+
+    # --- Functional groups for service plays ---------------------------------
+    region_b_rr:           # route-reflector cluster
+      hosts: {dc-p-r1: , dc-p-r2: }
+    region_b_pe:
+      hosts: {mr-pe-r1: , mr-pe-r2: , hh-pe-r1: , hh-pe-r2: }
+    region_b_ce:
+      hosts: {mr-ce: , hh-ce: , jnx-fw: }
+    region_b_asbr:         # inter-region boundary toward Region A
+      hosts: {dc-p-r1: }
