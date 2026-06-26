@@ -61,7 +61,9 @@ def node(name, x, y, w, h, title, sub, line3, fill, fg="#ffffff", dashed=False, 
     text(cx, y + 20, title, size=13, fill=fg, anchor="middle", bold=True)
     text(cx, y + 36, sub, size=9.5, fill=fg, anchor="middle")
     if line3:
-        text(cx, y + 50, line3, size=9, fill=fg, anchor="middle", italic=True)
+        # upright + 10px (not 9px italic): oblique thin strokes at the smallest size break up
+        # worst under projector downscale + lossy WiFi cast — italic carries no semantic load here
+        text(cx, y + 51, line3, size=10, fill=fg, anchor="middle")
     if badge:
         rect(x + w - 62, y + 4, 58, 14, "#f0b429", rx=3, sw=0)
         text(x + w - 33, y + 14, badge, size=8.5, fill="#3a2a00", anchor="middle", bold=True)

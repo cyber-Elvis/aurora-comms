@@ -64,6 +64,36 @@ def band(idx, n, two, three):
         return three[idx]
     return str(idx + 1)
 
+def validate_regions(spec, W, H, path):
+    """Validate a regions sidecar against the rendered master; return (scale_x, scale_y).
+    Fails LOUDLY (SystemExit) naming the sidecar + offending slide — never silently mis-crops."""
+    def die(msg):
+        sys.exit(f"ERROR in regions sidecar {path}: {msg}")
+    if "canvas" not in spec or len(spec["canvas"]) != 2:
+        die("missing required 'canvas': [width, height] in the diagram's native units")
+    if not spec.get("slides"):
+        die("missing or empty 'slides'")
+    cw, ch = spec["canvas"]
+    if cw <= 0 or ch <= 0:
+        die(f"bad canvas {cw}x{ch}")
+    if abs((cw / ch) / (W / H) - 1) > 0.02:    # master must share the declared canvas aspect
+        die(f"canvas aspect {cw}x{ch} != rendered master {W}x{H} — set 'canvas' to the diagram's true size")
+    seen = set()
+    for i, sl in enumerate(spec["slides"]):
+        for k in ("name", "caption", "box"):
+            if k not in sl:
+                die(f"slide #{i} missing '{k}'")
+        if sl["name"] in seen:
+            die(f"duplicate slide name '{sl['name']}'")
+        seen.add(sl["name"])
+        b = sl["box"]
+        if len(b) != 4:
+            die(f"slide '{sl['name']}' box needs 4 numbers [x0,y0,x1,y1], got {b}")
+        x0, y0, x1, y1 = b
+        if not (0 <= x0 < x1 <= cw and 0 <= y0 < y1 <= ch):
+            die(f"slide '{sl['name']}' box {b} is inverted or outside canvas {cw}x{ch}")
+    return W / cw, H / ch
+
 def slide(crop, caption, path):
     cap_h = 56
     avail_w, avail_h = PW, PH - cap_h
@@ -104,14 +134,15 @@ def main():
     if os.path.exists(regions_path):
         with open(regions_path, encoding="utf-8") as f:
             spec = json.load(f)
-        canvas_w = spec.get("canvas", [W, H])[0]
-        scale = W / canvas_w        # regions are declared in the diagram's own (e.g. viewBox) units
+        sx, sy = validate_regions(spec, W, H, regions_path)   # fails LOUDLY on a bad sidecar
         print(f"master {W}x{H}  name={name}  SEMANTIC ({len(spec['slides'])} slides "
               f"from {os.path.basename(regions_path)})")
         slide(m, f"{name} - OVERVIEW (map only - read the content slides)", os.path.join(out, "00-overview.png"))
         for sl in spec["slides"]:
-            x0, y0, x1, y1 = [int(v * scale) for v in sl["box"]]
-            slide(m.crop((x0, y0, x1, y1)), sl["caption"], os.path.join(out, sl["name"]))
+            x0, y0 = int(sl["box"][0] * sx), int(sl["box"][1] * sy)
+            x1, y1 = int(sl["box"][2] * sx), int(sl["box"][3] * sy)
+            slide(m.crop((min(x0, W), min(y0, H), min(x1, W), min(y1, H))),
+                  sl["caption"], os.path.join(out, sl["name"]))
         print(f"\n{len(spec['slides'])} semantic slides + overview in {out}")
         return
 
