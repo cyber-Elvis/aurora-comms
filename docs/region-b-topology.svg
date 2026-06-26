@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1760" height="1000" viewBox="0 0 1760 1000">
+<rect x="0" y="0" width="1760" height="1000" rx="0" ry="0" fill="#ffffff" fill-opacity="1.0" stroke="none" stroke-width="1.5"/>
+<rect x="0" y="0" width="1760" height="74" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="1.5"/>
+<text x="34" y="33" font-family="Helvetica" font-size="24" fill="#ffffff" text-anchor="start" font-weight="bold">Aurora Region B  ·  placement view  —  what runs in CML vs locally on PC1/Dell</text>
+<text x="34" y="59" font-family="Helvetica" font-size="13.5" fill="#9db8d6" text-anchor="start">CML = Cisco native + ONE BYOI (vJunos).  Non-Cisco CEs + IXP + RPKI run locally and reach the CML PEs over the PC1 openconnect bridge.  Transits stay in Region A.</text>
+<rect x="40" y="92" width="452" height="196" rx="14" ry="14" fill="#eef4fb" fill-opacity="0.55" stroke="#9fb3cd" stroke-width="1.8"/>
+<text x="56" y="116" font-family="Helvetica" font-size="14" fill="#0d2b4e" text-anchor="start" font-weight="bold">REGION A  ·  local Dell GNS3  (Internet edge stays here)</text>
+<rect x="40" y="312" width="452" height="600" rx="14" ry="14" fill="#eef4fb" fill-opacity="0.55" stroke="#9fb3cd" stroke-width="1.8"/>
+<text x="56" y="336" font-family="Helvetica" font-size="14" fill="#0d2b4e" text-anchor="start" font-weight="bold">PC1 / Dell  ·  bridge · PC1 Docker · local non-Cisco CEs</text>
+<rect x="560" y="92" width="660" height="648" rx="14" ry="14" fill="#eef4fb" fill-opacity="0.55" stroke="#9fb3cd" stroke-width="1.8"/>
+<text x="576" y="116" font-family="Helvetica" font-size="14" fill="#0d2b4e" text-anchor="start" font-weight="bold">REGION B  ·  CML reservation  (Cisco native + vJunos BYOI)</text>
+<rect x="56" y="150" width="200" height="58" rx="9" ry="9" fill="#0d2b4e" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="156.0" y="173" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">MEL-PE1 edge (ASBR)</text>
+<text x="156.0" y="191" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">AS 64496 · MEL-P = transport handoff</text>
+<rect x="300" y="144" width="180" height="50" rx="9" ry="9" fill="#8e44ad" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="390.0" y="167" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">Transit-A · CSR1000v</text>
+<text x="390.0" y="185" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">AS 64497 · primary</text>
+<rect x="300" y="210" width="180" height="50" rx="9" ry="9" fill="#8e44ad" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="390.0" y="233" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">Transit-B · IOL-XE</text>
+<text x="390.0" y="251" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">AS 64498 · backup</text>
+<line x1="300" y1="169.0" x2="256" y2="179.0" stroke="#8e44ad" stroke-width="1.8"/>
+<line x1="300" y1="235.0" x2="256" y2="187.0" stroke="#8e44ad" stroke-width="1.8"/>
+<rect x="56" y="360" width="200" height="58" rx="9" ry="9" fill="#6a4ea3" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="156.0" y="383" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">openconnect bridge</text>
+<text x="156.0" y="401" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">+ MASQUERADE (tun0)</text>
+<rect x="56" y="440" width="200" height="48" rx="9" ry="9" fill="#455a64" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="156.0" y="463" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">Routinator (PC1 Docker)</text>
+<text x="156.0" y="481" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">RTR :3323 · RPKI/ROV</text>
+<rect x="56" y="508" width="200" height="56" rx="9" ry="9" fill="#0e8a7d" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="156.0" y="531" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">IXP FRR (PC1 Docker)</text>
+<text x="156.0" y="549" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">RS/content/eyeball 64499-501</text>
+<rect x="290" y="360" width="196" height="58" rx="9" ry="9" fill="#fa582d" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="388.0" y="383" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">HH-CE · PA-VM 9.0.4</text>
+<text x="388.0" y="401" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">PC1 vrnetlab · AS 64521</text>
+<rect x="290" y="440" width="196" height="58" rx="9" ry="9" fill="#159e74" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="388.0" y="463" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">JNX-FW · vSRX</text>
+<text x="388.0" y="481" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">Dell standalone · AS 64522</text>
+<rect x="290" y="520" width="196" height="58" rx="9" ry="9" fill="#ff9800" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="388.0" y="543" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">helix-lan-sw · Aruba CX</text>
+<text x="388.0" y="561" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">local L2 · Helix LAN</text>
+<text x="56" y="600" font-family="Helvetica" font-size="11.5" fill="#334155" text-anchor="start">Local CEs reach Region B PEs over the bridge (PE-CE eBGP) —</text>
+<text x="56" y="618" font-family="Helvetica" font-size="11.5" fill="#334155" text-anchor="start">no per-reservation CML upload. Aruba is local L2 behind PA-VM (no GRE).</text>
+<line x1="290" y1="389.0" x2="256" y2="389.0" stroke="#fa582d" stroke-width="1.8"/>
+<line x1="290" y1="469.0" x2="256" y2="395.0" stroke="#159e74" stroke-width="1.8"/>
+<line x1="290" y1="549.0" x2="388.0" y2="418" stroke="#ff9800" stroke-width="1.8"/>
+<line x1="156.0" y1="508" x2="156.0" y2="418" stroke="#0e8a7d" stroke-width="1.6"/>
+<line x1="156.0" y1="440" x2="162.0" y2="418" stroke="#455a64" stroke-width="1.6"/>
+<rect x="720" y="140" width="150" height="56" rx="9" ry="9" fill="#1565c0" fill-opacity="1.0" stroke="#f0b429" stroke-width="3.0"/>
+<text x="795.0" y="163" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">DC-P-R1</text>
+<text x="795.0" y="181" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">IOS XR · RR / ASBR</text>
+<rect x="950" y="140" width="150" height="56" rx="9" ry="9" fill="#1565c0" fill-opacity="1.0" stroke="#f0b429" stroke-width="3.0"/>
+<text x="1025.0" y="163" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">DC-P-R2</text>
+<text x="1025.0" y="181" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">IOS XR · RR</text>
+<rect x="575" y="235" width="150" height="56" rx="9" ry="9" fill="#159e74" fill-opacity="1.0" stroke="#f0b429" stroke-width="3.0" stroke-dasharray="5 4"/>
+<text x="650.0" y="258" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">JNX-P</text>
+<text x="650.0" y="276" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">vJunos-router · BYOI</text>
+<rect x="700" y="335" width="150" height="56" rx="9" ry="9" fill="#1565c0" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="775.0" y="358" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">MR-PE-R1</text>
+<text x="775.0" y="376" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">IOS XR · PE</text>
+<rect x="700" y="425" width="150" height="56" rx="9" ry="9" fill="#4f8fe0" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="775.0" y="448" font-family="Helvetica" font-size="13.5" fill="#07203a" text-anchor="middle" font-weight="bold">MR-PE-R2</text>
+<text x="775.0" y="466" font-family="Helvetica" font-size="10" fill="#07203a" text-anchor="middle">Cat8000v XE · PE</text>
+<rect x="575" y="530" width="150" height="56" rx="9" ry="9" fill="#4f8fe0" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="650.0" y="553" font-family="Helvetica" font-size="13.5" fill="#07203a" text-anchor="middle" font-weight="bold">MR-CE</text>
+<text x="650.0" y="571" font-family="Helvetica" font-size="10" fill="#07203a" text-anchor="middle">Cat8000v · CE+ZBFW</text>
+<rect x="1010" y="335" width="150" height="56" rx="9" ry="9" fill="#1565c0" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="1085.0" y="358" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">HH-PE-R1</text>
+<text x="1085.0" y="376" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">IOS XR · PE</text>
+<rect x="1010" y="425" width="150" height="56" rx="9" ry="9" fill="#1565c0" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.0"/>
+<text x="1085.0" y="448" font-family="Helvetica" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="bold">HH-PE-R2</text>
+<text x="1085.0" y="466" font-family="Helvetica" font-size="10" fill="#ffffff" text-anchor="middle">IOS XR · PE</text>
+<text x="575" y="690" font-family="Helvetica" font-size="11.5" fill="#334155" text-anchor="start" font-style="italic">8 Cisco nodes (native) + JNX-P (vJunos, the one BYOI). HH-CE / vSRX / Aruba are bridged in.</text>
+<line x1="795.0" y1="168.0" x2="1025.0" y2="168.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="795.0" y1="168.0" x2="650.0" y2="263.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="1025.0" y1="168.0" x2="650.0" y2="263.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="795.0" y1="168.0" x2="775.0" y2="363.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="1025.0" y1="168.0" x2="775.0" y2="453.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="795.0" y1="168.0" x2="1085.0" y2="363.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="1025.0" y1="168.0" x2="1085.0" y2="453.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="775.0" y1="363.0" x2="775.0" y2="453.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="1085.0" y1="363.0" x2="1085.0" y2="453.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="775.0" y1="363.0" x2="650.0" y2="558.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<line x1="775.0" y1="453.0" x2="650.0" y2="558.0" stroke="#5b6b7d" stroke-width="1.6"/>
+<polyline points="256,179.0 520,179 660,168 720,168.0" fill="none" stroke="#6a4ea3" stroke-width="2.6" stroke-dasharray="8 5"/>
+<text x="548" y="150" font-family="Helvetica" font-size="11.5" fill="#6a4ea3" text-anchor="start" font-weight="bold">eBGP 64496 &lt;-&gt; 65002</text>
+<polyline points="256,389.0 520,389 700,470 1010,453.0" fill="none" stroke="#fa582d" stroke-width="2.4" stroke-dasharray="8 5"/>
+<polyline points="256,379.0 540,360 720,363 1010,363.0" fill="none" stroke="#fa582d" stroke-width="2.0" stroke-dasharray="2 5"/>
+<text x="560" y="470" font-family="Helvetica" font-size="11.5" fill="#fa582d" text-anchor="start" font-weight="bold">PE-CE eBGP (Helix) via bridge</text>
+<polyline points="256,464.0 530,464 690,250 795.0,196" fill="none" stroke="#455a64" stroke-width="2.0" stroke-dasharray="3 5"/>
+<text x="560" y="250" font-family="Helvetica" font-size="11" fill="#455a64" text-anchor="start" font-weight="bold">RPKI-RTR -&gt; ROV (SYD)</text>
+<rect x="1240" y="92" width="484" height="186" rx="10" ry="10" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.4"/>
+<rect x="1240" y="92" width="484" height="26" rx="10" ry="10" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="1240" y="105" width="484" height="13" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="1254" y="110" font-family="Helvetica" font-size="12.5" fill="#ffffff" text-anchor="start" font-weight="bold">ADDRESSING  (disjoint from Region A)</text>
+<text x="1253" y="138" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Carrier loopbacks</text>
+<text x="1405" y="138" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">10.0.20.0/24</text>
+<text x="1253" y="159" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">CE loopbacks</text>
+<text x="1405" y="159" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">10.0.21.0/24</text>
+<text x="1253" y="180" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Backbone /31s</text>
+<text x="1405" y="180" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">10.255.20.0/24</text>
+<text x="1253" y="201" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">PE-CE /30s</text>
+<text x="1405" y="201" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">10.255.21.0/24</text>
+<text x="1253" y="222" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">IS-IS</text>
+<text x="1405" y="222" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">L2-only · area 49.0002 · wide</text>
+<text x="1253" y="243" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">MPLS</text>
+<text x="1405" y="243" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">LDP on all core /31s</text>
+<rect x="1240" y="290" width="484" height="140" rx="10" ry="10" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.4"/>
+<rect x="1240" y="290" width="484" height="26" rx="10" ry="10" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="1240" y="303" width="484" height="13" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="1254" y="308" font-family="Helvetica" font-size="12.5" fill="#ffffff" text-anchor="start" font-weight="bold">BGP / AS</text>
+<text x="1253" y="336" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Region B AS</text>
+<text x="1405" y="336" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">65002 (confed id 64496)</text>
+<text x="1253" y="357" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">RR cluster</text>
+<text x="1405" y="357" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">DC-P-R1 + DC-P-R2</text>
+<text x="1253" y="378" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Inter-region</text>
+<text x="1405" y="378" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">eBGP 64496 &lt;-&gt; 65002</text>
+<text x="1253" y="399" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Customer AS</text>
+<text x="1405" y="399" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">MR 64520 · HH 64521 · SRX 64522</text>
+<rect x="1240" y="442" width="484" height="96" rx="10" ry="10" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.4"/>
+<rect x="1240" y="442" width="484" height="26" rx="10" ry="10" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="1240" y="455" width="484" height="13" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="1254" y="460" font-family="Helvetica" font-size="12.5" fill="#ffffff" text-anchor="start" font-weight="bold">VRF / RD-RT  (shared carrier space)</text>
+<text x="1253" y="488" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Maple Ridge</text>
+<text x="1405" y="488" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">id 1 · RD/RT 64496:1</text>
+<text x="1253" y="509" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Helix Health</text>
+<text x="1405" y="509" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">id 2 · RD/RT 64496:2</text>
+<rect x="1240" y="550" width="484" height="214" rx="10" ry="10" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.4"/>
+<rect x="1240" y="550" width="484" height="26" rx="10" ry="10" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="1240" y="563" width="484" height="13" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="1254" y="568" font-family="Helvetica" font-size="12.5" fill="#ffffff" text-anchor="start" font-weight="bold">WHERE THINGS RUN  (the holistic answer)</text>
+<text x="1253" y="596" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">CML (Cisco)</text>
+<text x="1405" y="596" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">DC-P x2, MR/HH PE pairs, MR-CE</text>
+<text x="1253" y="617" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">CML (BYOI)</text>
+<text x="1405" y="617" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">JNX-P vJunos  — the ONLY upload</text>
+<text x="1253" y="638" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">PC1 vrnetlab</text>
+<text x="1405" y="638" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">HH-CE PA-VM 9.0.4  (bridged)</text>
+<text x="1253" y="659" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Dell</text>
+<text x="1405" y="659" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">JNX-FW vSRX standalone  (bridged)</text>
+<text x="1253" y="680" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">PC1 local</text>
+<text x="1405" y="680" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">Aruba CX Helix LAN</text>
+<text x="1253" y="701" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">Region A</text>
+<text x="1405" y="701" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">Transit-A/B  (NOT Region B)</text>
+<text x="1253" y="722" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">PC1 Docker</text>
+<text x="1405" y="722" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">IXP FRR peers + Routinator</text>
+<rect x="1240" y="776" width="484" height="140" rx="10" ry="10" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.4"/>
+<rect x="1240" y="776" width="484" height="26" rx="10" ry="10" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="1240" y="789" width="484" height="13" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="1254" y="794" font-family="Helvetica" font-size="12.5" fill="#ffffff" text-anchor="start" font-weight="bold">BUILD STATE  (2026-06-23)</text>
+<text x="1253" y="822" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">[x]</text>
+<text x="1405" y="822" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">config-as-code ops/region-b-cml/</text>
+<text x="1253" y="843" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">[x]</text>
+<text x="1405" y="843" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">holistic placement corrected</text>
+<text x="1253" y="864" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">[ ]</text>
+<text x="1405" y="864" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">reserve CML + openconnect bridge</text>
+<text x="1253" y="885" font-family="Helvetica" font-size="12" fill="#334155" text-anchor="start" font-weight="bold">[ ]</text>
+<text x="1405" y="885" font-family="Helvetica" font-size="12" fill="#0d2b4e" text-anchor="start">boot core -&gt; verify -&gt; bridge CEs</text>
+<text x="56" y="770" font-family="Helvetica" font-size="13" fill="#0d2b4e" text-anchor="start" font-weight="bold">PLATFORM</text>
+<rect x="150" y="757" width="22" height="15" rx="4" ry="4" fill="#1565c0" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="178" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">IOS XR</text>
+<rect x="236.0" y="757" width="22" height="15" rx="4" ry="4" fill="#4f8fe0" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="264.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">Cat8000v XE</text>
+<rect x="357.0" y="757" width="22" height="15" rx="4" ry="4" fill="#fa582d" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="385.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">PA-VM</text>
+<rect x="436.0" y="757" width="22" height="15" rx="4" ry="4" fill="#159e74" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="464.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">Juniper</text>
+<rect x="529.0" y="757" width="22" height="15" rx="4" ry="4" fill="#ff9800" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="557.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">Aruba</text>
+<rect x="608.0" y="757" width="22" height="15" rx="4" ry="4" fill="#8e44ad" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="636.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">transit</text>
+<rect x="701.0" y="757" width="22" height="15" rx="4" ry="4" fill="#0e8a7d" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="729.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">IXP FRR</text>
+<rect x="794.0" y="757" width="22" height="15" rx="4" ry="4" fill="#6a4ea3" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="822.0" y="770" font-family="Helvetica" font-size="11.5" fill="#0d2b4e" text-anchor="start">bridge</text>
+<text x="56" y="796" font-family="Helvetica" font-size="11.5" fill="#64748b" text-anchor="start">Dashed = control-plane over the bridge   ·   gold dashed border = BYOI   ·   gold solid border = route-reflector</text>
+<text x="56" y="818" font-family="Helvetica" font-size="11.5" fill="#334155" text-anchor="start">Only vJunos is a per-reservation CML upload (it can't boot on the triple-nested Dell). Everything else non-Cisco runs locally and bridges in.</text>
+<text x="34" y="984" font-family="Helvetica" font-size="11.5" fill="#64748b" text-anchor="start">aurora-comms · ops/region-b-cml/ (topology · addressing · MOP) · ADR-002 §3.2/§3.2.4 · ADR-003 §2.3 · PROPOSED — ratify before deploy</text>
+</svg>
