@@ -1,0 +1,38 @@
+{
+  "canvas": [
+    1840,
+    1200
+  ],
+  "slides": [
+    {
+      "name": "01-topology.png",
+      "caption": "Region A - TOPOLOGY (edge - core - customer - workloads - Region B)",
+      "box": [
+        18,
+        78,
+        1218,
+        874
+      ]
+    },
+    {
+      "name": "02-reference-rpki-mgmt-addressing.png",
+      "caption": "Region A - REFERENCE: PC1 RPKI / Mgmt / Addressing",
+      "box": [
+        1224,
+        80,
+        1812,
+        470
+      ]
+    },
+    {
+      "name": "03-reference-hardening-build.png",
+      "caption": "Region A - REFERENCE: Hardening / Build state / Legend",
+      "box": [
+        1224,
+        470,
+        1812,
+        1134
+      ]
+    }
+  ]
+}

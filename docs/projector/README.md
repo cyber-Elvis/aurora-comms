@@ -19,13 +19,26 @@ docs/projector/
   region-a-automation/  00-overview + grid tiles  (generic tiler)
 ```
 - **`00-overview.png`** in each folder = the whole diagram letterboxed — a "where am I" **map
-  only; its text is NOT meant to be read** (denser diagrams like Region A look worse here —
-  that's inherent, not a bug). **Read from the content slides, not the overview.**
-- **Region A is split SEMANTICALLY** (the intelligent way): `01-topology` = the whole network
-  graph on one slide; `02/03-reference-*` = the description panels, enlarged. Crops are defined
-  in `ops/region-a/diagrams/build_projector_assets.py` (`SLIDES`) in diagram units.
-- **Other diagrams** use the generic tiler's mechanical grid (`top/mid/bottom` ×
-  `left/center/right`). Region B can be converted to a semantic split the same way as Region A.
+  only; its text is NOT meant to be read**. **Read from the content slides, not the overview.**
+- **Region A is split SEMANTICALLY** (`01-topology` = whole network graph; `02/03-reference-*` =
+  description panels enlarged) — the intelligent split, not a grid.
+- **Other diagrams** (Region B, automation) currently use the mechanical grid.
+
+## How to get INTELLIGENT (semantic) slides for any diagram — the convention
+The shared tiler (`ops/diagrams/make_projector_slides.py`) checks for a **regions sidecar**
+next to the input — `docs/<name>-topology.regions.json`:
+- **sidecar present → SEMANTIC** slides (one per declared region: topology, reference, …);
+- **no sidecar → GRID** fallback (mechanical `top/mid/bottom` × `left/center/right` tiles).
+
+So a code-generated diagram opts into intelligent slides by having its generator **emit the
+sidecar once**. Region A's `render_topology.py` does this in its `regions` block (single source
+of truth — edit there to re-shape the slides). The sidecar format:
+```json
+{ "canvas": [1840, 1200],
+  "slides": [ { "name": "01-topology.png", "caption": "…", "box": [x0,y0,x1,y1] }, … ] }
+```
+`box` is in the diagram's own canvas units. To make Region B (or any future diagram) semantic,
+add the same `regions` block to its generator — no tiler changes needed.
 
 ## Regenerate
 ```

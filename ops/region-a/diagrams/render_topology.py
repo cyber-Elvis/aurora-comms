@@ -11,12 +11,14 @@ Reflects region-a-plan.md v2.5 + the 2026-06-24 fixes: iBGP VPNv4 + IPv4-unicast
 ROV from Phase C1 on both transit sessions, GNS3 controller 192.168.137.1:3080, transits STAGED.
 """
 import os
+import json
 from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 OUT_SVG = os.path.join(REPO, "docs", "region-a-topology.svg")
 OUT_PNG = os.path.join(REPO, "docs", "region-a-topology.png")
+OUT_REGIONS = os.path.join(REPO, "docs", "region-a-topology.regions.json")
 
 W, H = 1840, 1200
 INK = "#0d2b4e"
@@ -220,6 +222,27 @@ doc = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBo
 with open(OUT_SVG, "w", encoding="utf-8") as f:
     f.write(doc)
 print("wrote", OUT_SVG)
+
+# Semantic projector regions (in this diagram's WxH units) — consumed by
+# ops/diagrams/make_projector_slides.py to cut intelligent slides (topology | reference)
+# instead of a mechanical grid. Edit here if the layout moves; it's the single source of truth.
+regions = {
+    "canvas": [W, H],
+    "slides": [
+        {"name": "01-topology.png",
+         "caption": "Region A - TOPOLOGY (edge - core - customer - workloads - Region B)",
+         "box": [18, 78, 1218, 874]},
+        {"name": "02-reference-rpki-mgmt-addressing.png",
+         "caption": "Region A - REFERENCE: PC1 RPKI / Mgmt / Addressing",
+         "box": [1224, 80, 1812, 470]},
+        {"name": "03-reference-hardening-build.png",
+         "caption": "Region A - REFERENCE: Hardening / Build state / Legend",
+         "box": [1224, 470, 1812, 1134]},
+    ],
+}
+with open(OUT_REGIONS, "w", encoding="utf-8") as f:
+    json.dump(regions, f, indent=2)
+print("wrote", OUT_REGIONS)
 
 try:
     from svglib.svglib import svg2rlg

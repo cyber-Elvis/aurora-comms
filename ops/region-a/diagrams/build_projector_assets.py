@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Build projector assets for Region A: refresh the topology, emit the native-resolution test
-pattern, and split the diagram into SEMANTIC 1920x1080 slides — the whole topology graph on one
-slide, the reference panels on their own slides (NOT a mechanical top-left/mid-center grid).
+"""Build projector assets for Region A: refresh the topology (which also writes its semantic
+regions sidecar), emit the native-resolution test pattern, and call the shared tiler — which
+sees the sidecar and cuts INTELLIGENT slides (topology | reference panels), not a grid.
 
     py -3.10 ops/region-a/diagrams/build_projector_assets.py            # render + test + slides
     py -3.10 ops/region-a/diagrams/build_projector_assets.py --no-render # skip the re-render
 
-Outputs into docs/projector/region-a/:
-  00-overview                       whole diagram (a "where am I" map; text not meant to be read)
-  01-topology                       the entire network graph (edge + core + CE + workloads + RegB)
-  02-reference-rpki-mgmt-addressing PC1 RPKI + mgmt segment + addressing/policy panels
-  03-reference-hardening-build      transit-edge hardening + build state + legend + guardrails
-plus docs/projector/00-native-1080p-test.png (the generic test pattern).
+Outputs:
+  docs/projector/00-native-1080p-test.png   native-resolution / focus / contrast test pattern
+  docs/projector/region-a/                   00-overview + semantic content slides
 
-Crops are in render_topology.py's 1840x1200 diagram units — edit there if the layout moves.
-Needs py3.10 with pillow + svglib + reportlab.
+The semantic split is declared ONCE in render_topology.py (the `regions` block -> writes
+docs/region-a-topology.regions.json). To re-shape the slides, edit that — not this file.
+Any diagram whose generator emits a `<name>.regions.json` gets the same intelligent treatment;
+diagrams without one fall back to the tiler's mechanical grid. Needs py3.10 +
+pillow (+ svglib + reportlab).
 """
 import os
 import sys
@@ -25,24 +25,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 SVG  = os.path.join(REPO, "docs", "region-a-topology.svg")
 OUT  = os.path.join(REPO, "docs", "projector")
-RA   = os.path.join(OUT, "region-a")
 RENDER = os.path.join(HERE, "render_topology.py")
-os.makedirs(RA, exist_ok=True)
+TILER  = os.path.join(REPO, "ops", "diagrams", "make_projector_slides.py")
+os.makedirs(OUT, exist_ok=True)
 
 PW, PH = 1920, 1080          # projector native panel (16:9)
-WHITE, BLACK, INK = (255, 255, 255), (0, 0, 0), (13, 43, 78)
-
-# Semantic regions (x0, y0, x1, y1) in the 1840x1200 diagram, name, caption.
-SLIDES = [
-    ((0,    0, 1840, 1200), "00-overview.png",
-     "Region A - OVERVIEW (map only - read the tiles below)"),
-    ((18,  78, 1218,  874), "01-topology.png",
-     "Region A - TOPOLOGY (edge - core - customer - workloads - Region B)"),
-    ((1224, 80, 1812, 470), "02-reference-rpki-mgmt-addressing.png",
-     "Region A - REFERENCE: PC1 RPKI / Mgmt / Addressing"),
-    ((1224, 470, 1812, 1134), "03-reference-hardening-build.png",
-     "Region A - REFERENCE: Hardening / Build state / Legend"),
-]
+WHITE, BLACK = (255, 255, 255), (0, 0, 0)
 
 def font(sz, bold=False):
     p = r"C:\Windows\Fonts\arialbd.ttf" if bold else r"C:\Windows\Fonts\arial.ttf"
@@ -50,31 +38,6 @@ def font(sz, bold=False):
         return ImageFont.truetype(p, sz)
     except OSError:
         return ImageFont.load_default()
-
-def render_master(scale=4):
-    from svglib.svglib import svg2rlg
-    from reportlab.graphics import renderPM
-    tmp = os.path.join(RA, "_master.png")
-    d = svg2rlg(SVG)
-    d.scale(scale, scale); d.width *= scale; d.height *= scale
-    renderPM.drawToFile(d, tmp, fmt="PNG", bg=0xFFFFFF)
-    m = Image.open(tmp).convert("RGB"); os.remove(tmp)
-    return m, m.width / 1840.0          # renderPM applies a 72/96 DPI factor
-
-def slide(master, scale, box, name, caption):
-    x0, y0, x1, y1 = [int(v * scale) for v in box]
-    crop = master.crop((x0, y0, x1, y1))
-    cap_h = 56
-    r = min(PW / crop.width, (PH - cap_h) / crop.height)
-    nw, nh = int(crop.width * r), int(crop.height * r)
-    crop = crop.resize((nw, nh), Image.LANCZOS)
-    canvas = Image.new("RGB", (PW, PH), WHITE)
-    d = ImageDraw.Draw(canvas)
-    d.rectangle([0, 0, PW, cap_h], fill=INK)
-    d.text((24, 12), caption, font=font(30, True), fill=WHITE)
-    canvas.paste(crop, ((PW - nw) // 2, cap_h + (PH - cap_h - nh) // 2))
-    canvas.save(os.path.join(RA, name))
-    print("wrote", os.path.join(RA, name), f"({1840/(box[2]-box[0]):.1f}x width)")
 
 # ---------------------------------------------------------------------------
 # Native 1080p test pattern (the one projector asset that isn't a diagram slice)
@@ -145,7 +108,7 @@ def maybe_render_topology():
     try:
         subprocess.run([sys.executable, RENDER], check=True)
     except (subprocess.CalledProcessError, OSError) as e:
-        print(f"WARNING: render_topology.py did not run ({e}); using existing {SVG}.")
+        print(f"WARNING: render_topology.py did not run ({e}); using existing {SVG} + regions.")
 
 if __name__ == "__main__":
     if "--no-render" not in sys.argv:
@@ -153,7 +116,6 @@ if __name__ == "__main__":
     if not os.path.exists(SVG):
         sys.exit(f"ERROR: {SVG} not found -- run render_topology.py first (needs svglib+reportlab).")
     native_test()
-    master, sc = render_master(scale=4)
-    for box, name, caption in SLIDES:
-        slide(master, sc, box, name, caption)
+    # The tiler auto-detects docs/region-a-topology.regions.json -> semantic slides.
+    subprocess.run([sys.executable, TILER, SVG, "--name", "region-a"], check=True)
     print("\nAll Region A projector assets in", OUT)
