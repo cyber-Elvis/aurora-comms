@@ -23,16 +23,20 @@ panel: **18px = perfect, 12px = readable, 10px = too small.** Drive it over **HD
 ```
 docs/projector/
   00-native-1080p-test.png   test pattern (generic; not a diagram)
-  region-a/             00-overview + 01-topology + 02-reference
-  region-b/             00-overview + 01-topology + 02-reference
+  region-a/             00-overview + 01-topology + 02-reference-routing + 03-reference-hardening-build
+  region-a-transit-internet/  00-overview + 01-topology + 02-reference-interfaces + 03-reference-operations
+  region-b/             00-overview + 01-topology + 02-reference-routing + 03-reference-placement-build
   region-a-automation/  00-overview + 01-flow + 02-reference-accounts
 ```
 - **`00-overview.png`** in each folder = the whole diagram letterboxed — a "where am I" **map
   only; its text is NOT meant to be read**. **Read from the content slides, not the overview.**
-- **`01-…`** = the whole topology/flow on one slide. **`02-reference`** = the whole right-hand
-  description column on one slide (relaxed to one slide now that the panel is native 1080p — if a
-  diagram's reference column is too tall to stay comfortably readable, split it into two boxes).
-- All three diagrams use the **same semantic split** (topology | reference), not a grid.
+- **Content slides (`01-...`, `02-...`, `03-...`) must be enlarged semantic views, not broad
+  overview crops.** Start their boxes at the actual topology, flow, or panel content; leave titles,
+  footers, legends, and unrelated bands to `00-overview` unless they are required to read that slide.
+- **Topology/flow slides** should fill the 4K canvas with the network/flow itself. **Reference
+  slides** should split tall sidebars into focused chunks when a single crop would leave the content
+  as a skinny column or make text feel no larger than the overview.
+- Diagrams use a **semantic split** (topology | focused reference sections), not a grid.
 
 ## How INTELLIGENT (semantic) slides work — the convention
 The shared tiler (`ops/diagrams/make_projector_slides.py`) checks for a **regions sidecar**
@@ -41,9 +45,10 @@ next to the input — `docs/<stem>.regions.json`:
 - **no sidecar → GRID** fallback (mechanical tiles, fine for ad-hoc images).
 
 A code-generated diagram opts in by emitting the sidecar from its generator. **The boxes are
-DERIVED from geometry, not hand-typed:** `band()/panel()/zone()/node()` register their rects into
-`REG` as they draw, and the sidecar boxes are the bbox of each region group — so they auto-track
-the layout (move a panel, its box follows). This is a genuine single source of truth. Sidecar
+derived from geometry wherever possible, then split by reading task:** `band()/panel()/zone()/node()`
+register their rects into `REG` as they draw, and the sidecar boxes use those groups for tight
+content crops. Move a panel and its crop follows; split a tall reference column by assigning panels
+to separate groups such as `ref_top` / `ref_bot`. This is a genuine single source of truth. Sidecar
 format:
 ```json
 { "canvas": [W, H],   // MUST equal the diagram's native size (SVG viewBox / PNG pixels)
@@ -54,10 +59,11 @@ independently, canvas aspect must match the master, boxes in-bounds and non-inve
 unique) and **warns** if any drawn content lands on no content slide — so a bad or stale sidecar
 fails loudly instead of silently mis-cropping.
 
-**To make a NEW code-gen diagram semantic:** tag its draw helpers with a region group (as in
-`render_topology.py`) and emit the derived sidecar. For a **PNG-only** diagram (no generator),
-hand-write `docs/<stem>.regions.json` in pixel units (see
-`region-a-automation-architecture.regions.json`).
+**To make a NEW code-gen diagram semantic:** tag its draw helpers with region groups (as in
+`render_topology.py`) and emit a tight sidecar. Do not use the overview crop as a content slide; if
+the resulting slide does not make the topic visibly larger, split the group or tighten the box. For
+a **PNG-only** diagram (no generator), hand-write `docs/<stem>.regions.json` in pixel units (see
+`region-a-automation-architecture.regions.json`) using the same enlarged-view rule.
 
 ## Regenerate
 ```
