@@ -14,6 +14,7 @@ Deploy / config MOPs:
 ```text
 ops/access/mops/2026-06-24-region-a-transit-edge-deploy.md
 ops/access/mops/2026-06-25-region-a-transit-edge-config.md
+ops/access/mops/2026-06-27-region-a-transit-real-internet.md
 ```
 
 ## Connection model
@@ -72,7 +73,31 @@ ansible-playbook playbooks/verify-platform.yml --limit transit-a
 ```
 
 `verify-platform.yml` proves the labadmin + jump-host + vault chain works and
-captures `show version` / interface / hostname evidence. The first configuration
-push is intentionally manual and MOP-driven so the operator practises IOS-XE config
-and verification; idempotent config roles follow after the break-glass + AAA
-baseline is accepted.
+captures `show version` / interface / hostname evidence.
+
+## Real IPv4 internet egress
+
+`playbooks/real-internet.yml` configures the transit-node internet uplinks and PAT:
+
+| Node | Inside | Outside |
+| --- | --- | --- |
+| `transit-a` | `GigabitEthernet2` | `GigabitEthernet3` |
+| `transit-b` | `Ethernet0/0` | `Ethernet0/2` |
+
+The playbook removes the old IPv4 Null0 default when present, configures DNS, builds
+the `AURORA-LAB-NAT` source ACL, marks inside/outside NAT, DHCPs the uplinks through
+the GNS3 `INET-SW` -> VM `eth1` path, waits for DHCP to settle, and verifies pings to
+`1.1.1.1` and `8.8.8.8`.
+
+Applied and verified 2026-06-27 from PC1 WSL:
+
+```bash
+cd ops/automation-iosxe
+export ANSIBLE_CONFIG=$PWD/ansible.cfg
+ansible-playbook playbooks/real-internet.yml
+```
+
+Final verification was clean and idempotent (`changed=0` on both transit nodes).
+Transit-A received `192.168.191.129/24`; Transit-B received `192.168.191.130/24`;
+both used default gateway `192.168.191.2` and had 100 percent ping success to
+`1.1.1.1` and `8.8.8.8` from their outside interfaces.

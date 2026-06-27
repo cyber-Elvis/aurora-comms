@@ -28,6 +28,7 @@ Execution MOP with the actual device configs. Companion to
 | Aurora PI (advertised outward) | `203.0.113.0/25` + `2001:db8:aaaa::/48` (originated on MEL-PE1) |
 | Customer aggregate (advertised when up) | `203.0.113.128/25` + `2001:db8:bbbb::/48` (not yet originated — in the advertise set ready) |
 | Transit-originated "Internet" | `0.0.0.0/0` + `::/0` + 8×/28 from `192.0.2.0/24` + `2001:db8:a::/48` |
+| Real IPv4 uplink addendum | `2026-06-27-region-a-transit-real-internet.md` - GNS3 Cloud corrected to VM `eth1`; transit PAT added on CSR `Gi3` / IOL `e0/2` |
 | LOCAL_PREF (failover) | Transit-A default **200** (primary) / Transit-B default **100** (backup) |
 
 > **Pre-checks (read-only, coach):** Stage 0 iBGP mesh Established both AFs on all 3 PEs;
@@ -151,9 +152,11 @@ Scaffolds: `ops/automation-iosxe/` (Ansible tree + `nornir/`). Secret:
 | --- | --- | --- |
 | SSH CLI — Ansible (`cisco.ios` / `network_cli`) | ✅ verified | ✅ verified |
 | SSH CLI — Nornir / Netmiko | ✅ verified | ✅ verified |
-| NETCONF (`:830`, `netconf-yang`) | ⚠ enabled, but `:830` never binds (16.8 quirk) | ❌ unsupported (no YANG infra) |
-| RESTCONF (`:443`, `restconf`) | ⚠ enabled (`:443` up), but TLS/cert too old for OpenSSL 3.x | ❌ unsupported |
-| gNMI | ❌ absent (16.8 too early) | ❌ absent |
+| NETCONF (`:830`, `netconf-yang`) | ❌ `:830` won't bind; `netconf-yang` toggle tried → no change (box can't gen persistent self-signed cert) | ❌ unsupported (no YANG infra) |
+| RESTCONF (`:443`, `restconf`) | ❌ no usable HTTPS cert (`show crypto pki cert` EMPTY); persistent self-signed cert gen fails even with authoritative clock (`ntp master`); OpenSSL 1.1.1 **and** 3.5 both alert-40 → PKI/NVRAM defect | ❌ unsupported |
+| gNMI | ❌ Cat 9300/9400/9500-only on 16.8 (not CSR1000v) | ❌ absent |
+
+> **FINAL verdict (2026-06-27, deep-research-confirmed + tested):** NETCONF/RESTCONF/gNMI are a **dead end on these images**. Every documented workaround was tried and failed on transit-a — client OpenSSL (1.1.1 *and* 3.5, via a Docker `curlimages/curl:7.78.0`), `netconf-yang` toggle, HTTPS cert regen, and an authoritative clock (`ntp master`). Root causes: gNMI is platform-gated to Catalyst 9k on 16.8; NETCONF `:830` never binds; RESTCONF has no usable HTTPS cert (CSR can't generate a persistent self-signed cert — PKI/NVRAM defect). **Working automation tier = CLI (Ansible + Nornir); programmatic transports → DevNet CML / IOS-XE 17.x (Cat8000V).** Same conclusion as the XRv 6.1.3 gNMI gap.
 
 Probe (read-only, 2026-06-27): `show platform software yang-management process` lists the CSR's YANG
 daemons (`confd/nesd/ncsshd/...`, `nginx` Running, `ip http secure-server` already on) but is

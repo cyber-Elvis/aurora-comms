@@ -1,0 +1,116 @@
+---
+# Give the IOS-XE transit nodes real IPv4 internet egress via the GNS3 INET-SW
+# uplink and PAT lab traffic out of the DHCP-facing interface.
+- name: Configure real internet egress on IOS-XE transit nodes
+  hosts: transit
+  gather_facts: false
+
+  vars:
+    real_internet_nat_acl:
+      - permit 10.0.0.0 0.255.255.255
+      - permit 172.16.0.0 0.15.255.255
+      - permit 192.168.0.0 0.0.255.255
+      - permit 192.0.2.0 0.0.0.255
+      - permit 198.51.100.0 0.0.0.255
+      - permit 203.0.113.0 0.0.0.255
+
+  tasks:
+    - name: Check for lab Null0 default route
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | include ^ip route 0.0.0.0 0.0.0.0 Null0
+      register: null_default_route
+      changed_when: false
+
+    - name: Remove lab Null0 default route when present
+      cisco.ios.ios_config:
+        lines:
+          - no ip route 0.0.0.0 0.0.0.0 Null0
+        save_when: modified
+      when: "'ip route 0.0.0.0 0.0.0.0 Null0' in null_default_route.stdout[0]"
+
+    - name: Configure DNS and PAT overload
+      cisco.ios.ios_config:
+        lines:
+          - ip name-server 1.1.1.1 8.8.8.8
+          - "ip nat inside source list AURORA-LAB-NAT interface {{ real_internet_outside_interface }} overload"
+        save_when: modified
+
+    - name: Collect NAT source ACL state
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | section ip access-list standard AURORA-LAB-NAT
+      register: nat_acl_state
+      changed_when: false
+
+    - name: Configure missing NAT source ACL lines
+      cisco.ios.ios_config:
+        parents:
+          - ip access-list standard AURORA-LAB-NAT
+        lines:
+          - "{{ item }}"
+        save_when: modified
+      loop: "{{ real_internet_nat_acl }}"
+      when: item not in nat_acl_state.stdout[0]
+
+    - name: Mark PE-facing transit interface as NAT inside
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ real_internet_inside_interface }}"
+        lines:
+          - ip nat inside
+        save_when: modified
+
+    - name: Configure DHCP internet uplink as NAT outside
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ real_internet_outside_interface }}"
+        lines:
+          - description REAL-INTERNET uplink via GNS3 INET-SW -> VM eth1
+          - ip address dhcp
+          - ip nat outside
+        save_when: modified
+
+    - name: Collect DHCP internet uplink state
+      cisco.ios.ios_command:
+        commands:
+          - "show ip interface brief | include {{ real_internet_outside_interface }}"
+      register: outside_interface_state
+      changed_when: false
+
+    - name: Enable DHCP internet uplink when administratively down
+      cisco.ios.ios_config:
+        parents:
+          - "interface {{ real_internet_outside_interface }}"
+        lines:
+          - no shutdown
+        save_when: modified
+      when: "'administratively down' in outside_interface_state.stdout[0]"
+
+    - name: Wait for DHCP internet uplink to be up
+      cisco.ios.ios_command:
+        commands:
+          - "show ip interface brief | include {{ real_internet_outside_interface }}"
+        wait_for:
+          - result[0] contains DHCP
+          - result[0] contains up
+        retries: 12
+        interval: 5
+      register: outside_dhcp_state
+      changed_when: false
+
+    - name: Collect real internet verification state
+      cisco.ios.ios_command:
+        commands:
+          - "show ip interface brief | include {{ real_internet_outside_interface }}"
+          - show ip route 0.0.0.0
+          - show ip nat statistics
+          - "ping 1.1.1.1 source {{ real_internet_outside_interface }}"
+          - "ping 8.8.8.8 source {{ real_internet_outside_interface }}"
+          - show ip bgp 0.0.0.0
+          - show ip nat translations
+      register: real_internet_evidence
+
+    - name: Display real internet evidence
+      ansible.builtin.debug:
+        var: real_internet_evidence.stdout_lines
