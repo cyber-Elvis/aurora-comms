@@ -1,0 +1,6 @@
+---
+# Inventory defaults. Password is injected at runtime from $AURORA_TRANSIT_PASSWORD
+# (decrypted from the Ansible vault by nr.sh) — never written to disk here.
+data:
+  lab: aurora-region-a
+  platform_note: "IOS-XE Internet-edge transit (CSR1000v / IOL-XE)"

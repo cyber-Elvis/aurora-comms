@@ -1,0 +1,8 @@
+all:
+  children:
+    transit:
+      hosts:
+        transit-a:
+          ansible_host: 10.255.191.21
+        transit-b:
+          ansible_host: 10.255.191.22

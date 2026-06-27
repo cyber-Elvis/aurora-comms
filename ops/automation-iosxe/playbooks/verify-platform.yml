@@ -1,0 +1,21 @@
+---
+# Smoke test: prove Ansible can reach each transit node through the GNS3 jump host
+# with the labadmin break-glass credential from the vault, and capture platform
+# evidence. Run only after labadmin + SSH have been configured on the nodes (config
+# MOP) and SSH verified manually through the jump host.
+- name: Verify IOS-XE transit reachability and capture platform evidence
+  hosts: transit
+  gather_facts: false
+
+  tasks:
+    - name: Collect IOS-XE platform state
+      cisco.ios.ios_command:
+        commands:
+          - show version
+          - show ip interface brief
+          - show running-config | include ^hostname
+      register: platform_evidence
+
+    - name: Display platform evidence
+      ansible.builtin.debug:
+        var: platform_evidence.stdout_lines

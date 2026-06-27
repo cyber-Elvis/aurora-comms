@@ -1,0 +1,5 @@
+node_name: transit-a-csr
+platform: csr1000v-16.08.01
+expected_management_ipv4: 10.255.191.21
+transit_asn: 64497
+transit_role: primary

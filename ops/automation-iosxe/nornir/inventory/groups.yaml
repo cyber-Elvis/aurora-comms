@@ -1,0 +1,18 @@
+---
+# Group settings for the transit nodes. Connection details mirror the working Ansible
+# path: labadmin over the GNS3 bastion (ssh_config ProxyCommand). Password is NOT stored
+# here — it is injected at runtime from $AURORA_TRANSIT_PASSWORD (decrypted by nr.sh).
+# use_keys:false avoids offering the WSL default key (the stray-key issue that bit
+# Ansible's libssh); disabled_algorithms forces ssh-rsa for the IOS-XE RSA host key.
+transit:
+  platform: cisco_ios            # -> Netmiko device_type
+  username: labadmin
+  connection_options:
+    netmiko:
+      extras:
+        ssh_config_file: "/mnt/d/CyberLab/Repos/aurora-comms/ops/automation-iosxe/nornir/ssh_config"
+        use_keys: false
+        disabled_algorithms:
+          pubkeys: ["rsa-sha2-256", "rsa-sha2-512"]
+        conn_timeout: 30
+        fast_cli: false

@@ -142,6 +142,49 @@ write memory
 
 ---
 
+## Automation readiness (management transports)
+
+Scaffolds: `ops/automation-iosxe/` (Ansible tree + `nornir/`). Secret:
+`vault_transit_labadmin_password` (vault-id `labadmin`, `~/.aurora-vault-pass`).
+
+| Transport | transit-a (CSR1000v 16.8.1a) | transit-b (IOL-XE 17.15.1) |
+| --- | --- | --- |
+| SSH CLI — Ansible (`cisco.ios` / `network_cli`) | ✅ verified | ✅ verified |
+| SSH CLI — Nornir / Netmiko | ✅ verified | ✅ verified |
+| NETCONF (`:830`, `netconf-yang`) | ◻ supported — enable pending | ❌ unsupported (no YANG infra) |
+| RESTCONF (`:443`, `restconf`) | ◻ supported — enable pending | ❌ unsupported |
+| gNMI | ❌ absent (16.8 too early) | ❌ absent |
+
+Probe (read-only, 2026-06-27): `show platform software yang-management process` lists the CSR's YANG
+daemons (`confd/nesd/ncsshd/...`, `nginx` Running, `ip http secure-server` already on) but is
+`% Invalid input` on the IOL; `show gnmi-yang state` is `% Invalid input` on both. **NETCONF/RESTCONF are
+CSR-only; the IOL is CLI/SSH-only; gNMI needs a 17.x/CML image** (mirrors the XRv 6.1.3 gNMI gap).
+
+**Ansible needs `export ANSIBLE_CONFIG=$PWD/ansible.cfg`** — `/mnt/d` is world-writable, so the in-dir
+`ansible.cfg` (and its `vault_password_file`) is otherwise ignored. Ansible uses **libssh** (paramiko
+ignores the ProxyJump and times out); Nornir/Netmiko uses an `ssh_config` ProxyCommand with `use_keys:false`.
+
+Run the proven CLI automation:
+```bash
+cd ops/automation-iosxe && export ANSIBLE_CONFIG=$PWD/ansible.cfg
+ansible-playbook playbooks/verify-platform.yml          # both nodes
+cd nornir && bash nr.sh conntest.py 10.255.191.21       # Nornir/Netmiko smoke test
+```
+
+Enable NETCONF + RESTCONF (**transit-a only**, operator types on console 5009):
+```
+conf t
+aaa authorization exec default local   ! NETCONF/RESTCONF authorize via AAA
+netconf-yang
+restconf
+end
+write memory
+```
+Then smoke-test: NETCONF via `ncclient` to `:830` through the jump, RESTCONF via
+`curl -k https://<jump>/restconf` — scaffolds to be added under `ops/automation-iosxe/netconf|restconf/`.
+
+---
+
 ## Stage 2A — Transit-A end to end (`transit-a-csr` ↔ MEL-PE1)
 
 ### 2A.1 — transit-a-csr (CSR1000v, IOS-XE, AS 64497) — operator types on console 5009
