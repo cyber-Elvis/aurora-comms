@@ -12,10 +12,10 @@ Execution MOP with the actual device configs. Companion to
 | Date | 2026-06-25 |
 | Operator | Elvis (drives device consoles — types config) |
 | Coach / verifier | Claude (read-only verify as `aurora-claude` via `ops/access/xr-show.sh`) |
-| Scope | eBGP to Transit-A (`transit-a-csr` AS 64497 ↔ MEL-PE1) + Transit-B (`transit-b-iol` AS 64498 ↔ ADL-PE1); §5.1 policy; §5.1a failover; §5.4 hardening |
+| Scope | eBGP to Transit-A (`transit-a-csr` AS 64497 ↔ MEL-PE1) + Transit-B (`transit-b-iol` AS 64498 ↔ ADL-PE1); §5.1 policy; §5.1a failover; §5.4 hardening; real IPv4 internet egress/PAT through the transit nodes |
 | Design refs | `docs/region-a-plan.md` §3.2, §4, §5.1, **§5.1a**, **§5.4**, §6 Wave 3.5 |
-| Blast radius | Additive eBGP edge on two PEs. IS-IS/LDP/iBGP unaffected. Outbound advertised to "Internet" is filtered to Aurora PI + customer aggregates only. |
-| Rollback | Per-stage, end of doc. Remove neighbor + interface + policies; backbone untouched. |
+| Blast radius | Additive eBGP edge on two PEs plus real IPv4 uplink state on the two transit nodes and the GNS3 Cloud uplink. IS-IS/LDP/iBGP unaffected. Outbound advertised to "Internet" is filtered to Aurora PI + customer aggregates only. |
+| Rollback | Per-stage, end of doc. Remove neighbor + interface + policies; remove real-internet NAT/uplink state or restore the mock Null0 default; backbone untouched. |
 
 ## Addressing (deployed — from plan §4; loopbacks are the verified deployed values)
 
@@ -28,7 +28,7 @@ Execution MOP with the actual device configs. Companion to
 | Aurora PI (advertised outward) | `203.0.113.0/25` + `2001:db8:aaaa::/48` (originated on MEL-PE1) |
 | Customer aggregate (advertised when up) | `203.0.113.128/25` + `2001:db8:bbbb::/48` (not yet originated — in the advertise set ready) |
 | Transit-originated "Internet" | `0.0.0.0/0` + `::/0` + 8×/28 from `192.0.2.0/24` + `2001:db8:a::/48` |
-| Real IPv4 uplink addendum | `2026-06-27-region-a-transit-real-internet.md` - GNS3 Cloud corrected to VM `eth1`; transit PAT added on CSR `Gi3` / IOL `e0/2` |
+| Real IPv4 uplink | Applied 2026-06-27; full evidence in `2026-06-27-region-a-transit-real-internet.md`. GNS3 VM `eth1` / `192.168.191.0/24` / gateway `192.168.191.2` via `INET-UPLINK-eth1` -> `INET-SW`; transit-a `Gi3` DHCP `192.168.191.129/24`; transit-b `e0/2` DHCP `192.168.191.130/24`; PAT at the transit nodes. |
 | LOCAL_PREF (failover) | Transit-A default **200** (primary) / Transit-B default **100** (backup) |
 
 > **Pre-checks (read-only, coach):** Stage 0 iBGP mesh Established both AFs on all 3 PEs;
@@ -217,7 +217,8 @@ interface GigabitEthernet2
  no shutdown
 exit
 !
-! prefixes this simulated transit originates -> pin to Null0 so network stmts resolve
+! prefixes this simulated transit originates -> pin mock routes to Null0 so network stmts resolve
+! IPv4 default is a placeholder; Stage 2C removes it when real internet is enabled.
 ip route 0.0.0.0 0.0.0.0 Null0
 ip route 192.0.2.0   255.255.255.240 Null0
 ip route 192.0.2.16  255.255.255.240 Null0
@@ -394,6 +395,7 @@ interface Ethernet0/0
  no shutdown
 exit
 !
+! IPv4 default is a placeholder; Stage 2C removes it when real internet is enabled.
 ip route 0.0.0.0 0.0.0.0 Null0
 ip route 192.0.2.0   255.255.255.240 Null0
 ip route 192.0.2.16  255.255.255.240 Null0
@@ -537,6 +539,113 @@ end
 
 ---
 
+## Stage 2C — real IPv4 internet egress via transit nodes (applied 2026-06-27)
+
+Purpose: replace the IPv4 mock default route on each transit with the GNS3 VM's real
+internet path, then PAT lab traffic at the transit edge. This stage is IPv4 only.
+Leave the IPv6 mock default (`::/0 Null0`) and the `192.0.2.0/24` / `2001:db8:a::/48`
+mock-originated routes in place until a real IPv6 uplink or a replacement internet
+simulation stage exists.
+
+Full implementation evidence and manual equivalents live in
+[`2026-06-27-region-a-transit-real-internet.md`](2026-06-27-region-a-transit-real-internet.md).
+The repo-standard 4K diagram set is:
+
+```text
+docs/region-a-transit-internet-topology.png
+docs/projector/region-a-transit-internet/00-overview.png
+docs/projector/region-a-transit-internet/01-topology.png
+docs/projector/region-a-transit-internet/02-reference-interfaces.png
+docs/projector/region-a-transit-internet/03-reference-operations.png
+```
+
+### 2C.1 — physical / GNS3 topology
+
+The earlier `eth0` assumption was wrong for the GNS3 VM. The VM's actual default route is on
+`eth1`, not `eth0`.
+
+```text
+GNS3 VM eth1 (192.168.191.0/24, default via 192.168.191.2)
+  -> INET-UPLINK-eth1 (GNS3 Cloud)
+  -> INET-SW
+     -> transit-a-csr GigabitEthernet3
+     -> transit-b-iol Ethernet0/2
+```
+
+Corrected GNS3 link state:
+
+```text
+INET-UPLINK-eth1:eth1 <-> INET-SW:Ethernet0
+INET-SW:Ethernet1      <-> transit-a-csr:GigabitEthernet3
+INET-SW:Ethernet2      <-> transit-b-iol:Ethernet0/2
+```
+
+### 2C.2 — automation plan
+
+Applied from PC1 WSL Ubuntu using the IOS-XE automation tree:
+
+```text
+ops/automation-iosxe/playbooks/real-internet.yml
+```
+
+Host-specific interface bindings:
+
+```text
+ops/automation-iosxe/host_vars/transit-a.yml
+  real_internet_inside_interface: GigabitEthernet2
+  real_internet_outside_interface: GigabitEthernet3
+
+ops/automation-iosxe/host_vars/transit-b.yml
+  real_internet_inside_interface: Ethernet0/0
+  real_internet_outside_interface: Ethernet0/2
+```
+
+The playbook:
+
+- removes only the IPv4 `0.0.0.0/0 Null0` placeholder;
+- keeps the IPv6 mock default and documentation-prefix mock routes;
+- configures DNS resolvers;
+- marks the PE-facing interface as NAT inside;
+- marks the GNS3-VM-facing interface as NAT outside;
+- enables DHCP on the outside interface;
+- installs PAT using `ip nat inside source list AURORA-LAB-NAT interface <outside> overload`;
+- waits for DHCP/up state before ping verification, avoiding the first-run DHCP race.
+
+### 2C.3 — applied evidence
+
+Final idempotent run returned:
+
+```text
+transit-a : ok=9 changed=0 unreachable=0 failed=0 skipped=3
+transit-b : ok=9 changed=0 unreachable=0 failed=0 skipped=3
+```
+
+Transit-node verification after apply:
+
+```text
+transit-a-csr GigabitEthernet3: 192.168.191.129/24 via DHCP, up/up
+  default route: 0.0.0.0/0 via 192.168.191.2
+  ping 1.1.1.1 source GigabitEthernet3: 100 percent (5/5)
+  ping 8.8.8.8 source GigabitEthernet3: 100 percent (5/5)
+  NAT outside: GigabitEthernet3; NAT inside: GigabitEthernet2
+
+transit-b-iol Ethernet0/2: 192.168.191.130/24 via DHCP, up/up
+  default route: 0.0.0.0/0 via 192.168.191.2
+  ping 1.1.1.1 source Ethernet0/2: 100 percent (5/5)
+  ping 8.8.8.8 source Ethernet0/2: 100 percent (5/5)
+  NAT outside: Ethernet0/2; NAT inside: Ethernet0/0
+```
+
+### 2C.4 — downstream gating
+
+This stage proves real IPv4 internet from the transit nodes and installs the NAT/uplink
+state needed for downstream lab traffic. It does **not** by itself prove PE/customer
+internet. The latest transit check during this work returned `% BGP not active`, so
+end-to-end PE/customer internet verification remains gated on Stage 2A/2B eBGP reaching
+Established and advertising the default route into Aurora.
+
+---
+
 ## Stage 3 — transit-edge hardening (§5.4) — per session, after 2A/2B are Established
 
 `maximum-prefix` and `log-neighbor-changes` are already in Stage 2. Add fast failover +
@@ -594,7 +703,12 @@ window). IOS-XE: `router bgp 64497` → `bgp graceful-restart`.
    PE's default reconverges to **Transit-B (LP 100) via ADL-PE1** (`show route 0.0.0.0/0` →
    next-hop `10.0.0.4`). `no shutdown` → flips back to Transit-A.
 4. **No-leak outbound:** each transit receives only `203.0.113.0/25` (+ customer /25 when up).
-5. Capture evidence → `ops/access/evidence/2026-06-25-region-a-transit-edge.md`.
+5. **Real IPv4 internet handoff:** after eBGP is Established, PE/customer internet-bound probes
+   should follow the active default path to Transit-A first, then Transit-B during failover.
+   On the active transit, confirm NAT translations appear for the lab source and that traceroute
+   exits via the DHCP outside interface (`transit-a Gi3` or `transit-b e0/2`). IPv6 remains the
+   mock/default-route exercise until a real IPv6 uplink is introduced.
+6. Capture evidence → `ops/access/evidence/2026-06-25-region-a-transit-edge.md`.
 
 ---
 
@@ -604,6 +718,12 @@ window). IOS-XE: `router bgp 64497` → `bgp graceful-restart`.
   (and the v6 neighbor) → `no interface GigabitEthernet0/0/0/2` addressing (or `shutdown`) →
   `commit`. Policies/prefix-sets can stay (inert) or `no route-policy …` / `no prefix-set …`.
 - **Transit node (IOS-XE):** `no router bgp <asn>` → `write memory` (or stop the node via GNS3).
+- **Real IPv4 uplink / PAT:** use the rollback block in
+  `2026-06-27-region-a-transit-real-internet.md` if returning the transit nodes to mock-only
+  internet. At minimum, remove `ip nat inside source list AURORA-LAB-NAT interface <outside> overload`,
+  remove NAT inside/outside from the PE/uplink interfaces, shut or clear the DHCP outside interface,
+  and restore `ip route 0.0.0.0 0.0.0.0 Null0` only if the lab is intentionally reverting to the
+  mock IPv4 default.
 - **PI origination:** `no network 203.0.113.0/25` under `router bgp` + `no 203.0.113.0/25 Null0`
   under `router static` on MEL-PE1.
 - Backbone IS-IS/LDP/iBGP are untouched throughout — nothing to roll back there.
