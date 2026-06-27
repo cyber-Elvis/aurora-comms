@@ -1,0 +1,28 @@
+{
+  "canvas": [
+    1920,
+    1080
+  ],
+  "slides": [
+    {
+      "name": "01-access-paths.png",
+      "caption": "PC3 -> GNS3 nodes - ACCESS PATHS (one jump host; SSH vs telnet console)",
+      "box": [
+        0,
+        0,
+        1920,
+        643
+      ]
+    },
+    {
+      "name": "02-reference.png",
+      "caption": "Node access - REFERENCE: commands / accounts / console ports / legend",
+      "box": [
+        43,
+        648,
+        1877,
+        1080
+      ]
+    }
+  ]
+}

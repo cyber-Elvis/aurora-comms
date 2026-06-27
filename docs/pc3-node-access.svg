@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<rect x="0" y="0" width="1920" height="1080" rx="0" ry="0" fill="#ffffff" fill-opacity="1.0" stroke="none" stroke-width="1.5"/>
+<rect x="0" y="0" width="1920" height="92" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="1.5"/>
+<text x="38" y="42" font-family="Helvetica" font-size="32" fill="#ffffff" text-anchor="start" font-weight="bold">Aurora Communications - Reaching GNS3 nodes from PC3 (Termius)</text>
+<text x="38" y="76" font-family="Helvetica" font-size="18" fill="#9db8d6" text-anchor="start">ONE jump host: GNS3 VM gns3@100.118.0.46 (Tailscale).    (1) SSH ProxyJump -&gt; node mgmt 10.255.191.0/24 (day-to-day).    (2) telnet -&gt; GNS3 VM console port (bootstrap / break-glass).</text>
+<rect x="55" y="360" width="360" height="155" rx="10" ry="10" fill="#455a64" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="235.0" y="404" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">PC3</text>
+<text x="235.0" y="436" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">Termius - terminal box</text>
+<text x="235.0" y="462" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">all access starts here</text>
+<rect x="560" y="345" width="440" height="185" rx="10" ry="10" fill="#0e7490" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="780.0" y="389" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">GNS3 VM  -  jump host</text>
+<text x="780.0" y="421" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">gns3@100.118.0.46  -  Tailscale</text>
+<text x="780.0" y="447" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">SSH ProxyJump + console host</text>
+<text x="780" y="562" font-family="Helvetica" font-size="16" fill="#475569" text-anchor="middle">holds 10.255.191.1 (tap-aurora-mgmt) -&gt; reaches node mgmt directly</text>
+<rect x="1050" y="100" width="810" height="300" rx="14" ry="14" fill="#eff6ff" fill-opacity="0.5" stroke="#1d4ed8" stroke-width="1.8"/>
+<text x="1070" y="134" font-family="Helvetica" font-size="20" fill="#1d4ed8" text-anchor="start" font-weight="bold">Region A backbone - Cisco IOS-XRv 6.1.3   (mgmt 10.255.191.11-.17)</text>
+<rect x="1078" y="152" width="372" height="110" rx="10" ry="10" fill="#1ba0d7" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="1264.0" y="196" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">MEL-P</text>
+<text x="1264.0" y="228" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">IOS-XRv 6.1.3 - P core</text>
+<text x="1264.0" y="254" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">mgmt .11  -  console in GNS3</text>
+<rect x="1468" y="152" width="372" height="110" rx="10" ry="10" fill="#1ba0d7" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="1654.0" y="196" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">MEL-PE1</text>
+<text x="1654.0" y="228" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">IOS-XRv 6.1.3 - PE / ASBR</text>
+<text x="1654.0" y="254" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">mgmt .12  -  console in GNS3</text>
+<rect x="1078" y="274" width="372" height="110" rx="10" ry="10" fill="#1ba0d7" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="1264.0" y="318" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">GEL-PE1</text>
+<text x="1264.0" y="350" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">IOS-XRv 6.1.3 - PE</text>
+<text x="1264.0" y="376" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">mgmt .15  -  console in GNS3</text>
+<rect x="1468" y="274" width="372" height="110" rx="10" ry="10" fill="#1ba0d7" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="1654.0" y="318" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">ADL-PE1</text>
+<text x="1654.0" y="350" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">IOS-XRv 6.1.3 - PE</text>
+<text x="1654.0" y="376" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">mgmt .17  -  console in GNS3</text>
+<rect x="1050" y="430" width="810" height="195" rx="14" ry="14" fill="#f5f3ff" fill-opacity="0.5" stroke="#7e22ce" stroke-width="1.8"/>
+<text x="1070" y="464" font-family="Helvetica" font-size="20" fill="#7e22ce" text-anchor="start" font-weight="bold">Transit edge - Cisco IOS-XE   (mgmt 10.255.191.21-.22)</text>
+<rect x="1078" y="484" width="372" height="116" rx="10" ry="10" fill="#6a1b9a" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="1264.0" y="528" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">transit-a-csr</text>
+<text x="1264.0" y="560" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">CSR1000v 16.08 - AS 64497</text>
+<text x="1264.0" y="586" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">mgmt .21  -  console :5009</text>
+<rect x="1468" y="484" width="372" height="116" rx="10" ry="10" fill="#6a1b9a" fill-opacity="1.0" stroke="#ffffff" stroke-width="1.4"/>
+<text x="1654.0" y="528" font-family="Helvetica" font-size="25" fill="#ffffff" text-anchor="middle" font-weight="bold">transit-b-iol</text>
+<text x="1654.0" y="560" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">IOL-XE 17.15 - AS 64498</text>
+<text x="1654.0" y="586" font-family="Helvetica" font-size="16" fill="#ffffff" text-anchor="middle">mgmt .22  -  console :5013</text>
+<line x1="418" y1="420" x2="556" y2="420" stroke="#1d4ed8" stroke-width="4.5"/>
+<text x="487" y="408" font-family="Helvetica" font-size="18" fill="#1d4ed8" text-anchor="middle" font-weight="bold">(1) ssh -J</text>
+<line x1="418" y1="470" x2="556" y2="470" stroke="#b45309" stroke-width="4.5" stroke-dasharray="9 6"/>
+<text x="487" y="494" font-family="Helvetica" font-size="18" fill="#b45309" text-anchor="middle" font-weight="bold">(2) telnet</text>
+<line x1="1002" y1="410" x2="1046" y2="240" stroke="#1d4ed8" stroke-width="3.4"/>
+<line x1="1002" y1="460" x2="1046" y2="300" stroke="#1d4ed8" stroke-width="3.4"/>
+<line x1="1002" y1="485" x2="1046" y2="520" stroke="#b45309" stroke-width="3.4" stroke-dasharray="9 6"/>
+<text x="1024" y="392" font-family="Helvetica" font-size="18" fill="#334155" text-anchor="middle" font-weight="bold">10.255.191.x</text>
+<text x="1024" y="414" font-family="Helvetica" font-size="15" fill="#334155" text-anchor="middle">:22 ssh  /  console telnet</text>
+<rect x="55" y="660" width="905" height="300" rx="12" ry="12" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.6"/>
+<rect x="55" y="660" width="905" height="38" rx="12" ry="12" fill="#0e7490" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="55" y="679" width="905" height="19" rx="0" ry="0" fill="#0e7490" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="73" y="687" font-family="Helvetica" font-size="19" fill="#ffffff" text-anchor="start" font-weight="bold">Connect (from a PC3 Termius session)</text>
+<text x="73" y="734" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">(1) SSH - day-to-day, once the node has mgmt SSH:</text>
+<text x="73" y="767" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">       ssh -J gns3@100.118.0.46 labadmin@10.255.191.21</text>
+<text x="73" y="800" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">(2) Console - bootstrap / break-glass, works on a blank node:</text>
+<text x="73" y="833" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">       telnet 100.118.0.46 5009</text>
+<text x="73" y="866" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">Termius setup</text>
+<text x="285" y="866" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">node Host = mgmt IP; Jump host = gns3@100.118.0.46</text>
+<text x="73" y="899" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">Auth</text>
+<text x="285" y="899" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">key -&gt; jump    -    password -&gt; node</text>
+<rect x="980" y="660" width="460" height="300" rx="12" ry="12" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.6"/>
+<rect x="980" y="660" width="460" height="38" rx="12" ry="12" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="980" y="679" width="460" height="19" rx="0" ry="0" fill="#0d2b4e" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="998" y="687" font-family="Helvetica" font-size="19" fill="#ffffff" text-anchor="start" font-weight="bold">Accounts (least-privilege)</text>
+<text x="998" y="734" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">labadmin</text>
+<text x="1210" y="734" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">break-glass admin - every node</text>
+<text x="998" y="767" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">IOS-XR read</text>
+<text x="1210" y="767" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">aurora-claude / aurora-codex</text>
+<text x="998" y="800" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">IOS-XR write</text>
+<text x="1210" y="800" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">aurora-automation (cfg)</text>
+<text x="998" y="833" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">aurora-security (crypto)</text>
+<text x="998" y="866" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">Transit IOS-XE</text>
+<text x="1210" y="866" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">labadmin only (tiers TBD)</text>
+<text x="998" y="899" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">Never</text>
+<text x="1210" y="899" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">reuse a credential</text>
+<rect x="1460" y="660" width="405" height="300" rx="12" ry="12" fill="#f4f7fb" fill-opacity="1.0" stroke="#c3d0e0" stroke-width="1.6"/>
+<rect x="1460" y="660" width="405" height="38" rx="12" ry="12" fill="#6a1b9a" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<rect x="1460" y="679" width="405" height="19" rx="0" ry="0" fill="#6a1b9a" fill-opacity="1.0" stroke="none" stroke-width="0"/>
+<text x="1478" y="687" font-family="Helvetica" font-size="19" fill="#ffffff" text-anchor="start" font-weight="bold">Console ports (telnet GNS3 VM)</text>
+<text x="1478" y="734" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">transit-a-csr</text>
+<text x="1690" y="734" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">:5009</text>
+<text x="1478" y="767" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">transit-b-iol</text>
+<text x="1690" y="767" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">:5013</text>
+<text x="1478" y="800" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">IOS-XR nodes</text>
+<text x="1690" y="800" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">per-node - see GNS3</text>
+<text x="1478" y="833" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">Use when</text>
+<text x="1690" y="833" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">no SSH yet / locked out</text>
+<text x="1478" y="866" font-family="Helvetica" font-size="17" fill="#334155" text-anchor="start" font-weight="bold">Then</text>
+<text x="1690" y="866" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">switch to SSH;</text>
+<text x="1478" y="899" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">console = break-glass</text>
+<text x="55" y="992" font-family="Helvetica" font-size="20" fill="#0d2b4e" text-anchor="start" font-weight="bold">Legend</text>
+<line x1="170" y1="986" x2="220" y2="986" stroke="#1d4ed8" stroke-width="4.5"/>
+<text x="232" y="992" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">(1) SSH ProxyJump -&gt; node mgmt :22</text>
+<line x1="640" y1="986" x2="690" y2="986" stroke="#b45309" stroke-width="4.5" stroke-dasharray="9 6"/>
+<text x="702" y="992" font-family="Helvetica" font-size="17" fill="#0d2b4e" text-anchor="start">(2) telnet -&gt; GNS3 VM console port</text>
+<rect x="1120" y="974" width="26" height="18" rx="3" ry="3" fill="#0e7490" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="1152" y="992" font-family="Helvetica" font-size="16" fill="#0d2b4e" text-anchor="start">GNS3 VM jump</text>
+<rect x="1310" y="974" width="26" height="18" rx="3" ry="3" fill="#1ba0d7" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="1342" y="992" font-family="Helvetica" font-size="16" fill="#0d2b4e" text-anchor="start">IOS-XRv P/PE</text>
+<rect x="1500" y="974" width="26" height="18" rx="3" ry="3" fill="#6a1b9a" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="1532" y="992" font-family="Helvetica" font-size="16" fill="#0d2b4e" text-anchor="start">transit IOS-XE</text>
+<rect x="1690" y="974" width="26" height="18" rx="3" ry="3" fill="#455a64" fill-opacity="1.0" stroke="#cbd5e1" stroke-width="1"/>
+<text x="1722" y="992" font-family="Helvetica" font-size="16" fill="#0d2b4e" text-anchor="start">PC3 terminal</text>
+<rect x="55" y="1016" width="1810" height="60" rx="10" ry="10" fill="#fff1f2" fill-opacity="1.0" stroke="#be123c" stroke-width="1.5"/>
+<text x="74" y="1040" font-family="Helvetica" font-size="16" fill="#881337" text-anchor="start" font-weight="bold">Mgmt is OOB via MGMT-SW01 (10.255.191.0/24, demarc .1 on the GNS3 VM tap). The GNS3 VM (100.118.0.46) is the ONLY jump - PC3 never reaches a node directly.    Doc ASNs/IPs (RFC 5398/5737/3849); break-glass passwords live in Ansible Vault, not in this diagram.</text>
+<text x="38" y="1062" font-family="Helvetica" font-size="14" fill="#94a3b8" text-anchor="start">Generated by ops/access/diagrams/render_node_access.py  (4K print: 3840x2160)  -  jump gns3@100.118.0.46 (Tailscale)  -  mgmt 10.255.191.0/24 via MGMT-SW01  -  sources: README.md, docs/aurora-deployment-status.md, docs/adr-004</text>
+</svg>
