@@ -28,6 +28,7 @@ Execution MOP with the actual device configs. Companion to
 | Aurora PI (advertised outward) | `203.0.113.0/25` + `2001:db8:aaaa::/48` (originated on MEL-PE1) |
 | Customer aggregate (advertised when up) | `203.0.113.128/25` + `2001:db8:bbbb::/48` (not yet originated — in the advertise set ready) |
 | Transit-originated "Internet" | `0.0.0.0/0` + `::/0` + 8×/28 from `192.0.2.0/24` + `2001:db8:a::/48` |
+| Real IPv4 uplink addendum | `2026-06-27-region-a-transit-real-internet.md` - GNS3 Cloud corrected to VM `eth1`; transit PAT added on CSR `Gi3` / IOL `e0/2` |
 | LOCAL_PREF (failover) | Transit-A default **200** (primary) / Transit-B default **100** (backup) |
 
 > **Pre-checks (read-only, coach):** Stage 0 iBGP mesh Established both AFs on all 3 PEs;
@@ -139,6 +140,62 @@ write memory
   match the lab; pubkey is a later hardening (mirrors the parked XR key goal).
 - `labadmin` = dedicated break-glass admin (random pw, stored in the vault, not personal). Scoped
   automation/read-only accounts can follow later, mirroring the XR RBAC tiers.
+
+---
+
+## Automation readiness (management transports)
+
+Scaffolds: `ops/automation-iosxe/` (Ansible tree + `nornir/`). Secret:
+`vault_transit_labadmin_password` (vault-id `labadmin`, `~/.aurora-vault-pass`).
+
+| Transport | transit-a (CSR1000v 16.8.1a) | transit-b (IOL-XE 17.15.1) |
+| --- | --- | --- |
+| SSH CLI — Ansible (`cisco.ios` / `network_cli`) | ✅ verified | ✅ verified |
+| SSH CLI — Nornir / Netmiko | ✅ verified | ✅ verified |
+| NETCONF (`:830`, `netconf-yang`) | ❌ `:830` won't bind; `netconf-yang` toggle tried → no change (box can't gen persistent self-signed cert) | ❌ unsupported (no YANG infra) |
+| RESTCONF (`:443`, `restconf`) | ❌ no usable HTTPS cert (`show crypto pki cert` EMPTY); persistent self-signed cert gen fails even with authoritative clock (`ntp master`); OpenSSL 1.1.1 **and** 3.5 both alert-40 → PKI/NVRAM defect | ❌ unsupported |
+| gNMI | ❌ Cat 9300/9400/9500-only on 16.8 (not CSR1000v) | ❌ absent |
+
+> **FINAL verdict (2026-06-27, deep-research-confirmed + tested):** NETCONF/RESTCONF/gNMI are a **dead end on these images**. Every documented workaround was tried and failed on transit-a — client OpenSSL (1.1.1 *and* 3.5, via a Docker `curlimages/curl:7.78.0`), `netconf-yang` toggle, HTTPS cert regen, and an authoritative clock (`ntp master`). Root causes: gNMI is platform-gated to Catalyst 9k on 16.8; NETCONF `:830` never binds; RESTCONF has no usable HTTPS cert (CSR can't generate a persistent self-signed cert — PKI/NVRAM defect). **Working automation tier = CLI (Ansible + Nornir); programmatic transports → DevNet CML / IOS-XE 17.x (Cat8000V).** Same conclusion as the XRv 6.1.3 gNMI gap.
+
+Probe (read-only, 2026-06-27): `show platform software yang-management process` lists the CSR's YANG
+daemons (`confd/nesd/ncsshd/...`, `nginx` Running, `ip http secure-server` already on) but is
+`% Invalid input` on the IOL; `show gnmi-yang state` is `% Invalid input` on both. **NETCONF/RESTCONF are
+CSR-only; the IOL is CLI/SSH-only; gNMI needs a 17.x/CML image** (mirrors the XRv 6.1.3 gNMI gap).
+
+**Ansible needs `export ANSIBLE_CONFIG=$PWD/ansible.cfg`** — `/mnt/d` is world-writable, so the in-dir
+`ansible.cfg` (and its `vault_password_file`) is otherwise ignored. Ansible uses **libssh** (paramiko
+ignores the ProxyJump and times out); Nornir/Netmiko uses an `ssh_config` ProxyCommand with `use_keys:false`.
+
+Run the proven CLI automation:
+```bash
+cd ops/automation-iosxe && export ANSIBLE_CONFIG=$PWD/ansible.cfg
+ansible-playbook playbooks/verify-platform.yml          # both nodes
+cd nornir && bash nr.sh conntest.py 10.255.191.21       # Nornir/Netmiko smoke test
+```
+
+Enable NETCONF + RESTCONF (**transit-a only**, operator types on console 5009):
+```
+conf t
+aaa authorization exec default local   ! NETCONF/RESTCONF authorize via AAA
+netconf-yang
+restconf
+end
+write memory
+```
+**Smoke-test outcome (2026-06-27)** — scaffolds added (`ops/automation-iosxe/netconf/` = ncclient
+through a bastion `:830` forward; `restconf/` = curl through a `:443` forward), but BOTH are blocked
+by the **CSR 16.8.1a image age**, not the tooling:
+- **NETCONF** — `netconf-yang` is configured and `show netconf-yang sessions` works, but **`:830`
+  never enters LISTEN** (`show tcp brief all` shows only `:22/:80/:443`); `ncsshd` shows "Running"
+  with no listener. RSA host key is 2048-bit and `:22` SSH is fine, so it's not key size — a 16.8 quirk.
+- **RESTCONF** — `:443` listens and advertises TLS 1.2 + GCM ciphers, but the handshake **fails from
+  WSL OpenSSL 3.x** even capped at TLS 1.2 with the exact GCM ciphers + `@SECLEVEL=0` (alert 40); the
+  2018 self-signed cert / TLS stack is incompatible with modern OpenSSL.
+
+So on these images the **working automation tier is CLI (Ansible + Nornir)**; NETCONF/RESTCONF/gNMI
+need **IOS-XE 17.x / DevNet CML** (same conclusion as the XRv 6.1.3 gNMI gap). The scaffolds are kept
+under `ops/automation-iosxe/{netconf,restconf}/` — they're correct and will work against a 17.x image.
 
 ---
 

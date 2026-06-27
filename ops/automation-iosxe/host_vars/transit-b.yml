@@ -1,0 +1,7 @@
+node_name: transit-b-iol
+platform: iol-xe-17.15
+expected_management_ipv4: 10.255.191.22
+transit_asn: 64498
+transit_role: backup
+real_internet_inside_interface: Ethernet0/0
+real_internet_outside_interface: Ethernet0/2

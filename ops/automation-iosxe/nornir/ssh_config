@@ -1,0 +1,9 @@
+# SSH config for the Nornir/Netmiko transit lab — jump through the GNS3 bastion to the
+# Region A management network. The ProxyCommand uses the openssh binary (key auth to
+# gns3); the node hop is negotiated by paramiko/Netmiko. This is why Nornir reaches the
+# nodes where Ansible's paramiko network_cli could not — Netmiko honours ProxyCommand.
+Host 10.255.191.*
+    ProxyCommand ssh -o BatchMode=yes -W %h:%p gns3@100.118.0.46
+    PubkeyAuthentication no
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile ~/.ssh/aurora_iosxe_known_hosts

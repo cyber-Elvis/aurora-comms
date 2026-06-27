@@ -1,0 +1,8 @@
+---
+# The two Region A IOS-XE Internet-edge transit nodes — same hosts as the Ansible inventory.
+transit-a:
+  hostname: "10.255.191.21"
+  groups: [transit]
+transit-b:
+  hostname: "10.255.191.22"
+  groups: [transit]

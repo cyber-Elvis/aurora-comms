@@ -1,0 +1,34 @@
+# Connection and common variables for the Region A IOS-XE Internet-edge transit group.
+#   transit-a (transit-a-csr)  CSR1000v 16.08.01   AS 64497  primary
+#   transit-b (transit-b-iol)  IOL-XE 17.15         AS 64498  backup
+#
+# Authentication uses the labadmin break-glass local secret stored in Ansible Vault
+# (vault_transit_labadmin_password, vault-id `labadmin`, decrypted with
+# ~/.aurora-vault-pass). labadmin is the dedicated break-glass admin — a random
+# password, not a personal account. Scoped non-human automation and read-only agent
+# accounts follow later, mirroring the Region A IOS-XR RBAC tiers
+# (aurora-automation / aurora-claude / aurora-codex / aurora-security); each gets its
+# own vault_<account>_secret and never reuses another credential.
+
+ansible_connection: ansible.netcommon.network_cli
+ansible_network_os: cisco.ios.ios
+ansible_user: labadmin
+ansible_password: "{{ vault_transit_labadmin_password }}"
+
+# labadmin is privilege 15, so SSH lands directly in privileged EXEC and `enable`
+# needs no password. The become method is declared so config modules behave, and so
+# a future lower-privilege scoped account only needs an added become_password.
+ansible_become: true
+ansible_become_method: ansible.netcommon.enable
+
+# Reach the transit OOB management (10.255.191.0/24, MGMT-SW01) through the GNS3 VM
+# jump host. IOS-XE presents an RSA host key and CSR 16.8 negotiates group14 KEX —
+# scope those legacy algorithms to this inventory and keep a dedicated known_hosts
+# file. Password auth only; no user-key binding yet.
+ansible_ssh_common_args: >-
+  -o ProxyJump=gns3@100.118.0.46
+  -o KexAlgorithms=+diffie-hellman-group14-sha1
+  -o HostKeyAlgorithms=+ssh-rsa
+  -o StrictHostKeyChecking=accept-new
+  -o UserKnownHostsFile=~/.ssh/aurora_iosxe_known_hosts
+  -o PubkeyAuthentication=no
