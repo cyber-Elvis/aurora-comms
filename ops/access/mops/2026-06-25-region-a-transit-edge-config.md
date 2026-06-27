@@ -151,8 +151,8 @@ Scaffolds: `ops/automation-iosxe/` (Ansible tree + `nornir/`). Secret:
 | --- | --- | --- |
 | SSH CLI — Ansible (`cisco.ios` / `network_cli`) | ✅ verified | ✅ verified |
 | SSH CLI — Nornir / Netmiko | ✅ verified | ✅ verified |
-| NETCONF (`:830`, `netconf-yang`) | ◻ supported — enable pending | ❌ unsupported (no YANG infra) |
-| RESTCONF (`:443`, `restconf`) | ◻ supported — enable pending | ❌ unsupported |
+| NETCONF (`:830`, `netconf-yang`) | ⚠ enabled, but `:830` never binds (16.8 quirk) | ❌ unsupported (no YANG infra) |
+| RESTCONF (`:443`, `restconf`) | ⚠ enabled (`:443` up), but TLS/cert too old for OpenSSL 3.x | ❌ unsupported |
 | gNMI | ❌ absent (16.8 too early) | ❌ absent |
 
 Probe (read-only, 2026-06-27): `show platform software yang-management process` lists the CSR's YANG
@@ -180,8 +180,19 @@ restconf
 end
 write memory
 ```
-Then smoke-test: NETCONF via `ncclient` to `:830` through the jump, RESTCONF via
-`curl -k https://<jump>/restconf` — scaffolds to be added under `ops/automation-iosxe/netconf|restconf/`.
+**Smoke-test outcome (2026-06-27)** — scaffolds added (`ops/automation-iosxe/netconf/` = ncclient
+through a bastion `:830` forward; `restconf/` = curl through a `:443` forward), but BOTH are blocked
+by the **CSR 16.8.1a image age**, not the tooling:
+- **NETCONF** — `netconf-yang` is configured and `show netconf-yang sessions` works, but **`:830`
+  never enters LISTEN** (`show tcp brief all` shows only `:22/:80/:443`); `ncsshd` shows "Running"
+  with no listener. RSA host key is 2048-bit and `:22` SSH is fine, so it's not key size — a 16.8 quirk.
+- **RESTCONF** — `:443` listens and advertises TLS 1.2 + GCM ciphers, but the handshake **fails from
+  WSL OpenSSL 3.x** even capped at TLS 1.2 with the exact GCM ciphers + `@SECLEVEL=0` (alert 40); the
+  2018 self-signed cert / TLS stack is incompatible with modern OpenSSL.
+
+So on these images the **working automation tier is CLI (Ansible + Nornir)**; NETCONF/RESTCONF/gNMI
+need **IOS-XE 17.x / DevNet CML** (same conclusion as the XRv 6.1.3 gNMI gap). The scaffolds are kept
+under `ops/automation-iosxe/{netconf,restconf}/` — they're correct and will work against a 17.x image.
 
 ---
 
