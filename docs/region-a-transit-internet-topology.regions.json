@@ -1,0 +1,38 @@
+{
+  "canvas": [
+    3840,
+    2160
+  ],
+  "slides": [
+    {
+      "name": "01-topology.png",
+      "caption": "Region A transit internet - topology and egress path",
+      "box": [
+        70,
+        220,
+        2660,
+        1670
+      ]
+    },
+    {
+      "name": "02-reference-interfaces.png",
+      "caption": "Region A transit internet - verified interfaces and IOS-XE role mapping",
+      "box": [
+        2708,
+        198,
+        3787,
+        937
+      ]
+    },
+    {
+      "name": "03-reference-operations.png",
+      "caption": "Region A transit internet - automation path and remaining boundaries",
+      "box": [
+        2708,
+        928,
+        3787,
+        1587
+      ]
+    }
+  ]
+}

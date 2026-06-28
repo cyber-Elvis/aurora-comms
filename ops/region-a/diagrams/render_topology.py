@@ -248,15 +248,17 @@ def _pad(*groups, p=8):  # bbox over one or more region groups, padded, clamped 
 regions = {
     "canvas": [W, H],
     "slides": [
-        # whole-topology slide: x0/y0=0 pulls in the title + plan-summary line; stop just left of
-        # the panel column (PX) so the reference panels live on their own slide(s).
+        # Content slides are enlarged views, not overview recrops. The overview slide already
+        # shows the whole canvas; this crop starts at the topology content bands.
         {"name": "01-topology.png",
-         "caption": "Region A - TOPOLOGY (whole network — fine IP/BGP detail is on the reference slide)",
-         "box": [0, 0, PX - 12, min(H, REG["topology"][3] + 14)]},
-        # native 1080p has the headroom to fit the whole reference column on ONE slide
-        {"name": "02-reference.png",
-         "caption": "Region A - REFERENCE: RPKI / mgmt / addressing / hardening / build / legend",
-         "box": _pad("ref_top", "ref_bot")},
+         "caption": "Region A - TOPOLOGY (enlarged network view)",
+         "box": _pad("topology")},
+        {"name": "02-reference-routing.png",
+         "caption": "Region A - REFERENCE: RPKI / management / addressing",
+         "box": _pad("ref_top")},
+        {"name": "03-reference-hardening-build.png",
+         "caption": "Region A - REFERENCE: hardening / build / legend",
+         "box": _pad("ref_bot")},
     ],
 }
 with open(OUT_REGIONS, "w", encoding="utf-8") as f:

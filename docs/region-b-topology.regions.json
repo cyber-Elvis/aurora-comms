@@ -6,20 +6,30 @@
   "slides": [
     {
       "name": "01-topology.png",
-      "caption": "Region B - TOPOLOGY (Region A edge / PC1 bridge / CML reservation)",
+      "caption": "Region B - TOPOLOGY (enlarged placement view)",
       "box": [
-        0,
-        0,
+        32,
+        84,
         1228,
-        926
+        920
       ]
     },
     {
-      "name": "02-reference.png",
-      "caption": "Region B - REFERENCE: addressing / BGP-AS / VRF / where-things-run / build",
+      "name": "02-reference-routing.png",
+      "caption": "Region B - REFERENCE: addressing / BGP-AS / VRF",
       "box": [
         1232,
         84,
+        1732,
+        546
+      ]
+    },
+    {
+      "name": "03-reference-placement-build.png",
+      "caption": "Region B - REFERENCE: where things run / build",
+      "box": [
+        1232,
+        542,
         1732,
         924
       ]
